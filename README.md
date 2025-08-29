@@ -5,11 +5,11 @@ This project is a fork of the original [BunkrDownloader by Lysagxra](https://git
 This version focuses on providing a user-friendly **Graphical User Interface (GUI)** for Windows users and includes other features to make downloading as simple as possible.
 
 ### Screenshots
-*Screen when launching the `BunkrDownloader-portable-GUI.exe` portable.*
+*Screen when launching the application `BunkrDownloader-portable-GUI.exe`.*
 
 ![Bunkr Downloader GUI](screenshots/screenshot-001.PNG)
 
-*Screen of an active interface from the Bunkr Downloader Portable GUI.*
+*Screen of an completed request interface from the application `BunkrDownloader-portable-GUI.exe`.*
 
 ![Download in progress](screenshots/screenshot-002.PNG)
 
