@@ -5,6 +5,18 @@ import asyncio
 import sys
 from contextlib import redirect_stdout
 import io
+from PIL import Image, ImageTk
+import os
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 class DownloaderUI(ctk.CTk):
     def __init__(self):
@@ -12,6 +24,13 @@ class DownloaderUI(ctk.CTk):
 
         self.title("Bunkr Downloader")
         self.geometry("500x350")
+
+        try:
+            # Set window icon
+            self.iconphoto(True, ImageTk.PhotoImage(Image.open(resource_path("icon.png"))))
+        except Exception as e:
+            # Use original stdout if icon loading fails, as sys.stdout is redirected
+            print(f"Error loading icon: {e}", file=sys.__stdout__)
 
         self.grid_columnconfigure(0, weight=1)
 

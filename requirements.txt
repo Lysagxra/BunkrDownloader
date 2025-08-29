@@ -3,3 +3,4 @@ Requests==2.32.4
 rich==14.1.0
 customtkinter
 pyinstaller
+pillow

@@ -1,0 +1,1625 @@
+========================
+CODE SNIPPETS
+========================
+TITLE: Install PyInstaller Test Dependencies
+DESCRIPTION: Guide to installing the Python packages required for running PyInstaller's test suite. This command uses pip to install dependencies listed in the `tests/requirements-tools.txt` file, ensuring your environment is ready for testing.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/quickstart.rst#_snippet_1
+
+LANGUAGE: Bash
+CODE:
+```
+pip install -r tests/requirements-tools.txt
+```
+
+----------------------------------------
+
+TITLE: Clone pyenv Repository
+DESCRIPTION: Instructions to clone the pyenv Git repository into the user's home directory. This is the first step to install pyenv on a system.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/venv.rst#_snippet_0
+
+LANGUAGE: Bash
+CODE:
+```
+git clone https://github.com/yyuu/pyenv.git ~/.pyenv
+```
+
+----------------------------------------
+
+TITLE: Test Docker and QEMU Setup for Cross-Architecture Emulation
+DESCRIPTION: This snippet provides commands to verify that Docker and QEMU are correctly installed and configured for cross-architecture emulation. It first resets the `qemu-user-static` setup and then tests a specific architecture (ppc64le) by running a simple command in an Alpine container to confirm functionality, which is a prerequisite for PyInstaller releases.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/release/README.rst#_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+$ docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+... lots of noise ...
+$ docker run --rm --platform=ppc64le alpine uname -m
+... some more noise ...
+ppc64le
+```
+
+----------------------------------------
+
+TITLE: Clone PyInstaller Git Repository
+DESCRIPTION: Instructions on how to clone the PyInstaller source code repository from GitHub using Git. This is the first step for local development and contribution, ensuring you have the latest `develop` branch.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/quickstart.rst#_snippet_0
+
+LANGUAGE: Bash
+CODE:
+```
+git clone https://github.com/pyinstaller/pyinstaller
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller from Git clone and local source
+DESCRIPTION: This sequence of commands clones the PyInstaller repository, changes into the new directory, and then installs PyInstaller from the local source. This is a common workflow for installing from a manual Git checkout.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_6
+
+LANGUAGE: Shell
+CODE:
+```
+git clone https://github.com/pyinstaller/pyinstaller
+cd pyinstaller
+pip install .
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller from local source directory
+DESCRIPTION: After unpacking a source archive or cloning the repository, navigate into the source directory and use this command to install PyInstaller locally. This is the recommended way to install from source.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_5
+
+LANGUAGE: Shell
+CODE:
+```
+pip install .
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller using pip
+DESCRIPTION: This command installs the latest stable version of PyInstaller from PyPI using pip, the standard Python package installer. It's the easiest and recommended way to get PyInstaller.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+pip install pyinstaller
+```
+
+----------------------------------------
+
+TITLE: Automated macOS SDK and Tools Preparation with Vagrant
+DESCRIPTION: This command uses Vagrant to automatically download and build the necessary macOS SDK and cctools for cross-compilation. It's a one-time setup that creates the `osxcross.tar.xz` archive, which will then be installed on the build-system.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_7
+
+LANGUAGE: Shell
+CODE:
+```
+vagrant up build-osxcross && vagrant halt build-osxcross
+```
+
+----------------------------------------
+
+TITLE: Set up virtual environment and install test tools
+DESCRIPTION: Steps to create a dedicated Python virtual environment for the test suite using 'virtualenv'. It includes installing 'virtualenv' itself, creating the environment, activating it, and then installing all necessary testing tools from the 'tests/requirements-tools.txt' file.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/testing.rst#_snippet_2
+
+LANGUAGE: Bash
+CODE:
+```
+pip install --user virtualenv
+virtualenv /tmp/venv
+. /tmp/venv/bin/activate
+pip install -r tests/requirements-tools.txt
+```
+
+----------------------------------------
+
+TITLE: Get Python script installation paths (UNIX)
+DESCRIPTION: These Python commands help identify the directories where Python scripts (like 'pyinstaller') are typically installed on UNIX-like systems. This is useful for troubleshooting if the 'pyinstaller' command is not found in your system's PATH.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_10
+
+LANGUAGE: Python
+CODE:
+```
+import sysconfig; print(sysconfig.get_path("scripts"))
+import site; print(site.USER_BASE + "/bin")
+```
+
+----------------------------------------
+
+TITLE: Install a specific branch of PyInstaller from Git
+DESCRIPTION: This command demonstrates how to install a particular branch (e.g., 'develop') of PyInstaller from its Git repository. Replace 'develop' with the desired branch name.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_4
+
+LANGUAGE: Shell
+CODE:
+```
+pip install git+https://github.com/pyinstaller/pyinstaller@develop
+```
+
+----------------------------------------
+
+TITLE: Building PyInstaller Documentation Locally
+DESCRIPTION: Instructions for setting up the environment and building the PyInstaller documentation locally. This involves installing dependencies, navigating to the documentation directory, and running Sphinx's make command to generate HTML output, which can then be opened in a browser.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/documentation.rst#_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+pip install -r doc/requirements.txt
+cd doc
+make html
+xdg-open _build/html/index.html
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller Test Prerequisites
+DESCRIPTION: This command installs all necessary Python packages and pytest add-ons required to run PyInstaller's test suite. It utilizes `pip` to install dependencies listed in the `tests/requirements-tools.txt` file, ensuring the testing environment is properly set up.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/tests/README.md#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+pip install -U -r tests/requirements-tools.txt
+```
+
+----------------------------------------
+
+TITLE: Clone pyenv-virtualenv Plugin
+DESCRIPTION: Instructions to clone the pyenv-virtualenv Git plugin into the pyenv plugins directory. This plugin enables virtual environment management capabilities within pyenv.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/venv.rst#_snippet_1
+
+LANGUAGE: Bash
+CODE:
+```
+git clone https://github.com/yyuu/pyenv-virtualenv.git \
+              ~/.pyenv/plugins/pyenv-virtualenv
+```
+
+----------------------------------------
+
+TITLE: Initializing PyInstaller Splash Screen Target
+DESCRIPTION: This snippet shows the initial setup for the `Splash` target within a PyInstaller spec file, which is responsible for displaying a splash screen during application startup. The `Splash` object typically takes an image file path as its first argument. Note that the provided code is an incomplete example.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/spec-files.rst#_snippet_20
+
+LANGUAGE: Python
+CODE:
+```
+a = Analysis(...)
+
+splash = Splash('image.png',
+```
+
+----------------------------------------
+
+TITLE: Create pyenv Virtual Environment
+DESCRIPTION: Creates a new virtual environment named 'venvname' using a specified Python version (e.g., 3.5.0) under pyenv. This isolates project dependencies.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/venv.rst#_snippet_4
+
+LANGUAGE: Bash
+CODE:
+```
+pyenv virtualenv 3.5.0 venvname
+```
+
+----------------------------------------
+
+TITLE: Installing Required Vagrant Plugins
+DESCRIPTION: Before using most PyInstaller Vagrant boxes, it is necessary to install specific plugins. This command installs `vagrant-reload` and `vagrant-scp`, which are crucial for managing virtual machine states and transferring files between the host and guest systems.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_17
+
+LANGUAGE: bash
+CODE:
+```
+vagrant plugin install vagrant-reload vagrant-scp
+```
+
+----------------------------------------
+
+TITLE: Install Python with Shared Library for PyInstaller
+DESCRIPTION: Installs a specific Python version (e.g., 3.5.0) using pyenv, ensuring it's configured with '--enable-shared'. This flag is crucial for PyInstaller to work correctly, as it requires a shared libpython.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/venv.rst#_snippet_3
+
+LANGUAGE: Bash
+CODE:
+```
+env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.5.0
+```
+
+----------------------------------------
+
+TITLE: pyi-makespec Command-Line Usage Examples
+DESCRIPTION: These examples illustrate the general syntax and common invocation patterns for the `pyi-makespec` command. They show how to specify options and the Python script(s) for which a PyInstaller spec file should be generated, including the `--onefile` option for creating a single executable.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/man/pyi-makespec.rst#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+pyi-makespec <options> SCRIPT [SCRIPT ...]
+```
+
+LANGUAGE: Shell
+CODE:
+```
+pyi-makespec [--onefile] yourprogram.py
+```
+
+----------------------------------------
+
+TITLE: Long PyInstaller Command Examples with Line Continuations
+DESCRIPTION: Provides examples of how to structure long PyInstaller commands for readability using line continuations. This is useful for complex builds involving numerous options, demonstrating syntax for both GNU/Linux shells and Windows batch files.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/usage.rst#_snippet_3
+
+LANGUAGE: shell
+CODE:
+```
+pyinstaller --noconfirm --log-level=WARN \\
+        --onefile --nowindow \\
+        --add-data=\"README:.\" \\
+        --add-data=\"image1.png:img\" \\
+        --add-binary=\"libfoo.so:lib\" \\
+        --hidden-import=secret1 \\
+        --hidden-import=secret2 \\
+        --upx-dir=/usr/local/share/ \\
+        myscript.spec
+```
+
+LANGUAGE: shell
+CODE:
+```
+pyinstaller --noconfirm --log-level=WARN ^
+        --onefile --nowindow ^
+        --add-data=\"README:.\" ^
+        --add-data=\"image1.png:img\" ^
+        --add-binary=\"libfoo.so:lib\" ^
+        --hidden-import=secret1
+        --hidden-import=secret2
+        --icon=..\\MLNMFLCN.ICO ^
+        myscript.spec
+```
+
+----------------------------------------
+
+TITLE: Install Python and Visual Studio Build Tools with Chocolatey
+DESCRIPTION: This command uses the Chocolatey package manager to install Python 3 and the Visual Studio 2019 C++ build tools workload. It's recommended for a streamlined setup of development dependencies on Windows, avoiding manual installations.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_11
+
+LANGUAGE: PowerShell
+CODE:
+```
+choco install -y python3 visualstudio2019-workload-vctools
+```
+
+----------------------------------------
+
+TITLE: Get Python script installation paths (Windows)
+DESCRIPTION: These Python commands help identify the directories where Python scripts (like 'pyinstaller') are typically installed on Windows. This is useful for troubleshooting if the 'pyinstaller' command is not found in your system's PATH.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_9
+
+LANGUAGE: Python
+CODE:
+```
+import sysconfig; print(sysconfig.get_path("scripts"))
+import site; print(site.USER_BASE + "\\Scripts")
+```
+
+----------------------------------------
+
+TITLE: Install Development Tools on Debian/Ubuntu for Bootloader Build
+DESCRIPTION: This command installs the necessary development tools and libraries on Debian- or Ubuntu-like Linux systems. It provides `build-essential` for compilers and `zlib1g-dev` for zlib development files, which are required to build the PyInstaller bootloader.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_2
+
+LANGUAGE: Shell
+CODE:
+```
+sudo apt-get install build-essential zlib1g-dev
+```
+
+----------------------------------------
+
+TITLE: reStructuredText Markup and Link Combination Example
+DESCRIPTION: An example demonstrating how to combine inline markup with external links in reStructuredText. It shows the use of the `|replace|` directive to define a substitution and then link it to a URL.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/documentation.rst#_snippet_4
+
+LANGUAGE: reStructuredText
+CODE:
+```
+The easiest way to install PyInstaller is using |pip|_::
+
+    .. |pip| replace:: :command:`pip`
+    .. _pip: https://pip.pypa.io/
+```
+
+----------------------------------------
+
+TITLE: Install Development Tools on Fedora/RedHat for Bootloader Build
+DESCRIPTION: These commands install the required development tools and libraries on Fedora, RedHat, and derivative Linux systems. They provide a 'Development Tools' group and `zlib-devel` for zlib development files, essential for building the PyInstaller bootloader.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_3
+
+LANGUAGE: Shell
+CODE:
+```
+sudo yum groupinstall "Development Tools"
+sudo yum install zlib-devel
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller via pip
+DESCRIPTION: This command installs PyInstaller from PyPI using pip, making it available in your Python environment. Ensure pip is up-to-date before running.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/README.rst#_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+pip install pyinstaller
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Bootloader Process Flow
+DESCRIPTION: Describes the detailed, two-process startup sequence of the PyInstaller bootloader. This includes the initial setup, environment variable modifications, signal handling, Python dynamic library loading, and interpreter initialization, followed by the steps for running the user's Python code within the bundled application.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/advanced-topics.rst#_snippet_0
+
+LANGUAGE: APIDOC
+CODE:
+```
+Bootloader Execution:
+
+A. First process: bootloader starts.
+    1. If one-file mode, extract bundled files to {temppath}/_MEI{xxxxxx}.
+    2. Modify various environment variables:
+        - GNU/Linux: Save original LD_LIBRARY_PATH to LD_LIBRARY_PATH_ORIG, prepend our path.
+        - AIX: Same for LIBPATH and LIBPATH_ORIG.
+        - macOS: Unset DYLD_LIBRARY_PATH.
+    3. Set up to handle signals for both processes.
+    4. Run the child process.
+    5. Wait for the child process to finish.
+    6. If one-file mode, delete {temppath}/_MEI{xxxxxx}.
+
+B. Second process: bootloader itself started as a child process.
+    1. On Windows set the activation context.
+    2. Load the Python dynamic library (name embedded in executable).
+    3. Initialize Python interpreter: set sys.path, sys.prefix, sys.executable.
+    4. Run python code.
+
+Running Python code steps:
+1. Run the Python initialization code (uses built-in modules only initially).
+    - Sets up Python import mechanism to load from embedded archives.
+    - Adds 'frozen' and '_MEIPASS' attributes to sys module.
+2. Execute any run-time hooks (user-specified then standard).
+3. Install python "egg" files (append .egg filenames to sys.path).
+4. Run the main script.
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller from Git repository
+DESCRIPTION: Install PyInstaller directly from its Git repository using pip's built-in Git support. This method is suitable for developers or those needing the absolute latest changes.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_3
+
+LANGUAGE: Shell
+CODE:
+```
+pip install git+https://github.com/pyinstaller/pyinstaller
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller development version from GitHub tarball
+DESCRIPTION: This command allows you to install the current development version of PyInstaller directly from its GitHub repository's tarball. This is useful for accessing unreleased features or testing.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_2
+
+LANGUAGE: Shell
+CODE:
+```
+pip install https://github.com/pyinstaller/pyinstaller/tarball/develop
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller
+DESCRIPTION: Install or upgrade PyInstaller using pip, ensuring all necessary requirements are met for bundling Python applications.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/index.rst#_snippet_0
+
+LANGUAGE: bash
+CODE:
+```
+pip install -U pyinstaller
+```
+
+----------------------------------------
+
+TITLE: Configure pyenv in Shell Profile (.bashrc/.zshrc)
+DESCRIPTION: Adds pyenv to the system's PATH, enables shims and autocompletion, and loads the pyenv-virtualenv plugin automatically. This configuration ensures pyenv commands are available and functional in new shell sessions.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/venv.rst#_snippet_2
+
+LANGUAGE: Bash
+CODE:
+```
+# Add 'pyenv' to PATH.
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+
+# Enable shims and autocompletion for pyenv.
+eval "$(pyenv init -)"
+# Load pyenv-virtualenv automatically by adding
+# # the following to ~/.zshrc:
+#
+eval "$(pyenv virtualenv-init -)"
+```
+
+----------------------------------------
+
+TITLE: Check PyInstaller installed version
+DESCRIPTION: After installation, run this command to verify that PyInstaller is correctly installed and accessible in your PATH. It should display the installed version number.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_8
+
+LANGUAGE: Shell
+CODE:
+```
+pyinstaller --version
+```
+
+----------------------------------------
+
+TITLE: Activate pyenv Virtual Environment
+DESCRIPTION: Activates a previously created pyenv virtual environment. Once activated, the shell uses the Python interpreter and packages from this specific environment.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/venv.rst#_snippet_5
+
+LANGUAGE: Bash
+CODE:
+```
+pyenv activate venvname
+```
+
+----------------------------------------
+
+TITLE: Upgrade PyInstaller to the latest version
+DESCRIPTION: Use this command to upgrade an existing PyInstaller installation to its most recent stable version. This ensures you have the latest features and bug fixes.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_1
+
+LANGUAGE: Shell
+CODE:
+```
+pip install --upgrade pyinstaller
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller in editable mode for development
+DESCRIPTION: Use this command to install PyInstaller in 'editable' mode. This is ideal for developers as changes made to the source code will take effect immediately without needing to re-install the package each time.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_7
+
+LANGUAGE: Shell
+CODE:
+```
+pip install -e .
+```
+
+----------------------------------------
+
+TITLE: Run PyInstaller full test suite with external libraries
+DESCRIPTION: Instructions to achieve better test coverage by first installing additional Python packages required for testing various hooks and functionalities. After installing these dependencies, the full suite of unit and functional tests is executed.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/testing.rst#_snippet_5
+
+LANGUAGE: Bash
+CODE:
+```
+pip install -U -r tests/requirements-libraries.txt
+pytest tests/unit tests/functional
+```
+
+----------------------------------------
+
+TITLE: Installing PyInstaller Development Version via pip
+DESCRIPTION: This command demonstrates how to install the latest development version of PyInstaller directly from its GitHub repository using pip. This is useful for accessing recent fixes or features not yet available on PyPI, especially when troubleshooting potential bugs.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/when-things-go-wrong.rst#_snippet_4
+
+LANGUAGE: bash
+CODE:
+```
+pip install https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller Development Tools
+DESCRIPTION: Instructions to install the necessary Python packages (`flake8`, `yapf`, `toml`) required for adhering to PyInstaller's coding conventions. These tools assist with code formatting and style validation.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/coding-conventions.rst#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+pip install flake8 yapf==0.32.0 toml
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Entry Point: pyinstaller40.hook-dirs
+DESCRIPTION: API documentation for the `pyinstaller40.hook-dirs` entry point. This entry point refers to a function that PyInstaller invokes to get additional absolute paths to search for hooks, equivalent to the `--additional-hooks-dir` command-line option.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_2
+
+LANGUAGE: APIDOC
+CODE:
+```
+pyinstaller40.hook-dirs:
+  Function Signature: get_hook_dirs() -> List[str]
+  Description: Invoked with no parameters. Must return a sequence of strings, each providing an additional absolute path to search for hooks.
+```
+
+----------------------------------------
+
+TITLE: Python Site Module: Get Site and User Package Paths
+DESCRIPTION: These standard Python functions return lists of directories where site-packages and user-specific site-packages are installed, respectively. They are referenced in the context of PyInstaller's DLL path preservation behavior, which is now limited to files collected from these specific directories to prevent unintended side effects, as seen in PyInstaller 5.5.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/CHANGES.rst#_snippet_13
+
+LANGUAGE: APIDOC
+CODE:
+```
+site.getsitepackages() -> list[str]
+site.getusersitepackages() -> list[str]
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller Test Dependencies
+DESCRIPTION: This command demonstrates how to install the necessary Python packages for running the PyInstaller test suite. It includes both the core test tools and additional libraries required for comprehensive testing, specified in separate requirements files.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/tests/requirements-tools.txt#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+python -m pip install -r tests/requirements-tools.txt
+python -m pip install -r tests/requirements-libraries.txt
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Entry Point: pyinstaller40.tests
+DESCRIPTION: API documentation for the `pyinstaller40.tests` entry point. This entry point refers to a function that PyInstaller invokes to get additional absolute paths to directories or Python source files for pytest test discovery.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_3
+
+LANGUAGE: APIDOC
+CODE:
+```
+pyinstaller40.tests:
+  Function Signature: get_PyInstaller_tests() -> List[str]
+  Description: Invoked with no parameters. Must return a sequence of strings, each providing an additional absolute path to a directory tree or Python source file for pytest test discovery.
+```
+
+----------------------------------------
+
+TITLE: Deactivate pyenv Virtual Environment
+DESCRIPTION: Deactivates the currently active pyenv virtual environment. This returns the shell to the system's default Python environment or the previously active pyenv environment.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/venv.rst#_snippet_6
+
+LANGUAGE: Bash
+CODE:
+```
+pyenv deactivate
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Tree Class Example: Collecting Cython Binary Modules
+DESCRIPTION: Illustrates the use of the `Tree` class to create a TOC list specifically for binary modules, such as those compiled by Cython. This example collects files from the `../src/cy_mods` directory, excluding Cython source (`.pyx`), Python source (`.py`), and compiled Python (`.pyc`) files, ensuring only the compiled binary modules are included with an `EXTENSION` typecode.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/advanced-topics.rst#_snippet_15
+
+LANGUAGE: python
+CODE:
+```
+cython_mods = Tree('..src/cy_mods', excludes=['*.pyx', '*.py', '*.pyc'], typecode='EXTENSION')
+```
+
+----------------------------------------
+
+TITLE: GStreamer: Basic Python Audio Player Application
+DESCRIPTION: A simple Python application demonstrating a basic audio player using GStreamer's `playbin` element. It initializes GStreamer, sets up a main loop, and plays an audio file from the command line. This code serves as a functional example for PyInstaller's GStreamer plugin inclusion.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks-config.rst#_snippet_5
+
+LANGUAGE: python
+CODE:
+```
+# audio_player.py
+import sys
+import os
+
+import gi
+gi.require_version('Gst', '1.0')
+from gi.repository import GLib, Gst
+
+if len(sys.argv) != 2:
+    print(f"Usage: {sys.argv[0]} <filename>")
+    sys.exit(-1)
+
+filename = os.path.abspath(sys.argv[1])
+if not os.path.isfile(filename):
+    print(f"Input file {filename} does not exist!")
+    sys.exit(-1)
+
+Gst.init(sys.argv)
+mainloop = GLib.MainLoop()
+
+playbin = Gst.ElementFactory.make("playbin", "player")
+playbin.set_property('uri', Gst.filename_to_uri(filename))
+playbin.set_property('volume', 0.2)
+playbin.set_state(Gst.State.PLAYING)
+
+mainloop.run()
+```
+
+----------------------------------------
+
+TITLE: Install PyInstaller Development and Test Dependencies
+DESCRIPTION: Demonstrates how to install the development and testing dependencies for PyInstaller using pip. This involves installing the core developer requirements and additional libraries for extensive testing, as specified in the project's requirements files.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/tests/requirements-developer.txt#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+python -m pip install -r tests/requirements-developer.txt
+python -m pip install -r tests/requirements-libraries.txt
+```
+
+----------------------------------------
+
+TITLE: Display current PATH environment variable (UNIX)
+DESCRIPTION: This command shows the current value of the PATH environment variable on UNIX-like systems. Inspecting the PATH helps determine if the directory containing the 'pyinstaller' executable is included.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_12
+
+LANGUAGE: Shell
+CODE:
+```
+echo $PATH
+```
+
+----------------------------------------
+
+TITLE: Build PyInstaller Bootloader for a Specific Target Architecture
+DESCRIPTION: This command allows building the PyInstaller bootloader for a specific target architecture, such as 32-bit, on a machine with a different native architecture. It requires the appropriate compiler and development files for the target architecture to be installed.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_1
+
+LANGUAGE: Shell
+CODE:
+```
+python ./waf all --target-arch=32bit
+```
+
+----------------------------------------
+
+TITLE: Example PyInstaller Spec File Content
+DESCRIPTION: This Python code snippet illustrates the core structure of a PyInstaller spec file. It shows the instantiation of `Analysis`, `PYZ`, `EXE`, and `COLLECT` classes, which are fundamental to defining how scripts, modules, binaries, and data files are processed and bundled into the final application.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/spec-files.rst#_snippet_3
+
+LANGUAGE: Python
+CODE:
+```
+a = Analysis(['minimal.py'],
+             pathex=['/Developer/PItests/minimal'],
+             binaries=None,
+             datas=None,
+             hiddenimports=[],
+             hookspath=None,
+             runtime_hooks=None,
+             excludes=None)
+pyz = PYZ(a.pure)
+exe = EXE(pyz,... )
+coll = COLLECT(...)
+```
+
+----------------------------------------
+
+TITLE: Display current PATH environment variable (Windows)
+DESCRIPTION: This command shows the current value of the PATH environment variable on Windows. Inspecting the PATH helps determine if the directory containing the 'pyinstaller' executable is included.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_11
+
+LANGUAGE: Shell
+CODE:
+```
+echo %PATH%
+```
+
+----------------------------------------
+
+TITLE: Registering PyInstaller Hooks via setuptools Entry Points in setup.cfg
+DESCRIPTION: This snippet demonstrates how to add entries to your `setup.cfg` file to inform PyInstaller about additional hook directories and test paths provided by your package. This uses setuptools entry points for dynamic discovery.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_1
+
+LANGUAGE: INI
+CODE:
+```
+[options.entry_points]
+pyinstaller40 =
+  hook-dirs = pyi_hooksample.__pyinstaller:get_hook_dirs
+  tests     = pyi_hooksample.__pyinstaller:get_PyInstaller_tests
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Tree Class Example: Collecting Extra Data Files
+DESCRIPTION: Demonstrates how to use the `Tree` class to create a TOC list for additional data files that need to be included in the PyInstaller bundle. This example collects all files from the relative path `../src/extras` into an `extras` sub-directory within the application, while explicitly excluding files named `tmp` or those with a `.pyc` extension.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/advanced-topics.rst#_snippet_14
+
+LANGUAGE: python
+CODE:
+```
+extras_toc = Tree('../src/extras', prefix='extras', excludes=['tmp', '*.pyc'])
+```
+
+----------------------------------------
+
+TITLE: Clone PyInstaller repository using Git
+DESCRIPTION: Command to clone the PyInstaller source code repository from GitHub using Git, and then change the current directory to the newly cloned repository. This is the standard way to get the development version.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/testing.rst#_snippet_1
+
+LANGUAGE: Bash
+CODE:
+```
+git clone https://github.com/pyinstaller/pyinstaller.git
+cd pyinstaller
+```
+
+----------------------------------------
+
+TITLE: Example: Configure GObject Introspection Hook for Gtk App
+DESCRIPTION: Illustrates how to configure the `gi` hook in PyInstaller to collect specific resources for a Gtk application. This example limits collected icons and themes to 'Adwaita', translations to British English and Simplified Chinese, and specifies module versions for Gtk (3.0) and GtkSource (4).
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks-config.rst#_snippet_2
+
+LANGUAGE: python
+CODE:
+```
+a = Analysis(
+    ["my-gtk-app.py"],
+    ...,
+    hooksconfig={
+        "gi": {
+            "icons": ["Adwaita"],
+            "themes": ["Adwaita"],
+            "languages": ["en_GB", "zh_CN"],
+            "module-versions": {
+                "Gtk": "3.0",
+                "GtkSource": "4"
+            }
+        }
+    },
+    ...,
+)
+```
+
+----------------------------------------
+
+TITLE: PyInstaller: Interpreter Options - Warning Control Example
+DESCRIPTION: A specific example demonstrating how to use the `W` option to control warning messages for the embedded Python interpreter in a PyInstaller application, effectively disabling all warnings by passing `'W ignore'`.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/spec-files.rst#_snippet_15
+
+LANGUAGE: Python
+CODE:
+```
+options = [
+        # Warning control
+        ('W ignore', None, 'OPTION'),  # disable all warnings
+    ]
+```
+
+----------------------------------------
+
+TITLE: Installing PyInstaller Test Dependencies via pip
+DESCRIPTION: Demonstrates the command-line instruction to install the Python package dependencies specified in this requirements file using pip, assuming the current directory is the PyInstaller's top-level source directory.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/tests/requirements-libraries.txt#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+python -m pip install -r tests/requirements-libraries.txt
+```
+
+----------------------------------------
+
+TITLE: Python Requirements File Environment Markers
+DESCRIPTION: Illustrates the syntax for using environment markers in `pip` requirements files. These markers allow specifying package dependencies that are conditional on the Python version or the operating system, ensuring platform-specific installations.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/tests/README.md#_snippet_9
+
+LANGUAGE: Python
+CODE:
+```
+SomeProject ==5.4 ; python_version != '3.6'
+SomeProject       ; sys_platform == 'win32'
+```
+
+----------------------------------------
+
+TITLE: Invoke PyInstaller module directly
+DESCRIPTION: If the 'pyinstaller' command is not in your system's PATH, or if you have multiple Python environments, you can invoke PyInstaller directly as a Python module using this command. Note the case-sensitive module name 'PyInstaller'.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/installation.rst#_snippet_13
+
+LANGUAGE: Shell
+CODE:
+```
+python -m PyInstaller
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Splash Screen Threading Model Overview
+DESCRIPTION: Describes the operational sequence when a splash screen is enabled in a PyInstaller-frozen application. It details the bootloader's role in checking for splash screen display, extracting dependencies, loading Tcl/Tk libraries, preparing the interpreter environment, and starting the splash screen script in a separate thread.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/advanced-topics.rst#_snippet_2
+
+LANGUAGE: English
+CODE:
+```
+1. Bootloader checks if it needs to display splash screen, i.e., if it is running in onedir mode or as a parent process in onefile mode.
+2. If running in onefile mode, extract the splash screen dependencies (Tcl/Tk shared libraries and resources). The files are extracted to the application's temporary directory ({temppath}/_MEI{xxxxxx}).
+3. Tcl and Tk shared libraries are loaded into the booloader, and required Tcl/Tk symbols are bound.
+   - Windows: tcl86t.dll / tk86t.dll
+   - Linux: libtcl.so / libtk.so
+4. Prepare a minimal environment for the Tcl/Tk interpreter by replacing/modifying the following functions:
+   1. ::tclInit: This command is called to find the standard library of Tcl. We replace this command to force Tcl to load/execute only the bundled modules.
+   2. ::tcl_findLibrary: Tk uses this function to source all its components. The overwritten function sets the required environment variable and evaluates the requested file.
+   3. ::exit: This function is modified to ensure a proper exit of the splash screen thread.
+   4. ::source: This command executes the contents of a passed file. Since we run in a minimal environment we mock the execution of not bundled files and execute those who are.
+5. Start the Tcl interpreter and execute the splash screen script, which was generated by PyInstaller's build target Splash at build time. This script creates the environment variable _PYI_SPLASH_IPC, which is also available to the python interpreter. It also initializes a TCP server socket to receive commands from python.
+
+Note: The Tcl interpreter is started in a separate thread. Only after the Tcl interpreter has executed the splash screen script, the bootloader thread, which is responsible for extraction/starting the python interpreter, is resumed.
+```
+
+----------------------------------------
+
+TITLE: Unfrozen Python: POSIX Multiprocessing Process Invocations
+DESCRIPTION: Examples of command-line arguments for `multiprocessing` resource tracker and worker processes on POSIX systems when running an unfrozen Python script. These show how the Python interpreter invokes internal `multiprocessing` functions for process management.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/common-issues-and-pitfalls.rst#_snippet_6
+
+LANGUAGE: Shell
+CODE:
+```
+python -c from multiprocessing.resource_tracker import main;main(5)
+```
+
+LANGUAGE: Shell
+CODE:
+```
+python -c "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=6, pipe_handle=8)" --multiprocessing-fork
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Hook Global Variable: datas (Bundling Data Files)
+DESCRIPTION: Examples of using the `datas` global variable within a PyInstaller hook to bundle additional files with the application. Each entry is a tuple `(source_path, destination_name)`. The second example shows how to use helper functions like `collect_data_files` for collecting multiple directories.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_6
+
+LANGUAGE: Python
+CODE:
+```
+datas = [ ('/usr/share/icons/education_*.png', 'icons') ]
+```
+
+LANGUAGE: Python
+CODE:
+```
+datas  = collect_data_files('submodule1')
+datas += collect_data_files('submodule2')
+```
+
+----------------------------------------
+
+TITLE: Basic Vagrant Commands for Bootloader Management
+DESCRIPTION: These commands demonstrate fundamental Vagrant operations for managing virtual machines used in PyInstaller's build process. `vagrant up` provisions the guest and builds the bootloader, `vagrant halt` gracefully shuts it down, and `git status` can be used to verify the build output on the host.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_18
+
+LANGUAGE: bash
+CODE:
+```
+vagrant up linux64      # will also build the bootloader
+vagrant halt linux64    # or `destroy`
+
+# verify the bootloader has been rebuild
+git status ../PyInstaller/bootloader/
+```
+
+----------------------------------------
+
+TITLE: Locating Data Files Relative to the Main Script (os.path)
+DESCRIPTION: This example demonstrates how to locate a data file (e.g., 'other-file.dat') that is specifically placed next to the main entry-point script. It uses `os.path.abspath` and `os.path.dirname(__file__)` to determine the bundle directory and then constructs the path to the data file, ensuring correct resolution in both bundled and unbundled scenarios.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/runtime-information.rst#_snippet_2
+
+LANGUAGE: Python
+CODE:
+```
+from os import path
+bundle_dir = path.abspath(path.dirname(__file__))
+path_to_dat = path.join(bundle_dir, 'other-file.dat')
+```
+
+----------------------------------------
+
+TITLE: Setting Python Path for Windows Builds
+DESCRIPTION: When building for Windows, it's often necessary to ensure the Python executable is in the system's PATH. This command demonstrates how to temporarily add a Python installation directory to the PATH environment variable in a Windows command prompt.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_10
+
+LANGUAGE: Batch
+CODE:
+```
+set PATH=%PATH%;c:\python35
+```
+
+----------------------------------------
+
+TITLE: Build PyInstaller Bootloader using Waf
+DESCRIPTION: Provides a concise command to build the PyInstaller bootloader. This command utilizes the Waf build automation tool to compile all necessary components. For more detailed instructions, refer to the official PyInstaller documentation.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/bootloader/README.txt#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+./waf all
+```
+
+----------------------------------------
+
+TITLE: PyInstaller.compat Module API Reference
+DESCRIPTION: This section provides API documentation for the `PyInstaller.compat` module, which offers compatibility attributes for detecting the current Python version and operating system. It lists various boolean attributes like `is_py36`, `is_win`, `is_linux`, etc., along with `base_prefix` for the base Python installation path and `EXTENSION_SUFFIXES` for C-extension file suffixes. These attributes are useful for writing platform-specific or Python version-specific logic within PyInstaller hooks.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_12
+
+LANGUAGE: APIDOC
+CODE:
+```
+Module: PyInstaller.compat
+
+Import Example:
+  from PyInstaller.compat import base_prefix, is_win
+
+Data Attributes:
+  is_py36: bool - True when the current version of Python is at least 3.6.
+  is_py37: bool - True when the current version of Python is at least 3.7.
+  is_py38: bool - True when the current version of Python is at least 3.8.
+  is_py39: bool - True when the current version of Python is at least 3.9.
+  is_py310: bool - True when the current version of Python is at least 3.10.
+  is_py311: bool - True when the current version of Python is at least 3.11.
+  is_win: bool - True in a Windows system.
+  is_cygwin: bool - True when sys.platform == 'cygwin'.
+  is_darwin: bool - True in macOS.
+  is_linux: bool - True in any GNU/Linux system.
+  is_solar: bool - True in Solaris.
+  is_aix: bool - True in AIX.
+  is_freebsd: bool - True in FreeBSD.
+  is_openbsd: bool - True in OpenBSD.
+  is_venv: bool - True in any virtual environment (either virtualenv or venv).
+  base_prefix: str - The correct path to the base Python installation, whether native or a virtual environment.
+  EXTENSION_SUFFIXES: list[str] - List of Python C-extension file suffixes. Used for finding all binary dependencies in a folder.
+```
+
+----------------------------------------
+
+TITLE: Run PyInstaller Tests with Parallel Execution
+DESCRIPTION: Speed up test runs by distributing them across multiple CPUs. This command requires the `pytest-xdist` plugin to be installed and replaces `NUM` with the desired number of parallel processes.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/tests/README.md#_snippet_2
+
+LANGUAGE: Shell
+CODE:
+```
+py.test -n NUM
+```
+
+----------------------------------------
+
+TITLE: Manual macOS Bootloader Build Steps
+DESCRIPTION: For users who prefer not to use the Vagrant build guest, these commands detail the manual process. It involves setting up the `osxcross` toolchain and then using `waf` with specific Clang compilers for both x86_64 and i386 architectures.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_9
+
+LANGUAGE: Shell
+CODE:
+```
+mkdir -p ~/osxcross
+tar -C ~/osxcross --xz -xf /vagrant/sdks/osx/osxcross.tar.xz
+PATH=~/osxcross/bin/:$PATH
+python ./waf all CC=x86_64-apple-darwin15-clang
+python ./waf all CC=i386-apple-darwin15-clang
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Matplotlib Backend Detection Examples
+DESCRIPTION: Illustrates how PyInstaller's bytecode scanner detects `matplotlib.use` calls. It highlights that the backend name must be a string literal and the `force` argument, if present, must also be a literal and not a keyword argument for successful detection.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks-config.rst#_snippet_8
+
+LANGUAGE: python
+CODE:
+```
+import matplotlib
+
+matplotlib.use('TkAgg')  # detected
+matplotlib.use('TkAgg', False)  # detected
+
+backend = 'TkAgg'
+matplotlib.use(backend)  # not detected
+
+matplotlib.use('TkAgg', force=False)  # not detected
+```
+
+----------------------------------------
+
+TITLE: Build PyInstaller Bootloader using waf
+DESCRIPTION: This command initiates the build process for the PyInstaller bootloader. It requires Python and the `waf` build system to be set up in the bootloader directory. This will produce the bootloader executables for the current platform.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+python ./waf all
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Frozen App: Multiprocessing Process Invocations
+DESCRIPTION: Examples of command-line arguments for `multiprocessing` resource tracker and worker processes when spawned by a PyInstaller frozen application. These illustrate how the application executable itself is re-invoked with specific `multiprocessing` arguments, which are then handled by PyInstaller's `freeze_support` override.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/common-issues-and-pitfalls.rst#_snippet_7
+
+LANGUAGE: Shell
+CODE:
+```
+my_program -B -S -I -c "from multiprocessing.resource_tracker import main;main(5)"
+```
+
+LANGUAGE: Shell
+CODE:
+```
+my_program --multiprocessing-fork tracker_fd=6 pipe_handle=8
+```
+
+LANGUAGE: Shell
+CODE:
+```
+my_program.exe --multiprocessing-fork parent_pid=8752 pipe_handle=1552
+```
+
+----------------------------------------
+
+TITLE: Unfrozen Python: Windows Multiprocessing Worker Process Invocation
+DESCRIPTION: Example command-line invocation for a `multiprocessing` worker process on Windows when running an unfrozen Python script. It demonstrates how the Python interpreter executes the `spawn_main` function from the `multiprocessing.spawn` module.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/common-issues-and-pitfalls.rst#_snippet_5
+
+LANGUAGE: Shell
+CODE:
+```
+python.exe -c "from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=6872, pipe_handle=520)" --multiprocessing-fork
+```
+
+----------------------------------------
+
+TITLE: Include Entire Folder as Data in PyInstaller Bundle
+DESCRIPTION: This example demonstrates how to include an entire directory and its contents into a PyInstaller bundle. By specifying the source folder path and a destination folder name in the `datas` list, PyInstaller will reproduce the folder structure within the bundled application.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/spec-files.rst#_snippet_7
+
+LANGUAGE: Python
+CODE:
+```
+added_files = [
+             ( 'src/README.txt', '.' ),
+             ( '/mygame/data', 'data' ),
+             ( '/mygame/sfx/*.mp3', 'sfx' )
+             ]
+```
+
+----------------------------------------
+
+TITLE: Python Qt Event Logger Application Implementation
+DESCRIPTION: This Python code defines a basic Qt-based event logger application. It sets up a main window with a read-only text edit widget to display messages, handles appending new messages, and processes file open requests. The main execution block initializes the application, connects signals, and starts the event loop, also demonstrating basic signal handling for graceful exit.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/feature-notes.rst#_snippet_21
+
+LANGUAGE: python
+CODE:
+```
+class MainWindow(QtWidgets.QMainWindow):
+    """
+    Main window.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.resize(800, 600)
+
+        self.setWindowTitle("Qt-based event logger")
+
+        # Construct the UI
+        self.scroll_area = QtWidgets.QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.setCentralWidget(self.scroll_area)
+
+        self.text_edit = QtWidgets.QTextEdit()
+        self.scroll_area.setWidget(self.text_edit)
+        self.text_edit.setReadOnly(True)
+
+    def append_message(self, msg):
+        """
+        Append message to text view.
+        """
+        self.text_edit.append(msg)
+
+    def handle_open_file_request(self, url):
+        self.append_message(f"Open request: {url.toString()}")
+
+
+if __name__ == '__main__':
+    # Make Ctrl+C work
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    app = Application(list(sys.argv))
+
+    window = MainWindow()
+    window.show()
+
+    window.append_message("Application started!")
+    window.append_message(f"Args: {sys.argv[1:]}")
+
+    app.openFileRequest.connect(window.handle_open_file_request)
+
+    app.exec_()
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Command for Single-File Windowed Application
+DESCRIPTION: This example shows how to use PyInstaller to create a single, self-contained executable file for a graphical user interface (GUI) application. The --onefile option consolidates all dependencies into one executable, while --windowed (or --noconsole) prevents the command-line console window from appearing when the application is launched, suitable for GUI apps.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/operating-mode.rst#_snippet_1
+
+LANGUAGE: Shell
+CODE:
+```
+pyinstaller --onefile --windowed myscript.py
+```
+
+----------------------------------------
+
+TITLE: Cython Module Import Error Traceback Example
+DESCRIPTION: This traceback example demonstrates how an error related to a Cython C object module might appear at runtime. While PyInstaller can bundle Cython modules, it cannot automatically determine if the Cython C object module itself imports other Python modules, which can lead to runtime errors if those dependencies are not explicitly handled.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/feature-notes.rst#_snippet_2
+
+LANGUAGE: Python
+CODE:
+```
+Traceback (most recent call last):
+[…]
+File "myapp\cython_module.pyx", line 3, in init myapp.cython_module
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Matplotlib Backend Configuration in Analysis
+DESCRIPTION: Provides an example of configuring Matplotlib backend collection within the `Analysis` object in a PyInstaller spec file. It shows options for auto-detection, collecting all backends, or specifying a single or multiple backends.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks-config.rst#_snippet_11
+
+LANGUAGE: python
+CODE:
+```
+a = Analysis(
+    ["my-matplotlib-app.py"],
+    ...,
+    hooksconfig={
+        "matplotlib": {
+            "backends": "auto",  # auto-detect; the default behavior
+            # "backends": "all",  # collect all backends
+            # "backends": "TkAgg",  # collect a specific backend
+            # "backends": ["TkAgg", "Qt5Agg"],  # collect multiple backends
+        },
+    },
+    ...,
+)
+```
+
+----------------------------------------
+
+TITLE: PyInstaller.utils.hooks.conda Module API Reference
+DESCRIPTION: This section provides API documentation for the `PyInstaller.utils.hooks.conda` submodule, which offers specific utilities for handling Conda environments within PyInstaller hooks. It details functions like `distribution`, `package_distribution`, `files`, `requires`, and `collect_dynamic_libs`, along with class definitions for `Distribution` and `PackagePath`. These tools are crucial for correctly identifying and bundling dependencies when working with Conda-managed Python installations.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_14
+
+LANGUAGE: APIDOC
+CODE:
+```
+Module: PyInstaller.utils.hooks.conda
+
+Functions:
+  distribution()
+  package_distribution()
+  files()
+  requires()
+  walk_dependency_tree()
+  collect_dynamic_libs()
+
+Classes:
+  Distribution
+  PackagePath:
+    Members: All public members are available.
+```
+
+----------------------------------------
+
+TITLE: Basic PyInstaller Command for Script Bundling
+DESCRIPTION: Demonstrates the simplest way to use PyInstaller to create a standalone executable from a Python script. PyInstaller analyzes the script, generates a spec file, and creates a build and dist folder containing the bundled application.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/usage.rst#_snippet_0
+
+LANGUAGE: shell
+CODE:
+```
+pyinstaller myscript.py
+```
+
+----------------------------------------
+
+TITLE: Source PyInstaller Release Script in Fish Shell
+DESCRIPTION: This command executes the `release/release.fish` script, making its functions available in the current `fish` shell session. Sourcing this script initiates the automated steps and prompts required for performing a PyInstaller release, guiding the user through the entire process.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/release/README.rst#_snippet_2
+
+LANGUAGE: fish
+CODE:
+```
+> source release/release.fish
+```
+
+----------------------------------------
+
+TITLE: Add Multiple Data Files with Glob Patterns in PyInstaller Spec
+DESCRIPTION: This example illustrates how to include multiple data files, including those matching a glob pattern (e.g., all `.mp3` files), into a specific subfolder within the PyInstaller bundle. The `datas` argument in the `Analysis` object is used, where each tuple specifies the source path (with glob) and the destination folder name in the bundle.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/spec-files.rst#_snippet_5
+
+LANGUAGE: Python
+CODE:
+```
+a = Analysis(...
+             datas= [ ('/mygame/sfx/*.mp3', 'sfx' ) ],
+             ...
+             )
+```
+
+----------------------------------------
+
+TITLE: Running PyInstaller Bundled GUI Applications from Command Line
+DESCRIPTION: Provides commands to run PyInstaller-bundled GUI applications from the command line on different operating systems. This is particularly useful for revealing startup errors when the application is bundled with the `--windowed` option, as standard output is often suppressed in GUI mode.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/when-things-go-wrong.rst#_snippet_0
+
+LANGUAGE: Shell
+CODE:
+```
+./dist/my_gui
+```
+
+LANGUAGE: Shell
+CODE:
+```
+my_gui.exe
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Hook Global Variable: excludedimports
+DESCRIPTION: Example of using the `excludedimports` global variable within a PyInstaller hook. This variable is a list of absolute module names that should *not* be part of the bundled application, preventing their automatic inclusion if only imported by the hooked module.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_5
+
+LANGUAGE: Python
+CODE:
+```
+excludedimports = ['tkinter']
+```
+
+----------------------------------------
+
+TITLE: Update Pull Request: Interactive Rebase (No Base Change)
+DESCRIPTION: Workflow for interactively rebasing a pull request without changing its base commit. This allows for squashing, reordering, or editing commits to improve commit history quality before a force push, without altering the branch's starting point.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/pull-requests.rst#_snippet_5
+
+LANGUAGE: bash
+CODE:
+```
+git checkout my-branch
+# find the commit your branch forked from 'develop'
+mb=$(git merge-base --fork-point develop)
+# rebase interactively without actually changing the base
+git rebase -i $mb
+# … process rebase
+git push -f my-fork my-branch
+```
+
+----------------------------------------
+
+TITLE: Cross-compiling FreeBSD Bootloaders with Docker
+DESCRIPTION: This command executes a Docker container with a FreeBSD cross-compiler image to build the bootloader. It mounts the current directory into the container, allowing the build process to access the source code and place the compiled executables back on the host system. This method ensures compatibility with older FreeBSD versions.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_16
+
+LANGUAGE: bash
+CODE:
+```
+docker run -v $(pwd):/io -it freebsd-cross-build bash -c "cd /io/bootloader; ./waf all"
+```
+
+----------------------------------------
+
+TITLE: PyInstaller Hook Global Variable: hiddenimports
+DESCRIPTION: Example of using the `hiddenimports` global variable within a PyInstaller hook. This variable is a list of module names (relative or absolute) that should be explicitly included in the bundled application, similar to the `--hidden-import` command-line option.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_4
+
+LANGUAGE: Python
+CODE:
+```
+hiddenimports = ['_gdbm', 'socket', 'h5py.defs']
+```
+
+----------------------------------------
+
+TITLE: Configuring Vagrantfile with Environment Variables
+DESCRIPTION: This snippet illustrates two ways to pass configuration parameters to Vagrant using environment variables. Parameters like `GUI` or `TARGET` can be set inline with the `vagrant up` command or exported beforehand, allowing dynamic customization of the virtual machine's behavior or the build target.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_19
+
+LANGUAGE: bash
+CODE:
+```
+GUI=1 TARGET=OSX vagrant up linux64
+```
+
+LANGUAGE: bash
+CODE:
+```
+export TARGET=OSX
+vagrant provision linux64
+```
+
+----------------------------------------
+
+TITLE: Advanced macOS Info.plist Customization for PyInstaller Bundles
+DESCRIPTION: This example illustrates how to embed custom entries into the `Info.plist` file of a macOS application bundle using the `info_plist` argument of the `BUNDLE` function. It showcases adding `NSPrincipalClass` for Retina support, disabling AppleScript, and defining `CFBundleDocumentTypes` to declare supported file formats.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/spec-files.rst#_snippet_18
+
+LANGUAGE: Python
+CODE:
+```
+app = BUNDLE(exe,
+             name='myscript.app',
+             icon=None,
+             bundle_identifier=None,
+             version='0.0.1',
+             info_plist={
+                'NSPrincipalClass': 'NSApplication',
+                'NSAppleScriptEnabled': False,
+                'CFBundleDocumentTypes': [
+                    {
+                        'CFBundleTypeName': 'My File Format',
+                        'CFBundleTypeIconFile': 'MyFileIcon.icns',
+                        'LSItemContentTypes': ['com.example.myformat'],
+                        'LSHandlerRank': 'Owner'
+                        }
+                    ]
+                },
+             )
+```
+
+----------------------------------------
+
+TITLE: Add Single Data File to PyInstaller Bundle
+DESCRIPTION: This snippet demonstrates how to include a single data file, such as a README.txt, into the root directory of your PyInstaller application bundle. It provides examples for both modifying the `Analysis` object in the spec file and using the `--add-data` command-line option. The file path is relative to the spec file, and the destination is specified as '.' for the bundle's top level.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/spec-files.rst#_snippet_4
+
+LANGUAGE: Python
+CODE:
+```
+a = Analysis(...
+             datas=[ ('src/README.txt', '.') ],
+             ...
+             )
+```
+
+LANGUAGE: Shell
+CODE:
+```
+pyinstaller --add-data "src/README.txt:." myscript.py
+```
+
+----------------------------------------
+
+TITLE: PyInstaller: Specifying Python Interpreter Options in Spec File
+DESCRIPTION: Provides an example of how to configure run-time options for the embedded Python interpreter in a PyInstaller-frozen application. Options are defined as a list of three-element tuples `('option string', None, 'OPTION')` and passed as an argument to the `EXE` object during spec file generation.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/spec-files.rst#_snippet_13
+
+LANGUAGE: Python
+CODE:
+```
+options = [
+        ('v', None, 'OPTION'),
+        ('W ignore', None, 'OPTION'),
+    ]
+
+    a = Analysis(
+        ...
+    )
+    ...
+    exe = EXE(
+        pyz,
+        a.scripts,
+        options,  # <-- the options list, passed to EXE
+        exclude_binaries=...
+        ...
+    )
+```
+
+----------------------------------------
+
+TITLE: Set PATH for MinGW-w64 on Windows
+DESCRIPTION: This command prepends the MinGW-w64 'bin' directory to the system's PATH environment variable. This ensures that the MinGW-w64 compiler tools are accessible from the command line for building the bootloader.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/bootloader-building.rst#_snippet_12
+
+LANGUAGE: Shell
+CODE:
+```
+set PATH=C:\MinGW\bin;%PATH%
+```
+
+----------------------------------------
+
+TITLE: PyInstaller: Exclude GStreamer Plugin from Build
+DESCRIPTION: This example configures PyInstaller's GStreamer hook to exclude the 'opencv' plugin. This prevents unnecessary OpenCV shared libraries from being bundled, reducing the frozen application's size. It's useful for optimizing builds where specific plugins are not required.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks-config.rst#_snippet_4
+
+LANGUAGE: python
+CODE:
+```
+a = Analysis(
+    ["my-gstreamer-app.py"],
+    ...,
+    hooksconfig={
+        "gstreamer": {
+            "exclude_plugins": [
+                "opencv",
+            ],
+        },
+    },
+    ...,
+)
+```
+
+----------------------------------------
+
+TITLE: Verifying PyInstaller Documentation Build
+DESCRIPTION: Steps to ensure the documentation builds correctly and without errors or warnings before submitting changes. This involves cleaning previous builds and then rebuilding the HTML documentation.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/documentation.rst#_snippet_1
+
+LANGUAGE: bash
+CODE:
+```
+make clean
+...
+make html
+```
+
+----------------------------------------
+
+TITLE: Suppress Symbolic Links for Multiple Paths in PyInstaller Hooks (Python)
+DESCRIPTION: This Python example illustrates how to configure `bindepend_symlink_suppression` as a list of patterns within a PyInstaller hook. This allows for suppressing symbolic links for shared libraries located in multiple specific subdirectories of a package. The `compat.is_linux` check ensures this suppression is applied only on Linux systems, addressing scenarios where bundled libraries might cause issues if their symbolic links are created.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/hooks.rst#_snippet_11
+
+LANGUAGE: python
+CODE:
+```
+# hook-mypackage.py
+
+from PyInstaller import compat
+
+# On linux, suppress creation of symbolic links to top-level application
+# directory for shared libraries bundled with this package in its two
+# library subdirectories.
+if compat.is_linux:
+   bindepend_symlink_suppression = [
+      "**/mypackage/lib_dir1/*.so*",
+      "**/mypackage/lib_dir2/*.so*",
+   ]
+```
+
+----------------------------------------
+
+TITLE: Download PyInstaller development head using pip
+DESCRIPTION: Instructions to download the PyInstaller development version as a zip archive using pip, then extract and navigate into the directory. This method is an alternative to cloning the repository with Git.
+
+SOURCE: https://github.com/pyinstaller/pyinstaller/blob/develop/doc/development/testing.rst#_snippet_0
+
+LANGUAGE: Bash
+CODE:
+```
+pip download --no-deps https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+unzip develop.zip
+cd pyinstaller-develop/
+```
