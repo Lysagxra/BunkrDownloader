@@ -36,7 +36,7 @@ This fork includes all the powerful core features from the original, plus:
 ## 💻 How to Use (Easy Way)
 
 1.  Go to the [**Releases**](https://github.com/ZeroHackz/BunkrDownloader-Portable/releases) page.
-2.  Download the latest `BunkrDownloaderGUI.exe` file.
+2.  Download the latest ` BunkrDownloader-portable-GUI.exe` file.
 3.  Run the application, paste your Bunkr URL, and click **Download**. That's it!
 
 ## 🛠️ For Developers (Building from Source)
