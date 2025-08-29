@@ -1,6 +1,5 @@
 from contextlib import redirect_stdout
 from downloader import main as downloader_main
-from PIL import Image, ImageTk
 import asyncio
 import customtkinter as ctk
 import io
@@ -28,7 +27,7 @@ class DownloaderUI(ctk.CTk):
 
         try:
             # Set window icon
-            self.iconphoto(True, ImageTk.PhotoImage(Image.open(resource_path("icon.png"))))
+            self.after(200, lambda: self.iconbitmap(resource_path("icon.ico")))
         except Exception as e:
             # Use original stdout if icon loading fails, as sys.stdout is redirected
             print(f"Error loading icon: {e}", file=sys.__stdout__)
@@ -106,7 +105,7 @@ class DownloaderUI(ctk.CTk):
         self.progress_bar.set(0)
         self.status_textbox.configure(state="normal")
         self.status_textbox.delete("1.0", "end")
-        self.status_textbox.insert("end", f"Received URL: {url}\\n")
+        self.status_textbox.insert("end", f"Received URL: {url}\n")
         self.status_textbox.configure(state="disabled")
 
         # Run the downloader in a separate thread to avoid blocking the UI

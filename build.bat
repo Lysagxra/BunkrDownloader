@@ -31,7 +31,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo Building executable...
-pyinstaller --onefile --windowed --name BunkrDownloaderGUI --icon="icon.png" --paths "venv/Lib/site-packages" --hidden-import "customtkinter" --add-data "venv/Lib/site-packages/customtkinter;customtkinter" --add-data "icon.png;." gui.py
+pyinstaller BunkrDownloaderGUI.spec
 
 if %ERRORLEVEL% NEQ 0 (
     echo Build failed.
