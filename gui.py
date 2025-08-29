@@ -48,8 +48,11 @@ class DownloaderUI(ctk.CTk):
         self.progress_bar.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
         
         self.status_textbox = ctk.CTkTextbox(self, height=150)
-        self.status_textbox.grid(row=4, column=0, padx=20, pady=(10, 20), sticky="nsew")
+        self.status_textbox.grid(row=4, column=0, padx=20, pady=(10, 5), sticky="nsew")
         self.status_textbox.configure(state="disabled")
+
+        self.info_label = ctk.CTkLabel(self, text="GUI v2025.08.29 by ZeroHackz")
+        self.info_label.grid(row=5, column=0, padx=20, pady=(5, 20), sticky="s")
 
         # Redirect stdout to the textbox
         sys.stdout = self.redirect_stdout_to_textbox()
@@ -85,6 +88,7 @@ class DownloaderUI(ctk.CTk):
         self.progress_bar.set(0)
         self.status_textbox.configure(state="normal")
         self.status_textbox.delete("1.0", "end")
+        self.status_textbox.insert("end", f"Received URL: {url}\\n")
         self.status_textbox.configure(state="disabled")
 
         # Run the downloader in a separate thread to avoid blocking the UI
@@ -100,11 +104,14 @@ class DownloaderUI(ctk.CTk):
             # Mock downloader arguments
             sys.argv = ['downloader.py', url]
             
-            asyncio.run(downloader_main())
+            download_path = asyncio.run(downloader_main())
 
             self.status_textbox.configure(state="normal")
             self.status_textbox.insert("end", "\nDownload finished!")
             self.status_textbox.configure(state="disabled")
+
+            if download_path and platform.system() == "Windows":
+                os.startfile(download_path)
 
         except Exception as e:
             self.status_textbox.configure(state="normal")

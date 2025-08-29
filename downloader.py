@@ -88,7 +88,7 @@ async def validate_and_download(
     url: str,
     live_manager: LiveManager,
     args: Namespace | None = None,
-) -> None:
+) -> str:
     """Validate the provided URL, and initiate the download process."""
     check_disk_space(live_manager)
 
@@ -98,6 +98,7 @@ async def validate_and_download(
 
     directory_name = format_directory_name(album_name, album_id)
     download_path = create_download_directory(directory_name)
+    print(f"\n\nDownloading to: {download_path}")
     session_info = SessionInfo(
         args=args,
         bunkr_status=bunkr_status,
@@ -110,6 +111,8 @@ async def validate_and_download(
     except (RequestConnectionError, Timeout, RequestException) as err:
         error_message = f"Error downloading from {url}: {err}"
         raise RuntimeError(error_message) from err
+
+    return download_path
 
 
 def initialize_managers(*, disable_ui: bool = False) -> LiveManager:
@@ -145,7 +148,7 @@ def parse_arguments() -> Namespace:
     return parser.parse_args()
 
 
-async def main() -> None:
+async def main() -> str:
     """Initialize the download process."""
     clear_terminal()
     check_python_version()
@@ -153,10 +156,11 @@ async def main() -> None:
     bunkr_status = get_bunkr_status()
     args = parse_arguments()
     live_manager = initialize_managers(disable_ui=args.disable_ui)
+    download_path = ""
 
     try:
         with live_manager.live:
-            await validate_and_download(
+            download_path = await validate_and_download(
                 bunkr_status,
                 args.url,
                 live_manager,
@@ -166,6 +170,8 @@ async def main() -> None:
 
     except KeyboardInterrupt:
         sys.exit(1)
+
+    return download_path
 
 
 if __name__ == "__main__":
