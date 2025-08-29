@@ -2,16 +2,17 @@
 
 This project is a fork of the original [BunkrDownloader by Lysagxra](https://github.com/Lysagxra/BunkrDownloader). Huge thanks to her for creating and maintaining the powerful core of this application!
 
-This version focuses on providing a user-friendly **Graphical User Interface (GUI)** for Windows users and includes other features to make downloading from Bunkr as simple as possible.
+This version focuses on providing a user-friendly **Graphical User Interface (GUI)** for Windows users and includes other features to make downloading as simple as possible.
 
 ### Screenshots
-*When launching the BunkrDownloader-portable-GUI.exe this is the Starting screen.*
+*Screen when launching the `BunkrDownloader-portable-GUI.exe` portable.*
 
 ![Bunkr Downloader GUI](screenshots/screenshot-001.PNG)
 
-*A active interface screenshot of the Bunkr Downloader Portable GUI.*
+*Screen of an active interface from the Bunkr Downloader Portable GUI.*
 
 ![Download in progress](screenshots/screenshot-002.PNG)
+
 *Real-time download progress and logs.*
 
 ## ✨ Features
@@ -36,7 +37,7 @@ This fork includes all the powerful core features from the original, plus:
 ## 💻 How to Use (Easy Way)
 
 1.  Go to the [**Releases**](https://github.com/ZeroHackz/BunkrDownloader-Portable/releases) page.
-2.  Download the latest ` BunkrDownloader-portable-GUI.exe` file.
+2.  Download the latest `BunkrDownloader-portable-GUI.exe` file.
 3.  Run the application, paste your Bunkr URL, and click **Download**. That's it!
 
 ## 🛠️ For Developers (Building from Source)
@@ -68,12 +69,20 @@ The original command-line interface is still available and fully functional.
 ### Single Download
 
 ```bash
-python3 downloader.py <bunkr_url>
+python downloader.py <bunkr_url>
 ```
 
 ### Selective & Batch Downloads
 
-All the original flags like `--ignore`, `--include`, and batch downloading via `URLs.txt` are still supported. For more details, please refer to the [original README](https://github.com/Lysagxra/BunkrDownloader/blob/main/README.md).
+All the original flags like
+* `--ignore`, 
+* `--ignore`,
+* `--include`,
+*  and batch downloading via `URLs.txt` 
+
+are still supported.
+ 
+For more details, please refer to the [Lysagxra README](https://github.com/Lysagxra/BunkrDownloader/blob/main/README.md).
 
 ## Logging
 
