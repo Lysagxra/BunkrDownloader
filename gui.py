@@ -1,12 +1,13 @@
-import customtkinter as ctk
-from downloader import main as downloader_main
-import threading
-import asyncio
-import sys
 from contextlib import redirect_stdout
-import io
+from downloader import main as downloader_main
 from PIL import Image, ImageTk
+import asyncio
+import customtkinter as ctk
+import io
 import os
+import platform
+import sys
+import threading
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -37,8 +38,15 @@ class DownloaderUI(ctk.CTk):
         self.url_label = ctk.CTkLabel(self, text="Bunkr URL:")
         self.url_label.grid(row=0, column=0, padx=20, pady=(20, 5), sticky="w")
 
-        self.url_entry = ctk.CTkEntry(self, placeholder_text="Enter Bunkr URL")
-        self.url_entry.grid(row=1, column=0, padx=20, pady=5, sticky="ew")
+        self.url_frame = ctk.CTkFrame(self)
+        self.url_frame.grid(row=1, column=0, padx=20, pady=5, sticky="ew")
+        self.url_frame.grid_columnconfigure(0, weight=1)
+
+        self.url_entry = ctk.CTkEntry(self.url_frame, placeholder_text="Enter Bunkr URL")
+        self.url_entry.grid(row=0, column=0, sticky="ew")
+
+        self.paste_button = ctk.CTkButton(self.url_frame, text="Paste", command=self.paste_from_clipboard, width=50, fg_color="red", hover_color="#CC0000")
+        self.paste_button.grid(row=0, column=1, padx=(10, 0))
 
         self.download_button = ctk.CTkButton(self, text="Download", command=self.start_download)
         self.download_button.grid(row=2, column=0, padx=20, pady=20)
@@ -57,6 +65,16 @@ class DownloaderUI(ctk.CTk):
         # Redirect stdout to the textbox
         sys.stdout = self.redirect_stdout_to_textbox()
 
+    def paste_from_clipboard(self):
+        try:
+            clipboard_content = self.clipboard_get()
+            self.url_entry.delete(0, "end")
+            self.url_entry.insert(0, clipboard_content)
+        except ctk.TclError:
+            self.status_textbox.configure(state="normal")
+            self.status_textbox.delete("1.0", "end")
+            self.status_textbox.insert("end", "Could not get text from clipboard.")
+            self.status_textbox.configure(state="disabled")
 
     def redirect_stdout_to_textbox(self):
         class IORedirector(io.StringIO):
