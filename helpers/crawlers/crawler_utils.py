@@ -27,15 +27,17 @@ def extract_next_album_pages(initial_soup: BeautifulSoup, url: str) -> list[str]
             "style": "margin-top:1rem",
         },
     )
+
+    # Returns None if the album consists of only one page
     if pagination_nav is None:
         return None
 
     pagination_text = pagination_nav.get_text()
     page_ids = re.findall(r"\d+", pagination_text)
+    num_pages = max(int(page_id) for page_id in page_ids)
 
-    # Discard the first ID since it has already been processed
-    next_page_ids = page_ids[1:]
-    return [f"{url}?page={page_id}" for page_id in next_page_ids]
+    # Discard the first ID since it has already been processed in the main code
+    return [f"{url}?page={page}" for page in range(2, num_pages + 1)]
 
 
 def extract_item_pages(soup: BeautifulSoup, host_page: str) -> list[str] | None:
@@ -53,9 +55,7 @@ def extract_item_pages(soup: BeautifulSoup, host_page: str) -> list[str] | None:
 
     except AttributeError:
         logging.exception("Error extracting item pages.")
-
-    logging.exception("No item pages found in the HTML content.")
-    return None
+        return None
 
 
 async def extract_all_album_item_pages(
@@ -64,7 +64,7 @@ async def extract_all_album_item_pages(
     """Collect item page links from an album, including pagination."""
     # Extract item pages from the initial soup
     item_pages = extract_item_pages(initial_soup, host_page)
-    next_album_pages = extract_next_album_pages(initial_soup, url) or []
+    next_album_pages = extract_next_album_pages(initial_soup, url)
 
     if next_album_pages is not None:
         for next_page in next_album_pages:
