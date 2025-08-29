@@ -38,6 +38,6 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo Setup completed successfully!
-echo You can now run launch_gui.bat to start BunkrDownloader.
+echo You can now run launch_cli.bat to start BunkrDownloader.
 echo.
 pause
