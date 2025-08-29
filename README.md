@@ -45,11 +45,11 @@ If you want to build the application yourself:
 
 1.  Clone this repository:
     ```bash
-    git clone https://github.com/ZeroHackz/BunkrDownloader.git
+    git clone https://github.com/ZeroHackz/BunkrDownloader-Portable.git
     ```
 2.  Navigate to the project directory:
     ```bash
-    cd BunkrDownloader
+    cd BunkrDownloader-Portable
     ```
 3.  Run the setup script. This will create a virtual environment and install the required dependencies.
     ```bat
