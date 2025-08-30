@@ -31,7 +31,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo Building executable...
-pyinstaller --onefile --windowed --name BunkrDownloaderGUI --icon="icon.png" --paths "venv/Lib/site-packages" --hidden-import "customtkinter" --add-data "venv/Lib/site-packages/customtkinter;customtkinter" --add-data "icon.png;." gui.py
+pyinstaller BunkrDownloaderPortableGUI.spec
 
 if %ERRORLEVEL% NEQ 0 (
     echo Build failed.
@@ -41,7 +41,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo.
 echo Build successful!
-echo The executable can be found in the 'dist' folder: dist\BunkrDownloaderGUI.exe
+echo The executable can be found in the 'dist' folder: dist\BunkrDownloaderPortableGUI.exe
 echo You can run it by double-clicking the file.
 echo.
 
