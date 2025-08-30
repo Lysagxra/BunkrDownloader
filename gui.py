@@ -8,6 +8,8 @@ import platform
 import sys
 import threading
 
+GUI_VERSION = "2025.08.30"
+
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -23,7 +25,7 @@ class DownloaderUI(ctk.CTk):
         super().__init__()
 
         self.title("Bunkr Downloader")
-        self.geometry("500x350")
+        self.geometry("500x450")
 
         try:
             # Set window icon
@@ -58,7 +60,7 @@ class DownloaderUI(ctk.CTk):
         self.status_textbox.grid(row=4, column=0, padx=20, pady=(10, 5), sticky="nsew")
         self.status_textbox.configure(state="disabled")
 
-        self.info_label = ctk.CTkLabel(self, text="GUI v2025.08.29 by ZeroHackz")
+        self.info_label = ctk.CTkLabel(self, text=f"GUI v{GUI_VERSION} by ZeroHackz")
         self.info_label.grid(row=5, column=0, padx=20, pady=(5, 20), sticky="s")
 
         # Redirect stdout to the textbox
