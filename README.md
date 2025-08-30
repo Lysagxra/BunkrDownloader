@@ -5,13 +5,21 @@ This project is a fork of the original [BunkrDownloader by Lysagxra](https://git
 This version focuses on providing a user-friendly **Graphical User Interface (GUI)** for Windows users and includes other features to make downloading as simple as possible.
 
 ### Screenshots
-*Screen when launching the application `BunkrDownloader-portable-GUI.exe`.*
+*Screen application `BunkrDownloader-portable-GUI.exe` in single mode.*
 
-![Bunkr Downloader GUI](screenshots/screenshot-001.PNG)
+![Bunkr Downloader GUI](screenshots/screenshot-single-mode.PNG)
 
-*Screen of an completed request interface from the application `BunkrDownloader-portable-GUI.exe`.*
+*Screen of an completed request interface in single mode `BunkrDownloader-portable-GUI.exe`.*
 
-![Download in progress](screenshots/screenshot-002.PNG)
+![Download in progress](screenshots/screenshot-single-mode-active.PNG)
+
+*Screen application `BunkrDownloader-portable-GUI.exe` in load from file mode.*
+
+![Download in progress](screenshots/screenshot-load-from-file.PNG)
+
+*Screen of an completed request interface in load from file mode `BunkrDownloader-portable-GUI.exe`.*
+
+![Download in progress](screenshots/screenshot-load-from-file-active.PNG)
 
 *Real-time download progress and logs.*
 
@@ -19,9 +27,11 @@ This version focuses on providing a user-friendly **Graphical User Interface (GU
 
 This fork includes all the powerful core features from the original, plus:
 
+*   **Dual Download Modes:** Easily switch between downloading a single URL or batch downloading from a `.txt` file using a simple toggle.
 *   **Graphical User Interface (GUI):** A simple and intuitive interface for downloading. No command line needed!
 *   **Portable Windows Executable:** Download and run the application directly without needing to install Python or any dependencies.
 *   **Easy URL Pasting:** A convenient "Paste" button to quickly insert a Bunkr URL from your clipboard.
+*   **File Browser:** A "Browse" button to easily select your URL list file when in "From File" mode.
 *   **Automatic Folder Opening:** Once your download is complete, the folder containing the files will automatically open.
 *   **Build & Setup Scripts:** Comes with `.bat` scripts to easily set up the environment and build the executable from source.
 
@@ -38,7 +48,11 @@ This fork includes all the powerful core features from the original, plus:
 
 1.  Go to the [**Releases**](https://github.com/ZeroHackz/BunkrDownloader-Portable/releases) page.
 2.  Download the latest `BunkrDownloader-portable-GUI.exe` file.
-3.  Run the application, paste your Bunkr URL, and click **Download**. That's it!
+3.  Run the application.
+4.  **Choose your download mode:**
+    *   **For a single link:** Leave it on "Single URL", paste your Bunkr URL, and click **Download**.
+    *   **For multiple links:** Select "From File", click **Browse** to select your `.txt` file, and then click **Download**.
+5.  That's it!
 
 ## 🛠️ For Developers (Building from Source)
 
@@ -74,13 +88,7 @@ python downloader.py <bunkr_url>
 
 ### Selective & Batch Downloads
 
-All the original flags like
-* `--ignore`, 
-* `--ignore`,
-* `--include`,
-*  and batch downloading via `URLs.txt` 
-
-are still supported.
+All the original flags like `--ignore`, `--include`, and batch downloading via `URLs.txt` are still supported.
  
 For more details, please refer to the [Lysagxra README](https://github.com/Lysagxra/BunkrDownloader/blob/main/README.md).
 
