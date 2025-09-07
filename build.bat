@@ -42,7 +42,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo Creating MSI installer...
 if exist "C:\Program Files\WiX Toolset v6.0\bin\wix.exe" (
-    "C:\Program Files\WiX Toolset v6.0\bin\wix.exe" build BunkrDownloaderPortable.wxs -o dist\BunkrDownloaderPortable.msi
+    "C:\Program Files\WiX Toolset v6.0\bin\wix.exe" build BunkrDownloaderPortableGUI.wxs -o dist\BunkrDownloaderPortableGUI.msi
 ) else (
     echo WiX Toolset v6.0 not found. Skipping MSI creation.
 )
