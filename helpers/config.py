@@ -18,8 +18,7 @@ if TYPE_CHECKING:
 # Paths and Files
 # ============================
 DOWNLOAD_FOLDER = "Downloads"    # The folder where downloaded files will be stored.
-URLS_FILE = "URLs.txt"           # The name of the file containing the list of URLs to
-                                 # process.
+URLS_FILE = "URLs.txt"           # The file containing the list of URLs to process.
 SESSION_LOG = "session_log.txt"  # The file used to log errors.
 MIN_DISK_SPACE_GB = 3            # Minimum free disk space (in GB) required.
 
@@ -31,7 +30,7 @@ STATUS_PAGE = "https://status.bunkr.ru/"  # The URL of the status page for check
 BUNKR_API = "https://bunkr.cr/api/vs"     # The API for retrieving encryption data.
 
 # ============================
-# Regex
+# Regex Patterns
 # ============================
 MEDIA_SLUG_REGEX = r'const\s+slug\s*=\s*"([a-zA-Z0-9_-]+)"'  # Extract media slug.
 VALID_SLUG_REGEX = r"^[a-zA-Z0-9_-]+$"                       # Validate media slug.
