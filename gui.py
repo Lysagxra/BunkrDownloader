@@ -9,7 +9,7 @@ import sys
 import threading
 from tkinter import filedialog
 
-GUI_VERSION = "2025.08.30"
+GUI_VERSION = "2025.09.07"
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
