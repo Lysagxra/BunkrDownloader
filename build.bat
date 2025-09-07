@@ -40,6 +40,14 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
+echo Creating MSI installer...
+if exist "C:\Program Files\WiX Toolset v6.0\bin\wix.exe" (
+    "C:\Program Files\WiX Toolset v6.0\bin\wix.exe" build BunkrDownloaderPortable.wxs -o dist\BunkrDownloaderPortable.msi
+) else (
+    echo WiX Toolset v6.0 not found. Skipping MSI creation.
+)
+
+echo.
 echo Build successful!
 echo The executable can be found in the 'dist' folder: dist\BunkrDownloaderPortableGUI.exe
 echo You can run it by double-clicking the file.
