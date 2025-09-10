@@ -1,0 +1,175 @@
+name: Bug report
+description: File a bug report
+title: "[BUG] <Enter a bug description here>"
+labels: [ "bug" ]
+assignees: [ Lysagxra ]
+
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to fill out this bug report!
+
+  - type: markdown
+    attributes:
+      value: |
+        > [!IMPORTANT]
+        > 1. Make sure to check existing issues before creating a new one.
+        > 2. Update to the latest release of the tool before opening an issue.
+
+        > [!WARNING]
+        > Please write your report in English.
+        > Reports submitted in any other language will be marked as invalid.
+        > Thank you for your understanding and cooperation :)
+
+        You can download the latest version of the tool here:
+        https://github.com/Lysagxra/BunkrDownloader/releases
+
+  - id: prechecks
+    attributes:
+      label: Steps to troubleshoot my issue
+
+      description: |
+        Before opening an issue, please confirm that you have read the relevant sections of the project's `README.md`.
+
+      options:
+        - label: "I'm using the latest version of the tool"
+          required: true
+        - label: "I’ve read the `README.md`."
+          required: true
+        - label: "I understand this is open source software provided for free and that I might not receive a timely response."
+          required: true
+        - label: "I’ve checked existing issues to avoid creating a duplicate."
+          required: true
+        - label: "A similar issue was previously marked as `completed`, but I'm confident the bug still exists."
+          required: false
+        - label: "I am willing to submit a pull request with the fix. *(Assign this issue to me)*"
+          required: false
+    
+    type: checkboxes
+
+  - id: operating-system
+    attributes:
+      label: Operating system
+      description: What operating system, version are you working with?
+      multiple: true
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Other (Please specify)
+
+    type: dropdown
+    
+    validations:
+      required: true
+  
+  - id: other-os
+    attributes:
+      label: Please specify your operating system
+      description: If you selected "Other", please provide the exact operating system and version you're using.
+      placeholder: "Example: ChromeOS"
+  
+    type: input
+
+    validations:
+      required: false
+
+  - id: python-version
+    attributes:
+      label: Python version
+      description: What version of Python are you working with?
+      placeholder: "Example: 3.13.3"
+    
+    type: input
+    
+    validations:
+      required: true
+  
+  - id: tool-version
+    attributes:
+      label: Tool version
+      description: What version of the tool are you encountering this issue with?
+      placeholder: "Example: 1.0.0"
+    
+    type: input
+    
+    validations:
+      required: true
+
+  - id: bug-description
+    attributes:
+      label: Describe the bug
+
+      description: A clear and concise description of what the bug is.
+
+      placeholder: |
+        Be specific and include:
+        1. A description of what went wrong.
+        2. The expected behavior.
+        3. Provide an example URL that showcases it (if applicable).
+        4. Add screenshots to help explain your problem (if applicable).
+    
+    type: textarea
+    
+    validations:
+      required: true
+  
+  - id: reproduce-steps
+    attributes:
+      label: Steps to help reproduce the behavior
+      description: Please provide a detailed list of steps to reproduce the issue.
+      placeholder: |
+        Provide detailed steps to reproduce the issue:
+          1. Specify any configurations or settings involved.
+          2. List any commands you ran or actions you took.
+          3. Describe the error or issue you encountered.
+    
+    type: textarea
+    
+    validations:
+      required: true
+
+  - id: relevant-logs
+    attributes:
+      label: Relevant logs
+      description: If you have an error log or stack trace, paste it here within backticks (```).
+      placeholder: |
+        Please copy the error log from your terminal and paste it here, formatted within backticks (```), like this:
+        ```
+        Insert your error log here...
+        Insert your error log here...
+        ```
+    
+    type: textarea
+    
+    validations:
+      required: false
+
+  - id: additional-context
+    attributes:
+      label: Additional context
+
+      description: |
+        If you have any additional context, information, or references that could help us better understand or resolve the issue, please provide them here.
+
+      placeholder: |
+        Add any other context about the problem here. For example:
+          - Was the issue intermittent or always reproducible?
+          - Were there any recent changes to your environment or the tool before the issue occurred?
+          - Any workarounds you may have tried or that worked?
+
+    type: textarea
+
+    validations:
+      required: false
+
+  - id: contact
+    attributes:
+      label: Contact details
+      description: How can we get in touch with you if we need more info?
+      placeholder: "Example: email@example.com"
+
+    type: input
+
+    validations:
+      required: false

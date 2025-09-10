@@ -30,7 +30,7 @@ class LiveManager:
     def __init__(
         self,
         progress_manager: ProgressManager,
-        logger: LoggerTable,
+        logger_table: LoggerTable,
         *,
         disable_ui: bool = False,
         refresh_per_second: int = 10,
@@ -38,7 +38,7 @@ class LiveManager:
         """Initialize the progress manager and logger, and set up the live view."""
         self.progress_manager = progress_manager
         self.progress_table = self.progress_manager.create_progress_table()
-        self.logger = logger
+        self.logger_table = logger_table
         self.disable_ui = disable_ui
         self.live = (
             Live(self._render_live_view(), refresh_per_second=refresh_per_second)
@@ -69,7 +69,7 @@ class LiveManager:
 
     def update_log(self, event: str, details: str) -> None:
         """Log an event and refreshes the live display."""
-        self.logger.log(event, details, disable_ui=self.disable_ui)
+        self.logger_table.log(event, details, disable_ui=self.disable_ui)
         if not self.disable_ui:
             self.live.update(self._render_live_view())
 
@@ -94,9 +94,10 @@ class LiveManager:
     # Private methods
     def _render_live_view(self) -> Group:
         """Render the combined live view of the progress table and the logger table."""
+        panel_width = self.progress_manager.get_panel_width()
         return Group(
             self.progress_table,
-            self.logger.render_log_panel(),
+            self.logger_table.render_log_panel(panel_width=2*panel_width),
         )
 
     def _compute_execution_time(self) -> str:

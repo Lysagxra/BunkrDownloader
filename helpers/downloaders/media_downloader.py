@@ -164,7 +164,8 @@ class MediaDownloader:
         """Log error, apply backoff, and return True if should retry."""
         self.live_manager.update_log(
             event,
-            f"{event} for {self.download_info.filename} ({attempt + 1}/{self.retries})",
+            f"{event} for {self.download_info.filename} "
+            f"({attempt + 1}/{self.retries})...",
         )
 
         if attempt < self.retries - 1:
@@ -199,7 +200,7 @@ class MediaDownloader:
             HTTPStatus.TOO_MANY_REQUESTS,
             HTTPStatus.SERVICE_UNAVAILABLE,
         ):
-            return self._retry_with_backoff(attempt, event="Too many requests")
+            return self._retry_with_backoff(attempt, event="Retrying download")
 
         if req_err.response.status_code == HTTPStatus.BAD_GATEWAY:
             self.live_manager.update_log(
@@ -219,7 +220,7 @@ class MediaDownloader:
         if not is_final_attempt:
             self.live_manager.update_log(
                 "Exceeded retry attempts",
-                f"Exceeded retry attempts for {self.download_info.filename}. "
+                f"Max retries reached for {self.download_info.filename}. "
                 "It will be retried one more time after all other tasks.",
             )
             return {

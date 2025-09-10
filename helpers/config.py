@@ -6,7 +6,8 @@ into a single location.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections import deque
+from dataclasses import dataclass, field
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 DOWNLOAD_FOLDER = "Downloads"    # The folder where downloaded files will be stored.
 URLS_FILE = "URLs.txt"           # The file containing the list of URLs to process.
 SESSION_LOG = "session_log.txt"  # The file used to log errors.
-MIN_DISK_SPACE_GB = 3            # Minimum free disk space (in GB) required.
+MIN_DISK_SPACE_GB = 2            # Minimum free disk space (in GB) required.
 
 # ============================
 # API / Status Endpoints
@@ -34,6 +35,31 @@ BUNKR_API = "https://bunkr.cr/api/vs"     # The API for retrieving encryption da
 # ============================
 MEDIA_SLUG_REGEX = r'const\s+slug\s*=\s*"([a-zA-Z0-9_-]+)"'  # Extract media slug.
 VALID_SLUG_REGEX = r"^[a-zA-Z0-9_-]+$"                       # Validate media slug.
+
+# ============================
+# UI & Table Settings
+# ============================
+PROGRESS_COLUMNS_SEPARATOR = "•"  # Visual separator used between progress bar columns.
+
+# Colors used for the progress manager UI elements
+PROGRESS_MANAGER_COLORS = {
+    "title_color": "light_cyan3",           # Title color for progress panels.
+    "overall_border_color": "bright_blue",  # Border color for overall progress panel.
+    "task_border_color": "medium_purple",   # Border color for task progress panel.
+}
+
+# Colors used for the log manager UI elements
+LOG_MANAGER_COLORS = {
+    "title_color": "light_cyan3",  # Title color for log panel.
+    "border_color": "cyan",        # Border color for log panel.
+}
+
+# Constant defining the minimum width for each column of the log table.
+MIN_COLUMN_WIDTHS = {
+    "Timestamp": 10,
+    "Event": 15,
+    "Details": 30,
+}
 
 # ============================
 # Download Settings
@@ -123,3 +149,13 @@ class AlbumInfo:
 
     album_id: str
     item_pages: list[str]
+
+@dataclass
+class ProgressConfig:
+    """Configuration for progress bar settings."""
+
+    task_name: str
+    item_description: str
+    color: str = PROGRESS_MANAGER_COLORS["title_color"]
+    panel_width = 40
+    overall_buffer: deque = field(default_factory=lambda: deque(maxlen=5))

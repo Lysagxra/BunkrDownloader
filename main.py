@@ -13,7 +13,11 @@ import asyncio
 import sys
 from argparse import Namespace
 
-from downloader import initialize_managers, validate_and_download
+from downloader import (
+    add_disable_ui_argument,
+    initialize_managers,
+    validate_and_download,
+)
 from helpers.bunkr_utils import get_bunkr_status
 from helpers.config import SESSION_LOG, URLS_FILE
 from helpers.file_utils import (
@@ -27,11 +31,7 @@ from helpers.general_utils import clear_terminal
 def parse_arguments() -> Namespace:
     """Parse only the --disable-ui argument."""
     parser = argparse.ArgumentParser(description="Acquire URL and other arguments.")
-    parser.add_argument(
-        "--disable-ui",
-        action="store_true",
-        help="Disable the user interface",
-    )
+    add_disable_ui_argument(parser)
     return parser.parse_args()
 
 

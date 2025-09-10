@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
-from argparse import Namespace
+from argparse import ArgumentParser, Namespace
 from typing import TYPE_CHECKING
 
 from requests.exceptions import ConnectionError as RequestConnectionError
@@ -122,6 +122,15 @@ def initialize_managers(*, disable_ui: bool = False) -> LiveManager:
     return LiveManager(progress_manager, logger_table, disable_ui=disable_ui)
 
 
+def add_disable_ui_argument(parser: ArgumentParser) -> None:
+    """Add the --disable-ui argument to any parser."""
+    parser.add_argument(
+        "--disable-ui",
+        action="store_true",
+        help="Disable the user interface",
+    )
+
+
 def parse_arguments() -> Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Acquire URL and other arguments.")
@@ -140,11 +149,7 @@ def parse_arguments() -> Namespace:
         help="A list of substrings to match against filenames. "
         "Files containing any of these substrings in their names will be downloaded.",
     )
-    parser.add_argument(
-        "--disable-ui",
-        action="store_true",
-        help="Disable the user interface",
-    )
+    add_disable_ui_argument(parser)
     return parser.parse_args()
 
 
