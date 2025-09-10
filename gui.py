@@ -1,12 +1,15 @@
-from downloader import main as downloader_main
+"""
+This module contains the graphical user interface for the Bunkr Downloader.
+"""
 import asyncio
-import customtkinter as ctk
 import io
 import os
 import platform
 import sys
 import threading
 from tkinter import filedialog
+import customtkinter as ctk
+from downloader import main as downloader_main
 
 GUI_VERSION = "2025.09.07"
 
@@ -15,12 +18,15 @@ def resource_path(relative_path):
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
-    except Exception:
+    except AttributeError:
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
 
 class DownloaderUI(ctk.CTk):
+    """
+    A class to represent the Downloader UI.
+    """
     def __init__(self):
         super().__init__()
 
@@ -30,7 +36,7 @@ class DownloaderUI(ctk.CTk):
         try:
             # Set window icon
             self.after(200, lambda: self.iconbitmap(resource_path("icon.ico")))
-        except Exception as e:
+        except ctk.TclError as e:
             # Use original stdout if icon loading fails, as sys.stdout is redirected
             print(f"Error loading icon: {e}", file=sys.__stdout__)
 
@@ -43,9 +49,17 @@ class DownloaderUI(ctk.CTk):
         self.mode_label.pack(side="left", padx=10, pady=10)
 
         self.download_mode = ctk.StringVar(value="url")
-        self.radio_url = ctk.CTkRadioButton(self.mode_frame, text="Single URL", variable=self.download_mode, value="url", command=self.toggle_mode)
+        self.radio_url = ctk.CTkRadioButton(self.mode_frame,
+                                              text="Single URL",
+                                              variable=self.download_mode,
+                                              value="url",
+                                              command=self.toggle_mode)
         self.radio_url.pack(side="left", padx=10, pady=10)
-        self.radio_file = ctk.CTkRadioButton(self.mode_frame, text="Load URLs from file", variable=self.download_mode, value="file", command=self.toggle_mode)
+        self.radio_file = ctk.CTkRadioButton(self.mode_frame,
+                                               text="Load URLs from file",
+                                               variable=self.download_mode,
+                                               value="file",
+                                               command=self.toggle_mode)
         self.radio_file.pack(side="left", padx=10, pady=10)
 
         # --- URL Input Frame ---
@@ -59,7 +73,12 @@ class DownloaderUI(ctk.CTk):
         self.url_entry = ctk.CTkEntry(self.url_input_frame, placeholder_text="Enter Bunkr URL")
         self.url_entry.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
-        self.paste_button = ctk.CTkButton(self.url_input_frame, text="Paste", command=self.paste_from_clipboard, width=50, fg_color="red", hover_color="#CC0000")
+        self.paste_button = ctk.CTkButton(self.url_input_frame,
+                                              text="Paste",
+                                              command=self.paste_from_clipboard,
+                                              width=50,
+                                              fg_color="red",
+                                              hover_color="#CC0000")
         self.paste_button.grid(row=1, column=1, padx=(0, 10), pady=10)
 
         # --- File Input Frame ---
@@ -72,7 +91,10 @@ class DownloaderUI(ctk.CTk):
         self.file_entry = ctk.CTkEntry(self.file_input_frame, placeholder_text="Select a .txt file")
         self.file_entry.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
-        self.browse_button = ctk.CTkButton(self.file_input_frame, text="Browse", command=self.browse_file, width=50)
+        self.browse_button = ctk.CTkButton(self.file_input_frame,
+                                             text="Browse",
+                                             command=self.browse_file,
+                                             width=50)
         self.browse_button.grid(row=1, column=1, padx=(0, 10), pady=10)
 
         # --- Common UI Elements ---
@@ -82,7 +104,6 @@ class DownloaderUI(ctk.CTk):
         self.progress_bar = ctk.CTkProgressBar(self, orientation="horizontal")
         self.progress_bar.set(0)
         self.progress_bar.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
-        
         self.status_textbox = ctk.CTkTextbox(self, height=200)
         self.status_textbox.grid(row=4, column=0, padx=20, pady=(10, 5), sticky="nsew")
         self.status_textbox.configure(state="disabled")
@@ -97,6 +118,7 @@ class DownloaderUI(ctk.CTk):
         sys.stdout = self.redirect_stdout_to_textbox()
 
     def toggle_mode(self):
+        """Toggles the UI between URL input and file input modes."""
         if self.download_mode.get() == "url":
             self.url_input_frame.grid(row=1, column=0, padx=20, pady=5, sticky="ew")
             self.file_input_frame.grid_forget()
@@ -105,6 +127,7 @@ class DownloaderUI(ctk.CTk):
             self.url_input_frame.grid_forget()
 
     def browse_file(self):
+        """Opens a file dialog to select a file containing URLs."""
         file_path = filedialog.askopenfilename(
             title="Select a URL file",
             filetypes=(("Text files", "*.txt"), ("All files", "*.*"))
@@ -114,6 +137,7 @@ class DownloaderUI(ctk.CTk):
             self.file_entry.insert(0, file_path)
 
     def paste_from_clipboard(self):
+        """Pastes content from the clipboard into the URL entry field."""
         try:
             clipboard_content = self.clipboard_get()
             self.url_entry.delete(0, "end")
@@ -125,7 +149,9 @@ class DownloaderUI(ctk.CTk):
             self.status_textbox.configure(state="disabled")
 
     def redirect_stdout_to_textbox(self):
+        """Redirects stdout to the status textbox."""
         class IORedirector(io.StringIO):
+            """A class to redirect stdout to a textbox."""
             def __init__(self, textbox):
                 super().__init__()
                 self.textbox = textbox
@@ -142,6 +168,7 @@ class DownloaderUI(ctk.CTk):
         return IORedirector(self.status_textbox)
 
     def start_download(self):
+        """Starts the download process."""
         self.download_button.configure(state="disabled")
         self.progress_bar.set(0)
         self.status_textbox.configure(state="normal")
@@ -167,7 +194,7 @@ class DownloaderUI(ctk.CTk):
                 self.download_button.configure(state="normal")
                 return
             try:
-                with open(file_path, 'r') as f:
+                with open(file_path, 'r', encoding='utf-8') as f:
                     urls = [line.strip() for line in f if line.strip()]
                 if not urls:
                     self.status_textbox.configure(state="normal")
@@ -175,7 +202,7 @@ class DownloaderUI(ctk.CTk):
                     self.status_textbox.configure(state="disabled")
                     self.download_button.configure(state="normal")
                     return
-            except Exception as e:
+            except (IOError, OSError) as e:
                 self.status_textbox.configure(state="normal")
                 self.status_textbox.insert("end", f"Error reading file: {e}")
                 self.status_textbox.configure(state="disabled")
@@ -187,16 +214,16 @@ class DownloaderUI(ctk.CTk):
         download_thread.start()
 
     def run_downloader_batch(self, urls):
+        """Runs the downloader for a batch of URLs."""
         total_urls = len(urls)
         for i, url in enumerate(urls):
             self.status_textbox.configure(state="normal")
-            self.status_textbox.insert("end", f"'\n--- Starting download for: {url} ({i+1}/{total_urls}) ---\n")
+            self.status_textbox.insert("end", f"'\n--- Starting download for: {url} "
+                                                  f"({i+1}/{total_urls}) ---\n")
             self.status_textbox.configure(state="disabled")
-            
             try:
                 # Mock downloader arguments for each URL
                 sys.argv = ['downloader.py', url]
-                
                 download_path = asyncio.run(downloader_main())
 
                 self.status_textbox.configure(state="normal")
@@ -211,7 +238,6 @@ class DownloaderUI(ctk.CTk):
                 self.status_textbox.configure(state="normal")
                 self.status_textbox.insert("end", f"\nAn error occurred with {url}: {e}\n\n")
                 self.status_textbox.configure(state="disabled")
-        
         self.status_textbox.configure(state="normal")
         self.status_textbox.insert("end", "\nAll downloads finished!")
         self.status_textbox.configure(state="disabled")
