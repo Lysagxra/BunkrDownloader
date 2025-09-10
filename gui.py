@@ -1,4 +1,3 @@
-from contextlib import redirect_stdout
 from downloader import main as downloader_main
 import asyncio
 import customtkinter as ctk
