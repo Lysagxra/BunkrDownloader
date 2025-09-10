@@ -35,7 +35,7 @@ class DownloaderUI(ctk.CTk):
 
         try:
             # Set window icon
-            self.after(200, lambda: self.iconbitmap(resource_path("icon.ico")))
+            self.after(200, lambda: self.iconbitmap(resource_path("misc/gui/icons/icon.ico")))
         except ctk.TclError as e:
             # Use original stdout if icon loading fails, as sys.stdout is redirected
             print(f"Error loading icon: {e}", file=sys.__stdout__)
