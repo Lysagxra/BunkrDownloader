@@ -1,0 +1,39 @@
+﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package Name="Bunkr Downloader Portable GUI" Language="1033" Version="1.2.0" Manufacturer="ZeroHackz" UpgradeCode="f25e950d-edce-4c1c-a175-c296a196897c" InstallerVersion="200">
+        <MajorUpgrade DowngradeErrorMessage="A newer version of Bunkr Downloader Portable GUI is already installed." />
+        <MediaTemplate EmbedCab="yes" />
+
+        <Feature Id="ProductFeature" Title="BunkrDownloader" Level="1">
+            <ComponentGroupRef Id="ProductComponents" />
+            <ComponentRef Id="ApplicationShortcut" />
+        </Feature>
+
+        <Icon Id="icon.ico" SourceFile="misc\gui\icons\icon.ico" />
+        <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+
+        
+
+        <DirectoryRef Id="ApplicationProgramsFolder">
+            <Component Id="ApplicationShortcut">
+                <Shortcut Id="ApplicationStartMenuShortcut" Name="Bunkr Downloader" Description="Bunkr Downloader GUI" Target="[INSTALLFOLDER]BunkrDownloaderPortableGUI.exe" WorkingDirectory="INSTALLFOLDER" Icon="icon.ico" />
+                <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+                <RegistryValue Root="HKCU" Key="Software\ZeroHackz\BunkrDownloaderPortableGUI" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+            </Component>
+        </DirectoryRef>
+
+        <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+            <!-- This is where you add all the files from your 'dist' folder -->
+            <Component>
+                <File Id="BunkrDownloaderPortableGUI.exe" Source="dist\BunkrDownloaderPortableGUI.exe" />
+            </Component>
+            <!-- If your 'dist' folder has other files or folders, you need to add them here too -->
+        </ComponentGroup>
+    
+            <StandardDirectory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLFOLDER" Name="BunkrDownloaderPortableGUI" />
+            </StandardDirectory>
+            <StandardDirectory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="Bunkr Downloader Portable GUI" />
+            </StandardDirectory>
+        </Package>
+</Wix>
