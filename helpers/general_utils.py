@@ -125,7 +125,7 @@ def create_download_directory(
     # Albums containing a single file will be directly downloaded into the 'Downloads'
     # folder, without creating a subfolder for the album ID.
     download_path = (
-        base_path / sanitized_directory_name if directory_name else base_path
+        base_path / sanitized_directory_name if sanitized_directory_name else base_path
     )
 
     # Create the directory if it doesn't exist
