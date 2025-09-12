@@ -114,8 +114,9 @@ def create_download_directory(
 ) -> str:
     """Create a directory for downloads if it doesn't exist."""
     # Sanitizing the directory name (album ID), if provided
-    if directory_name:
-        sanitized_directory_name = sanitize_directory_name(directory_name)
+    sanitized_directory_name = (
+        sanitize_directory_name(directory_name) if directory_name else None
+    )
 
     # Determine the base download path.
     base_path = (
