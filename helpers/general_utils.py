@@ -108,14 +108,27 @@ def sanitize_directory_name(directory_name: str) -> str:
     return re.sub(invalid_chars, "_", directory_name)
 
 
-def create_download_directory(directory_name: str) -> str:
+def create_download_directory(
+    directory_name: str,
+    custom_path: str | None = None,
+) -> str:
     """Create a directory for downloads if it doesn't exist."""
-    download_path = (
-        Path(DOWNLOAD_FOLDER) / sanitize_directory_name(directory_name)
-        if directory_name
-        else Path(DOWNLOAD_FOLDER)
+    # Sanitizing the directory name (album ID), if provided
+    if directory_name:
+        sanitized_directory_name = sanitize_directory_name(directory_name)
+
+    # Determine the base download path.
+    base_path = (
+        Path(custom_path) / DOWNLOAD_FOLDER if custom_path else Path(DOWNLOAD_FOLDER)
     )
 
+    # Albums containing a single file will be directly downloaded into the 'Downloads'
+    # folder, without creating a subfolder for the album ID.
+    download_path = (
+        base_path / sanitized_directory_name if directory_name else base_path
+    )
+
+    # Create the directory if it doesn't exist
     try:
         download_path.mkdir(parents=True, exist_ok=True)
 

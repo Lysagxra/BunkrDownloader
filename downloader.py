@@ -7,7 +7,6 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import sys
 from argparse import ArgumentParser, Namespace
@@ -90,14 +89,17 @@ async def validate_and_download(
     args: Namespace | None = None,
 ) -> None:
     """Validate the provided URL, and initiate the download process."""
-    check_disk_space(live_manager)
-
     soup = await fetch_page(url)
     album_id = get_album_id(url) if check_url_type(url) else None
     album_name = get_album_name(soup)
 
     directory_name = format_directory_name(album_name, album_id)
-    download_path = create_download_directory(directory_name)
+    download_path = create_download_directory(
+        directory_name, custom_path=args.custom_path,
+    )
+
+    # Check the available disk space on the download path before starting the download.
+    check_disk_space(live_manager, custom_path=download_path)
     session_info = SessionInfo(
         args=args,
         bunkr_status=bunkr_status,
@@ -119,6 +121,16 @@ def initialize_managers(*, disable_ui: bool = False) -> LiveManager:
     return LiveManager(progress_manager, logger_table, disable_ui=disable_ui)
 
 
+def add_custom_path_argument(parser: ArgumentParser) -> None:
+    """Add the --custom-path argument to the provided argument parser."""
+    parser.add_argument(
+        "--custom-path",
+        type=str,
+        default=None,
+        help="The directory where the downloaded content will be saved.",
+    )
+
+
 def add_disable_ui_argument(parser: ArgumentParser) -> None:
     """Add the --disable-ui argument to any parser."""
     parser.add_argument(
@@ -130,7 +142,7 @@ def add_disable_ui_argument(parser: ArgumentParser) -> None:
 
 def parse_arguments() -> Namespace:
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description="Acquire URL and other arguments.")
+    parser = ArgumentParser(description="Acquire URL and other arguments.")
     parser.add_argument("url", type=str, help="The URL to process")
     parser.add_argument(
         "--ignore",
@@ -147,6 +159,7 @@ def parse_arguments() -> Namespace:
         "Files containing any of these substrings in their names will be downloaded.",
     )
     add_disable_ui_argument(parser)
+    add_custom_path_argument(parser)
     return parser.parse_args()
 
 

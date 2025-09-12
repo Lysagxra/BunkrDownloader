@@ -4,16 +4,20 @@ It includes methods to read the contents of a file and to write content to a fil
 with optional support for clearing the file.
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import platform
 import shutil
 import sys
 from pathlib import Path
-
-from helpers.managers.live_manager import LiveManager
+from typing import TYPE_CHECKING
 
 from .config import MIN_DISK_SPACE_GB, SESSION_LOG
+
+if TYPE_CHECKING:
+    from helpers.managers.live_manager import LiveManager
 
 
 def read_file(filename: str) -> list[str]:
@@ -59,16 +63,16 @@ def get_root_path() -> str:
     return cwd
 
 
-def check_disk_space(live_manager: LiveManager) -> None:
+def check_disk_space(live_manager: LiveManager, custom_path: str | None = None) -> None:
     """Check if the available disk space is greater than or equal to `min_space` GB."""
-    root_path = get_root_path()
+    root_path = get_root_path() if custom_path is None else custom_path
     _, _, free_space = shutil.disk_usage(root_path)
     free_space_gb = free_space / (1024 ** 3)
 
     if free_space_gb < MIN_DISK_SPACE_GB:
         live_manager.update_log(
             "Insufficient disk space",
-            f"Only {free_space_gb:.2f} GB available on the disk. "
+            f"Only {free_space_gb:.2f} GB available on {root_path}. "
             "The program has been stopped to prevent data loss.",
         )
         sys.exit(1)
