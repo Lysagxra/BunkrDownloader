@@ -11,7 +11,7 @@ from tkinter import filedialog
 import customtkinter as ctk
 from downloader import main as downloader_main
 
-GUI_VERSION = "2025.09.07"
+GUI_VERSION = "2025.09.14"
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
