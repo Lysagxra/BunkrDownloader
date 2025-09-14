@@ -1,0 +1,6 @@
+[MESSAGES CONTROL]
+disable =
+    W0212, # W0212: Access to a protected member _MEIPASS of a client class (protected-access). This is a false positive for PyInstaller applications (gui.py).
+    R0902, # R0902: Too many instance attributes (17/7). Acceptable for a GUI class with many widgets (gui.py).
+    E1101, # E1101: Module 'customtkinter' has no 'TclError' member (no-member). This is a known pylint issue with customtkinter (gui.py).
+    W0718 # W0718: Catching too general exception Exception (broad-exception-caught). Used for general error catching in the application (gui.py).

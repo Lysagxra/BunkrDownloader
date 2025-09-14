@@ -8,11 +8,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from helpers.general_utils import fetch_page
-from helpers.url_utils import (
-    decrypt_url,
-    get_api_response,
-    get_url_based_filename,
-)
+from helpers.url_utils import get_url_based_filename
+
+from .api_utils import decrypt_url, get_api_response
 
 if TYPE_CHECKING:
     from bs4 import BeautifulSoup
@@ -20,15 +18,9 @@ if TYPE_CHECKING:
 
 def extract_next_album_pages(initial_soup: BeautifulSoup, url: str) -> list[str] | None:
     """Extract pagination links for subsequent album pages from an HTML document."""
-    pagination_nav = initial_soup.find(
-        "nav",
-        {
-            "class": "pagination",
-            "style": "margin-top:1rem",
-        },
-    )
+    pagination_nav = initial_soup.find("nav", {"class": "pagination"})
 
-    # Returns None if the album consists of only one page
+    # Return None if the album consists of only one page
     if pagination_nav is None:
         return None
 

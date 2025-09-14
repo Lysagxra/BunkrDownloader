@@ -1,8 +1,8 @@
-# Bunkr Downloader - GUI Edition
+# Bunkr Downloader Portable GUI
 
 This project is a fork of the original [BunkrDownloader by Lysagxra](https://github.com/Lysagxra/BunkrDownloader). Huge thanks to her for creating and maintaining the powerful core of this application!
 
-This version focuses on providing a user-friendly **Graphical User Interface (GUI)** for Windows users and includes other features to make downloading as simple as possible.
+This version focuses on providing an user-friendly **Graphical User Interface (GUI)** for Windows users and includes other features to make downloading as simple as possible.
 
 ### Screenshots
 *Screen application `BunkrDownloader-portable-GUI.exe` in single mode.*

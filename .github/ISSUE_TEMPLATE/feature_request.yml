@@ -1,0 +1,81 @@
+name: Feature request
+description: Suggest an idea for this project
+title: "[FEATURE] <Enter a title for your feature here>"
+labels: [ "enhancement" ]
+assignees: [ Lysagxra ]
+
+body:
+  - id: thank-you
+    type: markdown
+    
+    attributes:
+      value: Thanks for taking the time to fill out this feature request template!
+
+  - id: submission-guidelines
+    type: markdown
+    
+    attributes:
+      value: |
+        > [!IMPORTANT]
+        > 1. Make sure to check existing issues before creating a new one.
+        > 2. Update to the latest release of the tool before opening an issue.
+
+        > [!WARNING]
+        > Please write your request in English.
+        > Requests submitted in any other language will be marked as invalid.
+        > Thank you for your understanding and cooperation :)
+
+        You can download the latest version of the tool here:
+        https://github.com/Lysagxra/BunkrDownloader/releases
+
+  - id: feature-description
+    type: textarea
+
+    attributes:
+      label: Describe the feature you'd like
+      description: A clear and concise description of what you want to happen.
+      placeholder: "Example: I would like the tool to include an option for automatic updates."
+    
+    validations:
+      required: true
+      
+  - id: problem-related
+    type: textarea
+
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear and concise description of what the problem is. Leave it blank if you prefer not to provide one.
+      placeholder: "Example: I'm always frustrated when..."
+
+    validations:
+      required: false
+
+  - id: alternatives-considered
+    type: textarea
+
+    attributes:
+      label: Describe alternatives you've considered
+      
+      description: >
+        A clear and concise description of any alternative solutions or features you've considered.
+        Leave it blank if you prefer not to provide one.
+      
+      placeholder: "Example: I’ve tried using a script to automate updates, but it doesn’t always work properly"
+
+    validations:
+      required: false
+
+  - id: additional-context
+    type: textarea
+
+    attributes:
+      label: Additional context
+      
+      description: >
+        Add any other context or screenshots about the feature request here.
+        Leave it blank if you prefer not to provide one.
+      
+      placeholder: "Example: Here is a screenshot of the tool in action and how it could benefit from automatic updates."
+
+    validations:
+      required: false
