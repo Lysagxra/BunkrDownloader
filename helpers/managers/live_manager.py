@@ -10,14 +10,12 @@ from __future__ import annotations
 import datetime
 import time
 from contextlib import nullcontext
-from typing import TYPE_CHECKING
 
 from rich.console import Group
 from rich.live import Live
 
-if TYPE_CHECKING:
-    from .log_manager import LoggerTable
-    from .progress_manager import ProgressManager
+from .log_manager import LoggerTable
+from .progress_manager import ProgressManager
 
 
 class LiveManager:
@@ -111,3 +109,10 @@ class LiveManager:
         seconds = time_delta.seconds % 60
 
         return f"{hours:02} hrs {minutes:02} mins {seconds:02} secs"
+
+
+def initialize_managers(*, disable_ui: bool = False) -> LiveManager:
+    """Initialize and return the managers for progress tracking and logging."""
+    progress_manager = ProgressManager(task_name="Album", item_description="File")
+    logger_table = LoggerTable()
+    return LiveManager(progress_manager, logger_table, disable_ui=disable_ui)

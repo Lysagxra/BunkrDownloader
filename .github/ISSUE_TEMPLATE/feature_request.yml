@@ -5,11 +5,15 @@ labels: [ "enhancement" ]
 assignees: [ Lysagxra ]
 
 body:
-  - type: markdown
+  - id: thank-you
+    type: markdown
+    
     attributes:
       value: Thanks for taking the time to fill out this feature request template!
 
-  - type: markdown
+  - id: submission-guidelines
+    type: markdown
+    
     attributes:
       value: |
         > [!IMPORTANT]
@@ -24,8 +28,8 @@ body:
         You can download the latest version of the tool here:
         https://github.com/Lysagxra/BunkrDownloader/releases
 
-  - type: textarea
-    id: feature-description
+  - id: feature-description
+    type: textarea
 
     attributes:
       label: Describe the feature you'd like
@@ -35,34 +39,42 @@ body:
     validations:
       required: true
       
-  - type: textarea
-    id: problem-related
+  - id: problem-related
+    type: textarea
 
     attributes:
       label: Is your feature request related to a problem?
-      description: A clear and concise description of what the problem is.
+      description: A clear and concise description of what the problem is. Leave it blank if you prefer not to provide one.
       placeholder: "Example: I'm always frustrated when..."
 
     validations:
       required: false
 
-  - type: textarea
-    id: alternatives-considered
+  - id: alternatives-considered
+    type: textarea
 
     attributes:
       label: Describe alternatives you've considered
-      description: A clear and concise description of any alternative solutions or features you've considered.
+      
+      description: >
+        A clear and concise description of any alternative solutions or features you've considered.
+        Leave it blank if you prefer not to provide one.
+      
       placeholder: "Example: I’ve tried using a script to automate updates, but it doesn’t always work properly"
 
     validations:
       required: false
 
-  - type: textarea
-    id: additional-context
+  - id: additional-context
+    type: textarea
 
     attributes:
       label: Additional context
-      description: Add any other context or screenshots about the feature request here.
+      
+      description: >
+        Add any other context or screenshots about the feature request here.
+        Leave it blank if you prefer not to provide one.
+      
       placeholder: "Example: Here is a screenshot of the tool in action and how it could benefit from automatic updates."
 
     validations:

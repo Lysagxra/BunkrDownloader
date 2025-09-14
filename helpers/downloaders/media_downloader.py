@@ -21,8 +21,7 @@ from helpers.config import (
     HTTPStatus,
     SessionInfo,
 )
-from helpers.file_utils import write_on_session_log
-from helpers.general_utils import truncate_filename
+from helpers.file_utils import truncate_filename, write_on_session_log
 
 from .download_utils import save_file_with_progress
 

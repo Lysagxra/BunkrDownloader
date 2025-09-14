@@ -8,11 +8,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from helpers.general_utils import fetch_page
-from helpers.url_utils import (
-    decrypt_url,
-    get_api_response,
-    get_url_based_filename,
-)
+from helpers.url_utils import get_url_based_filename
+
+from .api_utils import decrypt_url, get_api_response
 
 if TYPE_CHECKING:
     from bs4 import BeautifulSoup

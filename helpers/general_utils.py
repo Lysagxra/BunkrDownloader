@@ -10,25 +10,29 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import platform
 import random
-import re
+import shutil
 import sys
 from http.client import RemoteDisconnected
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import requests
 from bs4 import BeautifulSoup
 from requests import Response
 
 from .config import (
-    DOWNLOAD_FOLDER,
     DOWNLOAD_HEADERS,
     FETCH_ERROR_MESSAGES,
-    MAX_FILENAME_LEN,
+    MIN_DISK_SPACE_GB,
     HTTPStatus,
 )
 from .file_utils import write_on_session_log
 from .url_utils import change_domain_to_cr
+
+if TYPE_CHECKING:
+    from helpers.managers.live_manager import LiveManager
 
 
 def validate_download_link(download_link: str) -> bool:
@@ -84,72 +88,6 @@ async def fetch_page(url: str, retries: int = 5) -> BeautifulSoup | None:
     return None
 
 
-def format_directory_name(directory_name: str, directory_id: str | None) -> str | None:
-    """Format a directory name by appending its ID in parentheses if the ID is provided.
-
-    If the directory ID is `None`, only the directory name is returned.
-    """
-    if directory_name is None:
-        return directory_id
-
-    return f"{directory_name} ({directory_id})" if directory_id is not None else None
-
-
-def sanitize_directory_name(directory_name: str) -> str:
-    """Sanitize a given directory name by replacing invalid characters with underscores.
-
-    Handles the invalid characters specific to Windows, macOS, and Linux.
-    """
-    invalid_chars_dict = {
-        "nt": r'[\\/:*?"<>|]',  # Windows
-        "posix": r"[/:]",       # macOS and Linux
-    }
-    invalid_chars = invalid_chars_dict.get(os.name)
-    return re.sub(invalid_chars, "_", directory_name)
-
-
-def create_download_directory(directory_name: str) -> str:
-    """Create a directory for downloads if it doesn't exist."""
-    download_path = (
-        Path(DOWNLOAD_FOLDER) / sanitize_directory_name(directory_name)
-        if directory_name
-        else Path(DOWNLOAD_FOLDER)
-    )
-
-    try:
-        download_path.mkdir(parents=True, exist_ok=True)
-
-    except OSError as os_err:
-        log_message = f"Error creating 'Downloads' directory: {os_err}"
-        logging.exception(log_message)
-        sys.exit(1)
-
-    return str(download_path)
-
-
-def remove_invalid_characters(text: str) -> str:
-    """Remove invalid characters from the input string.
-
-    This function keeps only letters (both uppercase and lowercase), digits, spaces,
-    hyphens ('-'), and underscores ('_').
-    """
-    return re.sub(r"[^a-zA-Z0-9 _-]", "", text)
-
-
-def truncate_filename(filename: str) -> str:
-    """Truncate the filename to fit within the maximum byte length."""
-    filename_path = Path(filename)
-    name = remove_invalid_characters(filename_path.stem)
-    extension = filename_path.suffix
-
-    if len(name) > MAX_FILENAME_LEN:
-        available_len = MAX_FILENAME_LEN - len(extension)
-        name = name[:available_len]
-
-    formatted_filename = f"{name}{extension}"
-    return str(filename_path.with_name(formatted_filename))
-
-
 def clear_terminal() -> None:
     """Clear the terminal screen based on the operating system."""
     commands = {
@@ -160,3 +98,40 @@ def clear_terminal() -> None:
     command = commands.get(os.name)
     if command:
         os.system(command)  # noqa: S605
+
+
+def check_python_version(min_version: tuple[int, int] = (3, 10)) -> None:
+    """Check if the current Python version meets the minimum requirement."""
+    current_version = sys.version_info
+    if current_version < min_version:
+        log_message = (
+            f"Python {current_version.major}.{current_version.minor} is not supported. "
+            f" Python {min_version[0]}.{min_version[1]} or higher is required.",
+        )
+        logging.warning(log_message)
+        sys.exit(1)
+
+
+def get_root_path() -> str:
+    """Return the filesystem root for the current working directory."""
+    cwd = Path.cwd()
+    if platform.system() == "Windows":
+        return os.path.splitdrive(cwd)[0] + "\\"
+
+    # Use actual working directory
+    return cwd
+
+
+def check_disk_space(live_manager: LiveManager, custom_path: str | None = None) -> None:
+    """Check if the available disk space is greater than or equal to `min_space` GB."""
+    root_path = get_root_path() if custom_path is None else custom_path
+    _, _, free_space = shutil.disk_usage(root_path)
+    free_space_gb = free_space / (1024 ** 3)
+
+    if free_space_gb < MIN_DISK_SPACE_GB:
+        live_manager.update_log(
+            "Insufficient disk space",
+            f"Only {free_space_gb:.2f} GB available on {root_path}. "
+            "The program has been stopped to prevent data loss.",
+        )
+        sys.exit(1)
