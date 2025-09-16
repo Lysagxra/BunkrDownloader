@@ -13,11 +13,11 @@ import sys
 from argparse import Namespace
 
 from downloader import parse_arguments, validate_and_download
-from helpers.bunkr_utils import get_bunkr_status
-from helpers.config import SESSION_LOG, URLS_FILE
-from helpers.file_utils import read_file, write_file
-from helpers.general_utils import check_python_version, clear_terminal
-from helpers.managers.live_manager import initialize_managers
+from src.bunkr_utils import get_bunkr_status
+from src.config import SESSION_LOG, URLS_FILE
+from src.file_utils import read_file, write_file
+from src.general_utils import check_python_version, clear_terminal
+from src.managers.live_manager import initialize_managers
 
 
 async def process_urls(urls: list[str], args: Namespace) -> None:

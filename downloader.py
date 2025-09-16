@@ -14,27 +14,27 @@ from typing import TYPE_CHECKING
 from requests.exceptions import ConnectionError as RequestConnectionError
 from requests.exceptions import RequestException, Timeout
 
-from helpers.bunkr_utils import get_bunkr_status
-from helpers.config import (
+from src.bunkr_utils import get_bunkr_status
+from src.config import (
     AlbumInfo,
     DownloadInfo,
     SessionInfo,
     parse_arguments,
 )
-from helpers.crawlers.crawler_utils import (
+from src.crawlers.crawler_utils import (
     extract_all_album_item_pages,
     get_download_info,
 )
-from helpers.downloaders.album_downloader import AlbumDownloader, MediaDownloader
-from helpers.file_utils import create_download_directory, format_directory_name
-from helpers.general_utils import (
+from src.downloaders.album_downloader import AlbumDownloader, MediaDownloader
+from src.file_utils import create_download_directory, format_directory_name
+from src.general_utils import (
     check_disk_space,
     check_python_version,
     clear_terminal,
     fetch_page,
 )
-from helpers.managers.live_manager import initialize_managers
-from helpers.url_utils import (
+from src.managers.live_manager import initialize_managers
+from src.url_utils import (
     check_url_type,
     get_album_id,
     get_album_name,
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 
     from bs4 import BeautifulSoup
 
-    from helpers.managers.live_manager import LiveManager
+    from src.managers.live_manager import LiveManager
 
 
 async def handle_download_process(
