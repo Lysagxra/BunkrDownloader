@@ -18,7 +18,7 @@ def fetch_page(url: str) -> BeautifulSoup | None:
         response.raise_for_status()
 
     except requests.RequestException:
-        logging.exception("Error occurred while making the request.")
+        logging.exception("An error occurred while fetching the status page.")
         return None
 
     return BeautifulSoup(response.text, "html.parser")

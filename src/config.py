@@ -1,7 +1,7 @@
 """Configuration module for managing constants and settings used across the project.
 
-These configurations aim to improve modularity and readability by consolidating settings
-into a single location.
+These configurations aim to improve modularity and readability by consolidating
+settings into a single location.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 DOWNLOAD_FOLDER = "Downloads"    # The folder where downloaded files will be stored.
 URLS_FILE = "URLs.txt"           # The file containing the list of URLs to process.
 SESSION_LOG = "session_log.txt"  # The file used to log errors.
-MIN_DISK_SPACE_GB = 3            # Minimum free disk space (in GB) required.
+MIN_DISK_SPACE_GB = 2            # Minimum free disk space (in GB) required.
 
 # ============================
 # API / Status Endpoints
@@ -50,17 +50,22 @@ PROGRESS_MANAGER_COLORS = {
     "task_border_color": "medium_purple",   # Border color for task progress panel.
 }
 
-# Colors used for the log manager UI elements
-LOG_MANAGER_COLORS = {
-    "title_color": "light_cyan3",  # Title color for log panel.
-    "border_color": "cyan",        # Border color for log panel.
-}
-
-# Constant defining the minimum width for each column of the log table.
-MIN_COLUMN_WIDTHS = {
-    "Timestamp": 10,
-    "Event": 15,
-    "Details": 30,
+# Setting used for the log manager UI elements
+LOG_MANAGER_CONFIG = {
+    "colors": {
+        "title_color": "light_cyan3",  # Title color for log panel.
+        "border_color": "cyan",        # Border color for log panel.
+    },
+    "min_column_widths": {
+        "Timestamp": 10,
+        "Event": 15,
+        "Details": 30,
+    },
+    "column_styles": {
+        "Timestamp": "pale_turquoise4",
+        "Event": "pale_turquoise1",
+        "Details": "pale_turquoise4",
+    },
 }
 
 # ============================
@@ -177,7 +182,12 @@ def add_common_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--disable-ui",
         action="store_true",
-        help="Disable the user interface",
+        help="Disable the user interface.",
+    )
+    parser.add_argument(
+        "--disable-disk-check",
+        action="store_true",
+        help="Disable the disk space check for available free space.",
     )
 
 

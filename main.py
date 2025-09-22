@@ -25,15 +25,11 @@ async def process_urls(urls: list[str], args: Namespace) -> None:
     bunkr_status = get_bunkr_status()
     live_manager = initialize_managers(disable_ui=args.disable_ui)
 
-    try:
-        with live_manager.live:
-            for url in urls:
-                await validate_and_download(bunkr_status, url, live_manager, args=args)
+    with live_manager.live:
+        for url in urls:
+            await validate_and_download(bunkr_status, url, live_manager, args=args)
 
-            live_manager.stop()
-
-    except KeyboardInterrupt:
-        sys.exit(1)
+        live_manager.stop()
 
 
 async def main() -> None:
@@ -42,10 +38,8 @@ async def main() -> None:
     clear_terminal()
     write_file(SESSION_LOG)
 
-    # Check Python version
+    # Check Python version and parse arguments
     check_python_version()
-
-    # Parse arguments
     args = parse_arguments(common_only=True)
 
     # Read and process URLs, ignoring empty lines
@@ -55,6 +49,9 @@ async def main() -> None:
     # Clear URLs file
     write_file(URLS_FILE)
 
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+
+    except KeyboardInterrupt:
+        sys.exit(1)

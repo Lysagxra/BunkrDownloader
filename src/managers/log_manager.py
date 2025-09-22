@@ -19,7 +19,7 @@ from rich.box import SIMPLE
 from rich.panel import Panel
 from rich.table import Table
 
-from src.config import LOG_MANAGER_COLORS, MIN_COLUMN_WIDTHS
+from src.config import LOG_MANAGER_CONFIG
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -36,8 +36,8 @@ class LoggerTable:
         self.row_buffer = deque(maxlen=max_rows)
 
         # Create the table with initial setup
-        self.title_color = LOG_MANAGER_COLORS["title_color"]
-        self.border_style = LOG_MANAGER_COLORS["border_color"]
+        self.title_color = LOG_MANAGER_CONFIG["colors"]["title_color"]
+        self.border_style = LOG_MANAGER_CONFIG["colors"]["border_color"]
         self.table = self._create_table()
 
     def log(self, event: str, details: str, *, disable_ui: bool = False) -> None:
@@ -86,7 +86,9 @@ class LoggerTable:
     def _create_table(self) -> Table:
         """Create and return a new table with the necessary columns and styles."""
         # Calculate the dynamic column widths
-        column_widths = self._calculate_column_widths(MIN_COLUMN_WIDTHS)
+        min_column_widths = LOG_MANAGER_CONFIG["min_column_widths"]
+        column_styles = LOG_MANAGER_CONFIG["column_styles"]
+        column_widths = self._calculate_column_widths(min_column_widths)
 
         new_table = Table(
             box=SIMPLE,                     # Box style for the table
@@ -97,17 +99,17 @@ class LoggerTable:
         )
         new_table.add_column(
             f"[{self.title_color}]Timestamp",
-            style="pale_turquoise4",
+            style=column_styles["Timestamp"],
             width=column_widths["Timestamp"],
         )
         new_table.add_column(
             f"[{self.title_color}]Event",
-            style="pale_turquoise1",
+            style=column_styles["Event"],
             width=column_widths["Event"],
         )
         new_table.add_column(
             f"[{self.title_color}]Details",
-            style="pale_turquoise4",
+            style=column_styles["Details"],
             width=column_widths["Details"],
         )
         return new_table
