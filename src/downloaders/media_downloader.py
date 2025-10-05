@@ -85,8 +85,8 @@ class MediaDownloader:
 
         if is_offline and is_final_attempt:
             self.live_manager.update_log(
-                "Non-operational subdomain",
-                f"The subdomain for {self.download_info.filename} could be offline. "
+                event="Non-operational subdomain",
+                details=f"The subdomain for {self.download_info.filename} is offline. "
                 "Check the log file.",
             )
             write_on_session_log(self.download_info.download_link)
@@ -126,7 +126,7 @@ class MediaDownloader:
 
         def log_and_skip_event(reason: str) -> bool:
             """Log the skip reason and updates the task before."""
-            self.live_manager.update_log("Skipped download", reason)
+            self.live_manager.update_log(event="Skipped download", details=reason)
             self.live_manager.update_task(
                 self.download_info.task,
                 completed=100,
@@ -162,8 +162,8 @@ class MediaDownloader:
     def _retry_with_backoff(self, attempt: int, *, event: str) -> bool:
         """Log error, apply backoff, and return True if should retry."""
         self.live_manager.update_log(
-            event,
-            f"{event} for {self.download_info.filename} "
+            event=event,
+            details=f"{event} for {self.download_info.filename} "
             f"({attempt + 1}/{self.retries})...",
         )
 
@@ -190,8 +190,8 @@ class MediaDownloader:
                 self.download_info.download_link,
             )
             self.live_manager.update_log(
-                "No response",
-                f"Subdomain {marked_subdomain} has been marked as offline.",
+                event="No response",
+                details=f"Subdomain {marked_subdomain} has been marked as offline.",
             )
             return False
 
@@ -203,23 +203,23 @@ class MediaDownloader:
 
         if req_err.response.status_code == HTTPStatus.BAD_GATEWAY:
             self.live_manager.update_log(
-                "Server error",
-                f"Bad gateway for {self.download_info.filename}.",
+                event="Server error",
+                details=f"Bad gateway for {self.download_info.filename}.",
             )
             # Setting retries to 1 forces an immediate failure on the next check.
             self.retries = 1
             return False
 
         # Do not retry, exit the loop
-        self.live_manager.update_log("Request error", str(req_err))
+        self.live_manager.update_log(event="Request error", details=str(req_err))
         return False
 
     def _handle_failed_download(self, *, is_final_attempt: bool) -> dict | None:
         """Handle a failed download after all retry attempts."""
         if not is_final_attempt:
             self.live_manager.update_log(
-                "Exceeded retry attempts",
-                f"Max retries reached for {self.download_info.filename}. "
+                event="Exceeded retry attempts",
+                details=f"Max retries reached for {self.download_info.filename}. "
                 "It will be retried one more time after all other tasks.",
             )
             return {
@@ -229,8 +229,9 @@ class MediaDownloader:
             }
 
         self.live_manager.update_log(
-            "Download failed",
-            f"Failed to download {self.download_info.filename}. Check the log file.",
+            event="Download failed",
+            details=f"Failed to download {self.download_info.filename}. "
+            "Check the log file.",
         )
         self.live_manager.update_task(self.download_info.task, visible=False)
         return None

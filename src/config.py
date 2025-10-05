@@ -19,10 +19,10 @@ if TYPE_CHECKING:
 # ============================
 # Paths and Files
 # ============================
-DOWNLOAD_FOLDER = "Downloads"    # The folder where downloaded files will be stored.
-URLS_FILE = "URLs.txt"           # The file containing the list of URLs to process.
-SESSION_LOG = "session_log.txt"  # The file used to log errors.
-MIN_DISK_SPACE_GB = 2            # Minimum free disk space (in GB) required.
+DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be stored.
+URLS_FILE = "URLs.txt"         # The file containing the list of URLs to process.
+SESSION_LOG = "session.log"    # The file used to log errors.
+MIN_DISK_SPACE_GB = 2          # Minimum free disk space (in GB) required.
 
 # ============================
 # API / Status Endpoints
@@ -36,6 +36,7 @@ BUNKR_API = "https://bunkr.cr/api/vs"     # The API for retrieving encryption da
 # ============================
 MEDIA_SLUG_REGEX = r'const\s+slug\s*=\s*"([a-zA-Z0-9_-]+)"'  # Extract media slug.
 VALID_SLUG_REGEX = r"^[a-zA-Z0-9_-]+$"                       # Validate media slug.
+VALID_CHARACTERS_REGEX = r"[^a-zA-Z0-9 _-]"                  # Validate characters.
 
 # ============================
 # UI & Table Settings
@@ -75,7 +76,7 @@ MAX_FILENAME_LEN = 120  # The maximum length for a file name.
 MAX_WORKERS = 3         # The maximum number of threads for concurrent downloads.
 
 # Mapping of URL identifiers to a boolean for album (True) vs single file (False).
-URL_TYPE_MAPPING = {"a": True, "f": False, "v": False}
+URL_TYPE_MAPPING = {"a": True, "f": False, "i": False, "v": False}
 
 # Constants for file sizes, expressed in bytes.
 KB = 1024

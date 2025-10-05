@@ -12,7 +12,12 @@ import re
 import sys
 from pathlib import Path
 
-from .config import DOWNLOAD_FOLDER, MAX_FILENAME_LEN, SESSION_LOG
+from .config import (
+    DOWNLOAD_FOLDER,
+    MAX_FILENAME_LEN,
+    SESSION_LOG,
+    VALID_CHARACTERS_REGEX,
+)
 
 
 def read_file(filename: str) -> list[str]:
@@ -99,7 +104,7 @@ def remove_invalid_characters(text: str) -> str:
     This function keeps only letters (both uppercase and lowercase), digits, spaces,
     hyphens ('-'), and underscores ('_').
     """
-    return re.sub(r"[^a-zA-Z0-9 _-]", "", text)
+    return re.sub(VALID_CHARACTERS_REGEX, "", text)
 
 
 def truncate_filename(filename: str) -> str:

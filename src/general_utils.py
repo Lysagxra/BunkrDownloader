@@ -130,8 +130,8 @@ def check_disk_space(live_manager: LiveManager, custom_path: str | None = None) 
 
     if free_space_gb < MIN_DISK_SPACE_GB:
         live_manager.update_log(
-            "Insufficient disk space",
-            f"Only {free_space_gb:.2f} GB available on {root_path}. "
+            event="Insufficient disk space",
+            details=f"Only {free_space_gb:.2f} GB available on {root_path}. "
             "The program has been stopped to prevent data loss.",
         )
         sys.exit(1)

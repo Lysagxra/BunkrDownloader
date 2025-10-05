@@ -95,7 +95,7 @@ async def validate_and_download(
     args: Namespace | None = None,
 ) -> None:
     """Validate the provided URL, and initiate the download process."""
-    # Check the available disk space on the download path before starting the download.
+    # Check the available disk space on the download path before starting the download
     if not args.disable_disk_check:
         check_disk_space(live_manager, custom_path=args.custom_path)
 
@@ -105,7 +105,8 @@ async def validate_and_download(
 
     directory_name = format_directory_name(album_name, album_id)
     download_path = create_download_directory(
-        directory_name, custom_path=args.custom_path,
+        directory_name,
+        custom_path=args.custom_path,
     )
     session_info = SessionInfo(
         args=args,

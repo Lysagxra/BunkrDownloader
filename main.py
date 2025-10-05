@@ -49,6 +49,7 @@ async def main() -> None:
     # Clear URLs file
     write_file(URLS_FILE)
 
+
 if __name__ == "__main__":
     try:
         asyncio.run(main())

@@ -44,7 +44,10 @@ class LiveManager:
             else nullcontext()
         )
         self.start_time = time.time()
-        self.update_log("Script started", "The script has started execution.")
+        self.update_log(
+            event="Script started",
+            details="The script has started execution.",
+        )
 
     def add_overall_task(self, description: str, num_tasks: int) -> None:
         """Call ProgressManager to add an overall task."""
@@ -65,7 +68,7 @@ class LiveManager:
         """Call ProgressManager to update an individual task."""
         self.progress_manager.update_task(task_id, completed, advance, visible=visible)
 
-    def update_log(self, event: str, details: str) -> None:
+    def update_log(self, *, event: str, details: str) -> None:
         """Log an event and refreshes the live display."""
         self.logger_table.log(event, details, disable_ui=self.disable_ui)
         if not self.disable_ui:
@@ -82,8 +85,9 @@ class LiveManager:
 
         # Log the execution time in hh:mm:ss format
         self.update_log(
-            "Script ended",
-            f"The script has finished execution. Execution time: {execution_time}",
+            event="Script ended",
+            details="The script has finished execution. "
+            f"Execution time: {execution_time}",
         )
 
         if not self.disable_ui:
@@ -95,7 +99,7 @@ class LiveManager:
         panel_width = self.progress_manager.get_panel_width()
         return Group(
             self.progress_table,
-            self.logger_table.render_log_panel(panel_width=2*panel_width),
+            self.logger_table.render_log_panel(panel_width=2 * panel_width),
         )
 
     def _compute_execution_time(self) -> str:
