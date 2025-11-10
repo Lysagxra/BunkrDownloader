@@ -166,17 +166,30 @@ class ProgressManager:
     # Private methods
     def _update_overall_task(self, task_id: int) -> None:
         """Advance the overall progress bar and removes old tasks."""
-        # Access the latest task dynamically
+        if not self.overall_progress.tasks:
+            return
+
+        if task_id < 0 or task_id >= len(self.task_progress.tasks):
+            return
+
+        # Access the latest overall task dynamically
         current_overall_task = self.overall_progress.tasks[-1]
 
         # If the task is finished, remove it and update the overall progress
-        if self.task_progress.tasks[task_id].finished:
-            self.overall_progress.advance(current_overall_task.id)
-            self.task_progress.update(task_id, visible=False)
+        try:
+            if self.task_progress.tasks[task_id].finished:
+                self.overall_progress.advance(current_overall_task.id)
+                self.task_progress.update(task_id, visible=False)
+        except Exception:
+            # Guard against race conditions where tasks disappear concurrently
+            return
 
         # Track completed overall tasks
-        if current_overall_task.finished:
-            self.config.overall_buffer.append(current_overall_task)
+        try:
+            if current_overall_task.finished:
+                self.config.overall_buffer.append(current_overall_task)
+        except Exception:
+            pass
 
         # Cleanup completed overall tasks
         self._cleanup_completed_overall_tasks()
