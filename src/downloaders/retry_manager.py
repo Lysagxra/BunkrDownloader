@@ -28,9 +28,9 @@ async def run_session_retry_pass(live_manager: "LiveManager") -> None:
     Each URL will be attempted once. If it fails again, it will be re-appended
     to the session file by existing MediaDownloader logic.
     """
-    import importlib
+    import importlib  # pylint: disable=import-outside-toplevel
 
-    from src.file_utils import get_session_log_path
+    from src.file_utils import get_session_log_path  # pylint: disable=import-outside-toplevel
     session_path = get_session_log_path()
 
     # No session file -> nothing to do
@@ -60,9 +60,9 @@ async def run_session_retry_pass(live_manager: "LiveManager") -> None:
 
     # Prepare a session_info-like context
     # get_bunkr_status lives in src.bunkr_utils
-    from src.bunkr_utils import get_bunkr_status  # safe import here
-    from src.config import SessionInfo
-    from src.file_utils import create_download_directory
+    from src.bunkr_utils import get_bunkr_status  # safe import here  # pylint: disable=import-outside-toplevel
+    from src.config import SessionInfo  # pylint: disable=import-outside-toplevel
+    from src.file_utils import create_download_directory  # pylint: disable=import-outside-toplevel
 
     bunkr_status = get_bunkr_status()
     default_download_path = create_download_directory(None, None)
@@ -75,8 +75,8 @@ async def run_session_retry_pass(live_manager: "LiveManager") -> None:
     session_info = SessionInfo(args=None, bunkr_status=bunkr_status, download_path=download_path)
 
     # Import MediaDownloader lazily to avoid circular imports
-    from src.config import DownloadInfo
-    from src.downloaders.media_downloader import MediaDownloader
+    from src.config import DownloadInfo  # pylint: disable=import-outside-toplevel
+    from src.downloaders.media_downloader import MediaDownloader  # pylint: disable=import-outside-toplevel
 
     try:
         live_manager.add_overall_task("Retry", num_tasks=len(urls))

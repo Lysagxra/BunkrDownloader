@@ -32,7 +32,7 @@ async def process_urls(urls: list[str], args: Namespace) -> None:
         # After the batch, perform a single retry pass over the session file so any
         # deferred URLs are attempted once more while the live UI is still active.
         try:
-            from src.downloaders.retry_manager import run_session_retry_pass
+            from src.downloaders.retry_manager import run_session_retry_pass  # pylint: disable=import-outside-toplevel
 
             await run_session_retry_pass(live_manager)
         except Exception:
@@ -50,13 +50,13 @@ async def main() -> None:
     args = parse_arguments(common_only=True)
 
     # Configure session log path according to optional session-id
-    from src.file_utils import set_session_log_path
+    from src.file_utils import set_session_log_path  # pylint: disable=import-outside-toplevel
 
     set_session_log_path(args.session_id)
 
     if args.disable_ui:
         try:
-            import importlib
+            import importlib  # pylint: disable=import-outside-toplevel
 
             cfg = importlib.import_module("src.config")
             verbose_path = getattr(cfg, "VERBOSE_LOG", "")
@@ -73,8 +73,8 @@ async def main() -> None:
 
     # If session log is empty after the run, remove it
     try:
-        import importlib
-        from pathlib import Path
+        import importlib  # pylint: disable=import-outside-toplevel
+        from pathlib import Path  # pylint: disable=import-outside-toplevel
 
         cfg = importlib.import_module("src.config")
         session_file = Path(cfg.SESSION_LOG)

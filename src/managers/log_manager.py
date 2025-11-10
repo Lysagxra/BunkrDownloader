@@ -70,7 +70,7 @@ class LoggerTable:
 
             if self.verbose:
                 try:
-                    from src.file_utils import write_verbose_log
+                    from src.file_utils import write_verbose_log  # pylint: disable=import-outside-toplevel
 
                     write_verbose_log(log_message)
                 except Exception:

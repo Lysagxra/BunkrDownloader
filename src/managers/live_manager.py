@@ -18,7 +18,7 @@ from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
 
 
-class LiveManager:
+class LiveManager:  # pylint: disable=R0902,R0913
     """Manage a live display that combines a progress table and a logger table.
 
     It allows for real-time updates and refreshes of both progress and logs in a

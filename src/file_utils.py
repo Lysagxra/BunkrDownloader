@@ -10,6 +10,8 @@ import logging
 import os
 import re
 import sys
+import importlib
+from datetime import datetime
 from pathlib import Path
 
 from .config import (
@@ -46,8 +48,6 @@ def get_session_log_path() -> Path:
     callers don't need to manually recombine paths.
     """
     try:
-        import importlib
-
         cfg = importlib.import_module("src.config")
         raw = getattr(cfg, "SESSION_LOG", SESSION_LOG)
         p = Path(raw)
@@ -90,7 +90,11 @@ def write_on_session_log(content: str) -> None:
         with session_path.open("a", encoding="utf-8") as file:
             file.write(f"{key}\n")
             try:
-                file.flush(); os.fsync(file.fileno())
+                file.flush()
+                try:
+                    os.fsync(file.fileno())
+                except Exception:
+                    pass
             except Exception:
                 pass
         write_verbose_log(f"Session log: appended entry: {key}")
@@ -120,9 +124,6 @@ def set_session_log_path(session_id: str | None, download_path: str | None = Non
     set. Also configures verbose logging path.
     """
     try:
-        import importlib
-        from datetime import datetime
-
         cfg = importlib.import_module("src.config")
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_id = sanitize_directory_name(session_id) if session_id else None
@@ -186,8 +187,6 @@ def set_verbose_log_path(verbose_id: str | None) -> None:
     otherwise LOG_OUTPUT_DIR/verbose.log.
     """
     try:
-        import importlib
-
         cfg = importlib.import_module("src.config")
         logs_dir = Path(cfg.LOG_OUTPUT_DIR)
         logs_dir.mkdir(parents=True, exist_ok=True)
@@ -204,9 +203,6 @@ def write_verbose_log(message: str) -> None:
     can import it directly: `from src.file_utils import write_verbose_log`.
     """
     try:
-        import importlib
-        from datetime import datetime
-
         cfg = importlib.import_module("src.config")
         verbose_path = getattr(cfg, "VERBOSE_LOG", None)
         if not verbose_path:
@@ -218,7 +214,10 @@ def write_verbose_log(message: str) -> None:
             f.write(f"[{ts}] {message}\n")
             try:
                 f.flush()
-                os.fsync(f.fileno())
+                try:
+                    os.fsync(f.fileno())
+                except Exception:
+                    pass
             except Exception:
                 pass
     except Exception:
@@ -232,8 +231,6 @@ def configure_logging_to_verbose() -> None:
     existing StreamHandlers so console output is avoided.
     """
     try:
-        import importlib
-
         cfg = importlib.import_module("src.config")
         verbose_path = getattr(cfg, "VERBOSE_LOG", None)
         if not verbose_path:

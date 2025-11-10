@@ -22,6 +22,7 @@ from src.file_utils import (
     write_on_session_log,
     write_verbose_log,
 )
+import traceback
 
 from .download_utils import save_file_with_progress
 
@@ -201,8 +202,6 @@ class MediaDownloader:
                 write_on_session_log(self.download_info.download_link)
                 write_verbose_log(f"write_on_session_log succeeded (is_offline) for {self.download_info.download_link}")
             except Exception as ex:
-                import traceback
-
                 tb = traceback.format_exc()
                 write_verbose_log(f"write_on_session_log raised (is_offline): {ex}\n{tb}")
             self.live_manager.update_task(self.download_info.task, visible=False)
@@ -366,8 +365,6 @@ class MediaDownloader:
                 write_on_session_log(self.download_info.download_link)
                 write_verbose_log(f"write_on_session_log succeeded (exceeded-retry) for {self.download_info.download_link}")
             except Exception as ex:
-                import traceback
-
                 tb = traceback.format_exc()
                 write_verbose_log(f"write_on_session_log raised (exceeded-retry): {ex}\n{tb}")
             self.live_manager.update_log(
@@ -406,8 +403,6 @@ class MediaDownloader:
             write_on_session_log(self.download_info.download_link)
             write_verbose_log(f"write_on_session_log succeeded (final-failure) for {self.download_info.download_link}")
         except Exception as ex:
-            import traceback
-
             tb = traceback.format_exc()
             write_verbose_log(f"write_on_session_log raised (final-failure): {ex}\n{tb}")
 
