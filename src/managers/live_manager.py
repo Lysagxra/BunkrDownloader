@@ -16,6 +16,9 @@ from rich.live import Live
 
 from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
+import importlib
+
+from src.file_utils import write_verbose_log, get_session_entries_count
 
 
 class LiveManager:  # pylint: disable=R0902,R0913
@@ -44,10 +47,6 @@ class LiveManager:  # pylint: disable=R0902,R0913
         self._last_verbose_path: str | None = None
 
         if self.verbose:
-            import importlib
-
-            from src.file_utils import write_verbose_log
-
             cfg = importlib.import_module("src.config")
             session_path = getattr(cfg, "SESSION_LOG", "")
             verbose_path = getattr(cfg, "VERBOSE_LOG", "")
@@ -125,8 +124,6 @@ class LiveManager:  # pylint: disable=R0902,R0913
         """Log an event and refreshes the live display."""
         if self.verbose:
             try:
-                import importlib
-
                 cfg = importlib.import_module("src.config")
                 session_path = getattr(cfg, "SESSION_LOG", "")
                 verbose_path = getattr(cfg, "VERBOSE_LOG", "")
@@ -134,8 +131,6 @@ class LiveManager:  # pylint: disable=R0902,R0913
                     session_path != self._last_session_path
                     or verbose_path != self._last_verbose_path
                 ):
-                    from src.file_utils import write_verbose_log
-
                     write_verbose_log(f"Session log: {session_path}")
                     write_verbose_log(f"Verbose log: {verbose_path}")
                     header = f"Session: {session_path} | Verbose: {verbose_path}"
@@ -152,8 +147,6 @@ class LiveManager:  # pylint: disable=R0902,R0913
         self.logger_table.log(event, details, disable_ui=self.disable_ui)
         if self.verbose:
             if not self.disable_ui:
-                from src.file_utils import write_verbose_log
-
                 timestamp = time.strftime("%H:%M:%S")
                 write_verbose_log(f"[{timestamp}] Event: {event} | Details: {details}")
         if not self.disable_ui:
@@ -199,8 +192,6 @@ class LiveManager:  # pylint: disable=R0902,R0913
             completed = self.progress_manager.get_completed_tasks()
             deferred_count, session_path = (0, "")
             try:
-                from src.file_utils import get_session_entries_count
-
                 deferred_count, session_path = get_session_entries_count()
             except Exception:
                 pass
@@ -219,8 +210,6 @@ class LiveManager:  # pylint: disable=R0902,R0913
             # Also write to verbose log if enabled
             if self.verbose:
                 try:
-                    from src.file_utils import write_verbose_log
-
                     write_verbose_log(summary)
                 except Exception:
                     pass
