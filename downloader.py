@@ -38,6 +38,9 @@ from src.url_utils import (
     get_host_page,
     get_identifier,
 )
+import importlib
+from pathlib import Path
+from src.downloaders.retry_manager import run_session_retry_pass
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -134,8 +137,6 @@ async def main() -> None:
 
     if args.disable_ui:
         try:
-            import importlib  # pylint: disable=import-outside-toplevel
-
             cfg = importlib.import_module("src.config")
             verbose_path = getattr(cfg, "VERBOSE_LOG", "")
             print(f"Starting download (verbose log: {verbose_path})", flush=True)
@@ -152,8 +153,6 @@ async def main() -> None:
             )
 
             try:
-                from src.downloaders.retry_manager import run_session_retry_pass  # pylint: disable=import-outside-toplevel
-
                 await run_session_retry_pass(live_manager)
             except Exception:
                 pass
@@ -162,9 +161,6 @@ async def main() -> None:
 
             # If the session log file is empty after the run, remove it
             try:
-                import importlib  # pylint: disable=import-outside-toplevel
-                from pathlib import Path  # pylint: disable=import-outside-toplevel
-
                 cfg = importlib.import_module("src.config")
                 session_file = Path(cfg.SESSION_LOG)
                 if session_file.exists() and session_file.stat().st_size == 0:

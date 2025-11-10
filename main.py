@@ -11,6 +11,8 @@ Usage:
 import asyncio
 import sys
 from argparse import Namespace
+import importlib
+from pathlib import Path
 
 from downloader import parse_arguments, validate_and_download
 from src.bunkr_utils import get_bunkr_status
@@ -18,6 +20,8 @@ from src.config import URLS_FILE
 from src.file_utils import read_file, write_file
 from src.general_utils import check_python_version, clear_terminal
 from src.managers.live_manager import initialize_managers
+from src.file_utils import set_session_log_path
+from src.downloaders.retry_manager import run_session_retry_pass
 
 
 async def process_urls(urls: list[str], args: Namespace) -> None:
@@ -32,8 +36,6 @@ async def process_urls(urls: list[str], args: Namespace) -> None:
         # After the batch, perform a single retry pass over the session file so any
         # deferred URLs are attempted once more while the live UI is still active.
         try:
-            from src.downloaders.retry_manager import run_session_retry_pass  # pylint: disable=import-outside-toplevel
-
             await run_session_retry_pass(live_manager)
         except Exception:
             pass
@@ -50,14 +52,10 @@ async def main() -> None:
     args = parse_arguments(common_only=True)
 
     # Configure session log path according to optional session-id
-    from src.file_utils import set_session_log_path  # pylint: disable=import-outside-toplevel
-
     set_session_log_path(args.session_id)
 
     if args.disable_ui:
         try:
-            import importlib  # pylint: disable=import-outside-toplevel
-
             cfg = importlib.import_module("src.config")
             verbose_path = getattr(cfg, "VERBOSE_LOG", "")
             print(f"Starting batch downloads (verbose log: {verbose_path})", flush=True)
@@ -73,9 +71,6 @@ async def main() -> None:
 
     # If session log is empty after the run, remove it
     try:
-        import importlib  # pylint: disable=import-outside-toplevel
-        from pathlib import Path  # pylint: disable=import-outside-toplevel
-
         cfg = importlib.import_module("src.config")
         session_file = Path(cfg.SESSION_LOG)
         if session_file.exists() and session_file.stat().st_size == 0:

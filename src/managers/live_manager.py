@@ -74,7 +74,6 @@ class LiveManager:  # pylint: disable=R0902,R0913
             event="Script started",
             details="The script has started execution.",
         )
-    # (console-only compact status removed)
 
     def add_overall_task(self, description: str, num_tasks: int) -> None:
         """Call ProgressManager to add an overall task."""

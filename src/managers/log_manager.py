@@ -20,6 +20,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from src.config import LOG_MANAGER_CONFIG
+from src.file_utils import write_verbose_log
 
 # Note: root logging configuration is handled by file_utils when a verbose log
 # file is configured so console handlers can be avoided in production runs.
@@ -70,8 +71,6 @@ class LoggerTable:
 
             if self.verbose:
                 try:
-                    from src.file_utils import write_verbose_log  # pylint: disable=import-outside-toplevel
-
                     write_verbose_log(log_message)
                 except Exception:
                     pass
