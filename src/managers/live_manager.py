@@ -45,6 +45,7 @@ class LiveManager:
 
         if self.verbose:
             import importlib
+
             from src.file_utils import write_verbose_log
 
             cfg = importlib.import_module("src.config")

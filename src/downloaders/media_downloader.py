@@ -13,19 +13,13 @@ from typing import TYPE_CHECKING
 
 import requests
 from requests import RequestException
-import sys
 
 from src.bunkr_utils import mark_subdomain_as_offline, subdomain_is_offline
-from src.config import (
-    DOWNLOAD_HEADERS,
-    DownloadInfo,
-    HTTPStatus,
-    SessionInfo,
-)
+from src.config import DOWNLOAD_HEADERS, DownloadInfo, HTTPStatus, SessionInfo
 from src.file_utils import (
+    is_in_session_log,
     truncate_filename,
     write_on_session_log,
-    is_in_session_log,
     write_verbose_log,
 )
 

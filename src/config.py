@@ -203,7 +203,7 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         action="store_true",
         help="Enable verbose logging to a file under logs/ in addition to the UI.",
     )
-    
+
 
 
 def setup_parser(

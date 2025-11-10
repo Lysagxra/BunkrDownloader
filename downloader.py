@@ -15,16 +15,8 @@ from requests.exceptions import ConnectionError as RequestConnectionError
 from requests.exceptions import RequestException, Timeout
 
 from src.bunkr_utils import get_bunkr_status
-from src.config import (
-    AlbumInfo,
-    DownloadInfo,
-    SessionInfo,
-    parse_arguments,
-)
-from src.crawlers.crawler_utils import (
-    extract_all_album_item_pages,
-    get_download_info,
-)
+from src.config import AlbumInfo, DownloadInfo, SessionInfo, parse_arguments
+from src.crawlers.crawler_utils import extract_all_album_item_pages, get_download_info
 from src.downloaders.album_downloader import AlbumDownloader, MediaDownloader
 from src.file_utils import create_download_directory, format_directory_name
 from src.general_utils import (
@@ -59,7 +51,7 @@ async def handle_download_process(
     """Handle the download process for a Bunkr album or a single item."""
     host_page = get_host_page(url)
     identifier = get_identifier(url, soup=initial_soup)
-    from src.file_utils import set_session_log_path, sanitize_directory_name
+    from src.file_utils import sanitize_directory_name, set_session_log_path
     safe_id = sanitize_directory_name(identifier) if identifier else None
     set_session_log_path(safe_id, download_path=session_info.download_path)
     # Album download

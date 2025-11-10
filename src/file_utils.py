@@ -18,8 +18,6 @@ from .config import (
     SESSION_LOG,
     VALID_CHARACTERS_REGEX,
 )
-from pathlib import Path
-import os
 
 
 def read_file(filename: str) -> list[str]:

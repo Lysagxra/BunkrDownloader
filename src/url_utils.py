@@ -14,11 +14,7 @@ import sys
 from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlparse, urlunparse
 
-from .config import (
-    MEDIA_SLUG_REGEX,
-    URL_TYPE_MAPPING,
-    VALID_SLUG_REGEX,
-)
+from .config import MEDIA_SLUG_REGEX, URL_TYPE_MAPPING, VALID_SLUG_REGEX
 
 if TYPE_CHECKING:
     from bs4 import BeautifulSoup
