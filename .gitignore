@@ -130,6 +130,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# virtualenv pattern for local envs created during checks
+.venv*
+
 # Spyder project settings
 .spyderproject
 .spyproject
