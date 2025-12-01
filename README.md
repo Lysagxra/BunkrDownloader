@@ -157,18 +157,18 @@ python3 main.py
 
 ## File Download Location
 
-If the `--custom-path <custom_path>` argument is used, the downloaded files will be saved in `<custom_path>/Downloads`. Otherwise, the files will be saved in a `Downloads` folder created within the script's directory
+If the `--custom-path <custom_path>` argument is used, the downloaded files will be saved in `<custom_path>/Downloads`. Otherwise, the files will be saved in a `Downloads` folder created within the script's directory.
 
 ### Usage
 
 ```bash
-python3 main.py --custom-path <custom_path>
+uv run python main.py --custom-path <custom_path>
 ```
 
 ### Example
 
 ```bash
-python3 main.py --custom-path /path/to/external/drive
+uv run python main.py --custom-path /path/to/external/drive
 ```
 
 ## Disable UI for Notebooks
@@ -181,14 +181,80 @@ You can run the script with the `--disable-ui` argument to disable the progress 
 
 To disable the UI, use the following command:
 
-```
-python3 main.py --disable-ui
+```bash
+uv run python main.py --disable-ui
 ```
 
 To download a single file or album without the UI, you can use this command:
 
 ```bash
-python3 downloader.py <bunkr_url> --disable-ui
+uv run python downloader.py <bunkr_url> --disable-ui
+```
+
+## Using the Makefile
+
+The `Makefile` provides a convenient way to manage the environment and run the downloader scripts. Below are the available commands and their usage:
+
+### Prerequisites
+
+Ensure you have `uv` installed on your system. If not, you can install it using the following command:
+
+```bash
+pip install uv
+```
+
+### Commands
+
+#### 1. Sync Environment
+
+This command creates or updates the `uv` environment based on the `pyproject.toml` file:
+
+```bash
+make sync
+```
+
+#### 2. Run Batch Download
+
+To download files from multiple URLs listed in `URLs.txt`, use the following command:
+
+```bash
+make run-batch
+```
+
+You can also pass additional arguments using the `EXTRA` variable. For example, to ignore `.zip` files:
+
+```bash
+make run-batch EXTRA="--ignore .zip"
+```
+
+#### 3. Run Single Download
+
+To download a single file or album, provide the `URL` variable:
+
+```bash
+make run-single URL="https://bunkr.si/a/PUK068QE"
+```
+
+You can also pass additional arguments using the `EXTRA` variable. For example:
+
+```bash
+make run-single URL="https://bunkr.si/a/PUK068QE" EXTRA="--ignore .zip"
+```
+
+#### 4. Clean Up
+
+To remove the virtual environment and the `Downloads` folder, use the following command:
+
+```bash
+make clean
+```
+
+#### 5. Help
+
+To display the list of available commands, use:
+
+```bash
+make help
 ```
 
 ## Logging
