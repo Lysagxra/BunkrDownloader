@@ -6,6 +6,12 @@ import logging
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
+import contextlib
+import html
+import logging
+import re
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.general_utils import fetch_page
 from src.url_utils import get_url_based_filename
@@ -77,13 +83,25 @@ async def get_item_download_link(
 
 
 def get_item_filename(item_soup: BeautifulSoup) -> str:
-    """Extract the filename from the provided HTML soup."""
+    """Extract the filename from the provided HTML soup.
+
+    Attempts to fix mojibake (UTF-8 bytes decoded as Latin-1) safely; if the
+    repair fails, returns the unescaped original text.
+    """
     item_filename_container = item_soup.find(
         "h1",
         {"class": "text-subs font-semibold text-base sm:text-lg truncate"},
     )
-    item_filename = item_filename_container.get_text()
-    return item_filename.encode("latin1").decode("utf-8")
+    original_filename = item_filename_container.get_text()
+    unescaped = html.unescape(original_filename)
+
+    # Try to fix mojibake (latin1-encoded bytes decoded as utf-8) safely.
+    with contextlib.suppress(UnicodeEncodeError, UnicodeDecodeError):
+        fixed = unescaped.encode("latin1").decode("utf-8")
+        if fixed != unescaped:
+            return fixed
+
+    return unescaped
 
 
 def format_item_filename(original_filename: str, url_based_filename: str) -> str:
