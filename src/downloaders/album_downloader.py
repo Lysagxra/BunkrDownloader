@@ -39,28 +39,36 @@ class AlbumDownloader:
         """Handle the download of an individual item in the album."""
         async with semaphore:
             task = self.live_manager.add_task(current_task=current_task)
-
-            # Process the download of an item
-            item_soup = await fetch_page(item_page)
-            item_download_link, item_filename = await get_download_info(
-                item_page, item_soup,
-            )
-
-            # Download item
-            if item_download_link:
-                media_downloader = MediaDownloader(
-                    session_info=self.session_info,
-                    download_info=DownloadInfo(
-                        download_link=item_download_link,
-                        filename=item_filename,
-                        task=task,
-                    ),
-                    live_manager=self.live_manager,
+            
+            try:
+                # Process the download of an item
+                item_soup = await fetch_page(item_page)
+                item_download_link, item_filename = await get_download_info(
+                    item_page, item_soup,
                 )
 
-                failed_download = await asyncio.to_thread(media_downloader.download)
-                if failed_download:
-                    self.failed_downloads.append(failed_download)
+                # Download item
+                if item_download_link:
+                    media_downloader = MediaDownloader(
+                        session_info=self.session_info,
+                        download_info=DownloadInfo(
+                            download_link=item_download_link,
+                            filename=item_filename,
+                            task=task,
+                        ),
+                        live_manager=self.live_manager,
+                    )
+
+                    failed_download = await asyncio.to_thread(media_downloader.download)
+                    if failed_download:
+                        self.failed_downloads.append(failed_download)
+                
+            except Exception as e:
+                self.live_manager.update_log(
+                    event="Download Error",
+                    details=f"Exception in download: {item_page}: {e}"
+                )
+                self.live_manager.update_task(task, completed=100, visible=False)
 
     async def download_album(self, max_workers: int = MAX_WORKERS) -> None:
         """Handle the album download."""
