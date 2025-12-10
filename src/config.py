@@ -30,6 +30,7 @@ MIN_DISK_SPACE_GB = 2          # Minimum free disk space (in GB) required.
 STATUS_PAGE = "https://status.bunkr.ru/"  # The URL of the status page for checking
                                           # service availability.
 BUNKR_API = "https://bunkr.cr/api/vs"     # The API for retrieving encryption data.
+FALLBACK_DOMAIN = "bunkr.cr"              # The domain used if the main one is offline.
 
 # ============================
 # Regex Patterns
