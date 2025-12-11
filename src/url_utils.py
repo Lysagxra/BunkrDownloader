@@ -14,7 +14,12 @@ import sys
 from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlparse, urlunparse
 
-from .config import MEDIA_SLUG_REGEX, URL_TYPE_MAPPING, VALID_SLUG_REGEX
+from .config import (
+    FALLBACK_DOMAIN,
+    MEDIA_SLUG_REGEX,
+    URL_TYPE_MAPPING,
+    VALID_SLUG_REGEX,
+)
 
 if TYPE_CHECKING:
     from bs4 import BeautifulSoup
@@ -26,15 +31,15 @@ def get_host_page(url: str) -> str:
     return f"https://{url_netloc}"
 
 
-def change_domain_to_cr(url: str) -> str:
-    """Replace the domain of the given URL with 'bunkr.cr'.
+def replace_domain_with_fallback(url: str) -> str:
+    """Replace the domain (netloc) of the given URL with the fallback domain 'bunkr.cr'.
 
     This is useful for retrying requests using an alternative domain (e.g., when the
     original domain is blocked or returns a 403 error).
     """
     parsed_url = urlparse(url)
-    new_parsed_url = parsed_url._replace(netloc="bunkr.cr")
-    return urlunparse(new_parsed_url)
+    updated_url = parsed_url._replace(netloc=FALLBACK_DOMAIN)
+    return urlunparse(updated_url)
 
 
 def check_url_type(url: str) -> bool:

@@ -31,6 +31,7 @@ LOG_OUTPUT_DIR = "logs"        # Directory where verbose log output files are st
 STATUS_PAGE = "https://status.bunkr.ru/"  # The URL of the status page for checking
                                           # service availability.
 BUNKR_API = "https://bunkr.cr/api/vs"     # The API for retrieving encryption data.
+FALLBACK_DOMAIN = "bunkr.cr"              # The domain used if the main one is offline.
 
 # ============================
 # Regex Patterns
