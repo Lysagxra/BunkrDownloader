@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.general_utils import fetch_page
+from src.general_utils import fetch_page, remove_invalid_characters
 from src.url_utils import get_url_based_filename
 
 from .api_utils import decrypt_url, get_api_response
@@ -105,7 +105,8 @@ def format_item_filename(original_filename: str, url_based_filename: str) -> str
         return url_based_filename
 
     # Combine the base names with a hyphen and append the extension
-    return f"{original_base}-{url_base}{extension}"
+    valid_original_base = remove_invalid_characters(original_base)
+    return f"{valid_original_base}-{url_base}{extension}"
 
 
 async def get_download_info(item_url: str, item_soup: BeautifulSoup) -> tuple:
