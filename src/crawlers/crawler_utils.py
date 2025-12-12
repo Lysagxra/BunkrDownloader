@@ -7,7 +7,8 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.general_utils import fetch_page, remove_invalid_characters
+from src.file_utils import remove_invalid_characters
+from src.general_utils import fetch_page
 from src.url_utils import get_url_based_filename
 
 from .api_utils import decrypt_url, get_api_response
