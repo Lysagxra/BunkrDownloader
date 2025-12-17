@@ -15,18 +15,15 @@ from requests.exceptions import ConnectionError as RequestConnectionError
 from requests.exceptions import RequestException, Timeout
 
 from src.bunkr_utils import get_bunkr_status
-from src.config import (
-    AlbumInfo,
-    DownloadInfo,
-    SessionInfo,
-    parse_arguments,
-)
-from src.crawlers.crawler_utils import (
-    extract_all_album_item_pages,
-    get_download_info,
-)
+from src.config import AlbumInfo, DownloadInfo, SessionInfo, parse_arguments
+from src.crawlers.crawler_utils import extract_all_album_item_pages, get_download_info
 from src.downloaders.album_downloader import AlbumDownloader, MediaDownloader
-from src.file_utils import create_download_directory, format_directory_name
+from src.file_utils import (
+    create_download_directory,
+    format_directory_name,
+    sanitize_directory_name,
+    set_session_log_path,
+)
 from src.general_utils import (
     check_disk_space,
     check_python_version,
@@ -41,6 +38,9 @@ from src.url_utils import (
     get_host_page,
     get_identifier,
 )
+import importlib
+from pathlib import Path
+from src.downloaders.retry_manager import run_session_retry_pass
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -59,7 +59,8 @@ async def handle_download_process(
     """Handle the download process for a Bunkr album or a single item."""
     host_page = get_host_page(url)
     identifier = get_identifier(url, soup=initial_soup)
-
+    safe_id = sanitize_directory_name(identifier) if identifier else None
+    set_session_log_path(safe_id, download_path=session_info.download_path)
     # Album download
     if check_url_type(url):
         item_pages = await extract_all_album_item_pages(initial_soup, host_page, url)
@@ -82,8 +83,10 @@ async def handle_download_process(
                 download_link=download_link,
                 filename=filename,
                 task=task,
+                display_index=1,
             ),
             live_manager=live_manager,
+            retries=getattr(session_info.args, "retries", 5),
         )
         media_downloader.download()
 
@@ -129,7 +132,16 @@ async def main() -> None:
 
     bunkr_status = get_bunkr_status()
     args = parse_arguments()
-    live_manager = initialize_managers(disable_ui=args.disable_ui)
+    set_session_log_path(args.session_id)
+    live_manager = initialize_managers(disable_ui=args.disable_ui, verbose=args.verbose)
+
+    if args.disable_ui:
+        try:
+            cfg = importlib.import_module("src.config")
+            verbose_path = getattr(cfg, "VERBOSE_LOG", "")
+            print(f"Starting download (verbose log: {verbose_path})", flush=True)
+        except Exception:
+            print("Starting download", flush=True)
 
     try:
         with live_manager.live:
@@ -139,7 +151,22 @@ async def main() -> None:
                 live_manager,
                 args=args,
             )
+
+            try:
+                await run_session_retry_pass(live_manager)
+            except Exception:
+                pass
+
             live_manager.stop()
+
+            # If the session log file is empty after the run, remove it
+            try:
+                cfg = importlib.import_module("src.config")
+                session_file = Path(cfg.SESSION_LOG)
+                if session_file.exists() and session_file.stat().st_size == 0:
+                    session_file.unlink()
+            except Exception:
+                pass
 
     except KeyboardInterrupt:
         sys.exit(1)

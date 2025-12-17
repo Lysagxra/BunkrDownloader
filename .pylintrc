@@ -1,0 +1,23 @@
+[MASTER]
+# Ignore local virtualenvs
+ignore-patterns=.venv*
+
+[MESSAGES CONTROL]
+# Temporarily disable noisy checks that require larger refactors
+disable=
+    R0914,  # too-many-locals
+    R0912,  # too-many-branches
+    R0915,  # too-many-statements
+    R0801,  # duplicate-code
+    W0718,  # broad-exception-caught
+    C0301,  # line-too-long
+    C0411,  # wrong-import-order (we use isort)
+    W1203   # logging-fstring-interpolation (optional)
+
+[FORMAT]
+# Relax line length while refactoring
+max-line-length=120
+
+[REPORTS]
+# Disable the full report in CI logs
+reports=no
