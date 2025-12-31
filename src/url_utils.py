@@ -32,11 +32,7 @@ def get_host_page(url: str) -> str:
 
 
 def replace_domain_with_fallback(url: str) -> str:
-    """Replace the domain (netloc) of the given URL with the fallback domain 'bunkr.cr'.
-
-    This is useful for retrying requests using an alternative domain (e.g., when the
-    original domain is blocked or returns a 403 error).
-    """
+    """Replace the domain of the given URL with the configured fallback domain."""
     parsed_url = urlparse(url)
     updated_url = parsed_url._replace(netloc=FALLBACK_DOMAIN)
     return urlunparse(updated_url)

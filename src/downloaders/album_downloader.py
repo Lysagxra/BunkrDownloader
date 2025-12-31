@@ -42,6 +42,13 @@ class AlbumDownloader:
 
             # Process the download of an item
             item_soup = await fetch_page(item_page)
+            if item_soup is None:
+                self.live_manager.update_log(
+                    event="Fetch failed",
+                    details=f"Unable to load album item page: {item_page}",
+                )
+                raise RuntimeError(f"Failed to load album item page: {item_page}")
+
             item_download_link, item_filename = await get_download_info(
                 item_page, item_soup,
             )

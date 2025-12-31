@@ -24,9 +24,13 @@ def fetch_page(url: str) -> BeautifulSoup | None:
     return BeautifulSoup(response.text, "html.parser")
 
 
-def get_bunkr_status() -> dict[str, str] | None:
+def get_bunkr_status() -> dict[str, str]:
     """Fetch the status of servers from the status page and returns a dictionary."""
     soup = fetch_page(STATUS_PAGE)
+    if soup is None:
+        logging.warning("Unable to fetch status page; continuing without host data.")
+        return {}
+
     bunkr_status = {}
 
     try:
@@ -45,9 +49,8 @@ def get_bunkr_status() -> dict[str, str] | None:
             bunkr_status[server_name] = server_status
 
     except AttributeError as attr_err:
-        log_message = f"Error extracting server data: {attr_err}"
-        logging.exception(log_message)
-        return None
+        logging.exception("Error extracting server data: %s", attr_err)
+        return {}
 
     return bunkr_status
 
