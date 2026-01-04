@@ -83,7 +83,7 @@ class MediaDownloader:
             self.session_info.bunkr_status,
         )
 
-        if is_offline and is_final_attempt:
+        if is_offline or is_final_attempt:
             self.live_manager.update_log(
                 event="Non-operational subdomain",
                 details=f"The subdomain for {self.download_info.filename} is offline. "
