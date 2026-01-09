@@ -20,6 +20,7 @@ from src.config import (
     DownloadInfo,
     HTTPStatus,
     SessionInfo,
+    MAX_RETRY,
 )
 from src.file_utils import truncate_filename, write_on_session_log
 
@@ -37,7 +38,7 @@ class MediaDownloader:
         session_info: SessionInfo,
         download_info: DownloadInfo,
         live_manager: LiveManager,
-        retries: int = 5,
+        retries: int = MAX_RETRY,
     ) -> None:
         """Initialize the MediaDownloader instance."""
         self.session_info = session_info
