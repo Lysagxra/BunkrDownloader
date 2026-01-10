@@ -66,9 +66,9 @@ def get_offline_servers(bunkr_status: dict[str, str] | None = None) -> dict[str,
 
 
 def get_subdomain(download_link: str) -> str:
-    """Extract the capitalized subdomain from a given URL."""
+    """Extract the subdomain from a given URL."""
     netloc = urlparse(download_link).netloc
-    return netloc.split(".")[0].capitalize()
+    return netloc.split(".")[0]
 
 
 def subdomain_is_offline(

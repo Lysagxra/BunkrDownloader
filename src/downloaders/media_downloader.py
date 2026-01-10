@@ -102,7 +102,15 @@ class MediaDownloader:
             return None
 
         # Attempt to download the file with retries
-        failed_download = self.attempt_download(final_path)
+        try:
+            failed_download = self.attempt_download(final_path)
+
+        except requests.exceptions.ConnectionError:
+            self.live_manager.update_log(
+                event="Connection error",
+                details="Read timed out for {self.download_info.filename}",
+            )
+            failed_download = True
 
         # Handle failed download after retries
         if failed_download:
@@ -157,6 +165,16 @@ class MediaDownloader:
                 f"No included words found for {self.download_info.filename}.",
             )
 
+        # Check if the subdomain is marked as offline
+        if subdomain_is_offline(
+            self.download_info.download_link, self.session_info.bunkr_status,
+        ):
+            write_on_session_log(self.download_info.download_link)
+            return log_and_skip_event(
+                f"The subdomain for {self.download_info.download_link} has been "
+                "previously marked as offline.",
+            )
+
         # If none of the skip conditions are met, do not skip
         return False
 
@@ -181,7 +199,10 @@ class MediaDownloader:
         """Handle exceptions during the request and manages retries."""
         is_server_down = (
             req_err.response is None
-            or req_err.response.status_code == HTTPStatus.SERVER_DOWN
+            or req_err.response.status_code in (
+                HTTPStatus.SERVER_DOWN,
+                HTTPStatus.SERVICE_UNAVAILABLE,
+            )
         )
 
         # Mark the subdomain as offline and exit the loop
@@ -192,14 +213,11 @@ class MediaDownloader:
             )
             self.live_manager.update_log(
                 event="No response",
-                details=f"Subdomain {marked_subdomain} has been marked as offline.",
+                details=f"Subdomain '{marked_subdomain}' has been marked as offline.",
             )
             return False
 
-        if req_err.response.status_code in (
-            HTTPStatus.TOO_MANY_REQUESTS,
-            HTTPStatus.SERVICE_UNAVAILABLE,
-        ):
+        if req_err.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
             return self._retry_with_backoff(attempt, event="Retrying download")
 
         if req_err.response.status_code == HTTPStatus.BAD_GATEWAY:

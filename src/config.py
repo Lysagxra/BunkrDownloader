@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be stored.
 URLS_FILE = "URLs.txt"         # The file containing the list of URLs to process.
 SESSION_LOG = "session.log"    # The file used to log errors.
-MIN_DISK_SPACE_GB = 2          # Minimum free disk space (in GB) required.
+MIN_DISK_SPACE_GB = 3          # Minimum free disk space (in GB) required.
 
 # ============================
 # API / Status Endpoints
