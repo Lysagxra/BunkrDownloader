@@ -26,6 +26,8 @@ from src.file_utils import truncate_filename, write_on_session_log
 
 from .download_utils import save_file_with_progress
 
+from src.managers.progress_manager import TaskResult
+
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
 
@@ -92,6 +94,7 @@ class MediaDownloader:
             )
             write_on_session_log(self.download_info.download_link)
             self.live_manager.update_task(self.download_info.task, visible=False)
+            self.live_manager.update_result(TaskResult.FAILURE)
             return None
 
         formatted_filename = truncate_filename(self.download_info.filename)
@@ -115,6 +118,8 @@ class MediaDownloader:
         # Handle failed download after retries
         if failed_download:
             return self._handle_failed_download(is_final_attempt=is_final_attempt)
+        else:
+            self.live_manager.update_result(TaskResult.SUCCESS)
 
         return None
 
@@ -141,6 +146,7 @@ class MediaDownloader:
                 completed=100,
                 visible=False,
             )
+            self.live_manager.update_result(TaskResult.SKIPPED)
             return True
 
         # Check if the file already exists
@@ -253,4 +259,5 @@ class MediaDownloader:
             "Check the log file.",
         )
         self.live_manager.update_task(self.download_info.task, visible=False)
+        self.live_manager.update_result(TaskResult.FAILURE)
         return None
