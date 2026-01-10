@@ -15,7 +15,7 @@ from rich.console import Group
 from rich.live import Live
 
 from .log_manager import LoggerTable
-from .progress_manager import ProgressManager
+from .progress_manager import ProgressManager, TaskResult
 
 
 class LiveManager:
@@ -68,6 +68,10 @@ class LiveManager:
         """Call ProgressManager to update an individual task."""
         self.progress_manager.update_task(task_id, completed, advance, visible=visible)
 
+    def update_result(self, task_result: TaskResult) -> None:
+        """Update statistics of task results."""
+        self.progress_manager.update_result(task_result)
+
     def update_log(self, *, event: str, details: str) -> None:
         """Log an event and refreshes the live display."""
         self.logger_table.log(event, details, disable_ui=self.disable_ui)
@@ -83,11 +87,19 @@ class LiveManager:
         """Stop the live display and log the execution time."""
         execution_time = self._compute_execution_time()
 
-        # Log the execution time in hh:mm:ss format
+        success_count = self.progress_manager.get_success_count()
+        failure_count = self.progress_manager.get_failure_count()
+        skipped_count = self.progress_manager.get_skipped_count()
+        total_count = self.progress_manager.get_total_count()
+
+        # Log the execution time in hh:mm:ss format, and file download statistics
         self.update_log(
             event="Script ended",
-            details="The script has finished execution. "
-            f"Execution time: {execution_time}",
+            details="The script has finished execution.\n"
+            f"Execution time: {execution_time}\n"
+            f"Successes: {success_count} of {total_count}\n"
+            f"Skipped:   {skipped_count}\n"
+            f"Failures:  {failure_count}",
         )
 
         if not self.disable_ui:

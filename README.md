@@ -214,7 +214,7 @@ python3 downloader.py <bunkr_url> --max-retries 3
 ### Example:
 
 ```bash
-python3 downloader.py https://bunkr.si/a/PUK068QE --max-retry 3
+python3 downloader.py https://bunkr.si/a/PUK068QE --max-retries 3
 ```
 
 ## Logging
