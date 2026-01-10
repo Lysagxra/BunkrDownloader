@@ -7,7 +7,7 @@ integrating with live task displays.
 import asyncio
 from asyncio import Semaphore
 
-from src.config import MAX_WORKERS, MAX_RETRY, AlbumInfo, DownloadInfo, SessionInfo
+from src.config import MAX_WORKERS, MAX_RETRIES, AlbumInfo, DownloadInfo, SessionInfo
 from src.crawlers.crawler_utils import get_download_info
 from src.general_utils import fetch_page
 from src.managers.live_manager import LiveManager
@@ -35,7 +35,7 @@ class AlbumDownloader:
         item_page: str,
         current_task: int,
         semaphore: Semaphore,
-        max_retry: int,
+        max_retries: int,
     ) -> None:
         """Handle the download of an individual item in the album."""
         async with semaphore:
@@ -64,14 +64,16 @@ class AlbumDownloader:
                         task=task,
                     ),
                     live_manager=self.live_manager,
-                    retries=max_retry,
+                    retries=max_retries,
                 )
 
                 failed_download = await asyncio.to_thread(media_downloader.download)
                 if failed_download:
                     self.failed_downloads.append(failed_download)
 
-    async def download_album(self, max_workers: int = MAX_WORKERS, max_retry: int = MAX_RETRY) -> None:
+    async def download_album(
+        self, max_workers: int = MAX_WORKERS, max_retries: int = MAX_RETRIES,
+    ) -> None:
         """Handle the album download."""
         num_tasks = len(self.album_info.item_pages)
         self.live_manager.add_overall_task(
@@ -82,7 +84,7 @@ class AlbumDownloader:
         # Create tasks for downloading each item in the album
         semaphore = asyncio.Semaphore(max_workers)
         tasks = [
-            self.execute_item_download(item_page, current_task, semaphore, max_retry)
+            self.execute_item_download(item_page, current_task, semaphore, max_retries)
             for current_task, item_page in enumerate(self.album_info.item_pages)
         ]
         await asyncio.gather(*tasks)

@@ -55,7 +55,7 @@ async def handle_download_process(
     url: str,
     initial_soup: BeautifulSoup,
     live_manager: LiveManager,
-    max_retry: int,
+    max_retries: int,
 ) -> None:
     """Handle the download process for a Bunkr album or a single item."""
     host_page = get_host_page(url)
@@ -69,7 +69,7 @@ async def handle_download_process(
             album_info=AlbumInfo(album_id=identifier, item_pages=item_pages),
             live_manager=live_manager,
         )
-        await album_downloader.download_album(max_retry=max_retry)
+        await album_downloader.download_album(max_retries=max_retries)
 
     # Single item download
     else:
@@ -116,7 +116,9 @@ async def validate_and_download(
     )
 
     try:
-        await handle_download_process(session_info, url, soup, live_manager, args.max_retry)
+        await handle_download_process(
+            session_info, url, soup, live_manager, args.max_retries,
+        )
 
     except (RequestConnectionError, Timeout, RequestException) as err:
         error_message = f"Error downloading from {url}: {err}"
