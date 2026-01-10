@@ -17,16 +17,15 @@ from requests import RequestException
 from src.bunkr_utils import mark_subdomain_as_offline, subdomain_is_offline
 from src.config import (
     DOWNLOAD_HEADERS,
+    MAX_RETRIES,
     DownloadInfo,
     HTTPStatus,
     SessionInfo,
-    MAX_RETRIES,
+    TaskResult,
 )
 from src.file_utils import truncate_filename, write_on_session_log
 
 from .download_utils import save_file_with_progress
-
-from src.managers.progress_manager import TaskResult
 
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
@@ -118,9 +117,8 @@ class MediaDownloader:
         # Handle failed download after retries
         if failed_download:
             return self._handle_failed_download(is_final_attempt=is_final_attempt)
-        else:
-            self.live_manager.update_result(TaskResult.SUCCESS)
 
+        self.live_manager.update_result(TaskResult.SUCCESS)
         return None
 
     # Private methods

@@ -5,9 +5,9 @@ monitoring task completion.
 """
 
 from __future__ import annotations
-from enum import Enum
 
 import shutil
+from collections import Counter
 
 from rich.panel import Panel
 from rich.progress import (
@@ -23,12 +23,9 @@ from src.config import (
     PROGRESS_COLUMNS_SEPARATOR,
     PROGRESS_MANAGER_COLORS,
     ProgressConfig,
+    TaskResult,
 )
 
-class TaskResult(Enum):
-    SUCCESS = 1
-    FAILURE = 2
-    SKIPPED = 3
 
 class ProgressManager:
     """Manage and tracks the progress of multiple tasks.
@@ -47,13 +44,23 @@ class ProgressManager:
         self.overall_progress = self._create_progress_bar()
         self.task_progress = self._create_progress_bar(show_time=True)
         self.num_tasks = 0
-        self.num_success = 0
-        self.num_failure = 0
-        self.num_skipped = 0
+        self._result_counts: Counter[TaskResult] = Counter()
 
     def get_panel_width(self) -> int:
         """Return the width of the panel."""
         return self.config.panel_width
+
+    def get_success_count(self) -> int:
+        """Retrieve the number of successfully downloaded tasks."""
+        return self._result_counts[TaskResult.SUCCESS]
+
+    def get_failure_count(self) -> int:
+        """Retrieve the number of tasks that failed to download."""
+        return self._result_counts[TaskResult.FAILURE]
+
+    def get_skipped_count(self) -> int:
+        """Retrieve the number of skipped tasks."""
+        return self._result_counts[TaskResult.SKIPPED]
 
     def add_overall_task(self, description: str, num_tasks: int) -> None:
         """Add an overall progress task with a given description and total tasks."""
@@ -92,7 +99,7 @@ class ProgressManager:
 
     def update_result(self, task_result: TaskResult) -> None:
         """Update statistics of task results."""
-        self._add_task_result(task_result)
+        self._result_counts[task_result] += 1
 
     def create_progress_table(self, min_panel_width: int = 30) -> Table:
         """Create a formatted progress table for tracking the download."""
@@ -117,22 +124,6 @@ class ProgressManager:
             ),
         )
         return progress_table
-
-    def get_success_count(self) -> int:
-        """Retrieve the number of successfully downloaded tasks."""
-        return self.num_success
-
-    def get_failure_count(self) -> int:
-        """Retrieve the number of tasks that failed to download."""
-        return self.num_failure
-
-    def get_skipped_count(self) -> int:
-        """Retrieve the number of skipped tasks as the media file has already been downloaded earlier."""
-        return self.num_skipped
-        
-    def get_total_count(self) -> int:
-        """Retrieve the number of skipped tasks as the media file has already been downloaded earlier."""
-        return self.num_tasks
 
     # Private methods
     def _update_overall_task(self, task_id: int) -> None:
@@ -160,12 +151,7 @@ class ProgressManager:
 
     def _add_task_result(self, task_result: TaskResult) -> None:
         """Append statistics of media file download result."""
-        if task_result == TaskResult.SUCCESS:
-            self.num_success += 1
-        elif task_result == TaskResult.FAILURE:
-            self.num_failure += 1
-        elif task_result == TaskResult.SKIPPED:
-            self.num_skipped += 1
+        self._result_counts[task_result] += 1
 
     # Static methods
     @staticmethod

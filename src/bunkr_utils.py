@@ -48,8 +48,8 @@ def get_bunkr_status() -> dict[str, str]:
             server_status = server_item.find("span").get_text(strip=True)
             bunkr_status[server_name] = server_status
 
-    except AttributeError as attr_err:
-        logging.exception("Error extracting server data: %s", attr_err)
+    except AttributeError:
+        logging.exception("Error extracting server data")
         return {}
 
     return bunkr_status

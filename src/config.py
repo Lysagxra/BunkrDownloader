@@ -138,6 +138,13 @@ DOWNLOAD_HEADERS = {
 # Data Classes
 # ============================
 @dataclass
+class AlbumInfo:
+    """Store the information about an album and its associated item pages."""
+
+    album_id: str
+    item_pages: list[str]
+
+@dataclass
 class DownloadInfo:
     """Represent the information related to a download task."""
 
@@ -154,13 +161,6 @@ class SessionInfo:
     download_path: str
 
 @dataclass
-class AlbumInfo:
-    """Store the information about an album and its associated item pages."""
-
-    album_id: str
-    item_pages: list[str]
-
-@dataclass
 class ProgressConfig:
     """Configuration for progress bar settings."""
 
@@ -170,6 +170,12 @@ class ProgressConfig:
     panel_width = 40
     overall_buffer: deque = field(default_factory=lambda: deque(maxlen=BUFFER_SIZE))
 
+class TaskResult(IntEnum):
+    """Enumerate the possible outcomes for a processed task."""
+
+    SUCCESS = 1 # The task completed successfully.
+    FAILURE = 2 # The task failed due to an error.
+    SKIPPED = 3 # The task was intentionally skipped.
 
 # ============================
 # Argument Parsing
@@ -196,7 +202,7 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         "--max-retries",
         type=int,
         default=MAX_RETRIES,
-        help="Maximum number of retries for downloading a single media."
+        help="Maximum number of retries for downloading a single media.",
     )
 
 

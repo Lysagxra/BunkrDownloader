@@ -10,12 +10,16 @@ from __future__ import annotations
 import datetime
 import time
 from contextlib import nullcontext
+from typing import TYPE_CHECKING
 
 from rich.console import Group
 from rich.live import Live
 
 from .log_manager import LoggerTable
-from .progress_manager import ProgressManager, TaskResult
+from .progress_manager import ProgressManager
+
+if TYPE_CHECKING:
+    from src.config import TaskResult
 
 
 class LiveManager:
@@ -84,23 +88,18 @@ class LiveManager:
             self.live.start()
 
     def stop(self) -> None:
-        """Stop the live display and log the execution time."""
+        """Stop the live display, log the execution time and a summary of results."""
         execution_time = self._compute_execution_time()
-
-        success_count = self.progress_manager.get_success_count()
-        failure_count = self.progress_manager.get_failure_count()
-        skipped_count = self.progress_manager.get_skipped_count()
-        total_count = self.progress_manager.get_total_count()
 
         # Log the execution time in hh:mm:ss format, and file download statistics
         self.update_log(
             event="Script ended",
             details="The script has finished execution.\n"
-            f"Execution time: {execution_time}\n"
-            f"Successes: {success_count} of {total_count}\n"
-            f"Skipped:   {skipped_count}\n"
-            f"Failures:  {failure_count}",
+            f"Execution time: {execution_time}",
         )
+
+        # Log a summary of task execution results
+        self._log_results_summary()
 
         if not self.disable_ui:
             self.live.stop()
@@ -125,6 +124,18 @@ class LiveManager:
         seconds = time_delta.seconds % 60
 
         return f"{hours:02} hrs {minutes:02} mins {seconds:02} secs"
+
+    def _log_results_summary(self) -> None:
+        success_count = self.progress_manager.get_success_count()
+        failure_count = self.progress_manager.get_failure_count()
+        skipped_count = self.progress_manager.get_skipped_count()
+
+        details = (
+            f"Successes: {success_count}\n"
+            f"Skipped:   {skipped_count}\n"
+            f"Failures:  {failure_count}"
+        )
+        self.update_log(event="Results summary", details=details)
 
 
 def initialize_managers(*, disable_ui: bool = False) -> LiveManager:

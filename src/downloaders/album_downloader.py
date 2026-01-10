@@ -7,7 +7,7 @@ integrating with live task displays.
 import asyncio
 from asyncio import Semaphore
 
-from src.config import MAX_WORKERS, MAX_RETRIES, AlbumInfo, DownloadInfo, SessionInfo
+from src.config import MAX_RETRIES, MAX_WORKERS, AlbumInfo, DownloadInfo, SessionInfo
 from src.crawlers.crawler_utils import get_download_info
 from src.general_utils import fetch_page
 from src.managers.live_manager import LiveManager
@@ -48,7 +48,8 @@ class AlbumDownloader:
                     event="Fetch failed",
                     details=f"Unable to load album item page: {item_page}",
                 )
-                raise RuntimeError(f"Failed to load album item page: {item_page}")
+                error_message = "Failed to load album item page: {item_page}"
+                raise RuntimeError(error_message)
 
             item_download_link, item_filename = await get_download_info(
                 item_page, item_soup,

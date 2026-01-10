@@ -56,25 +56,25 @@ async def extract_all_album_item_pages(
 ) -> list[str]:
     """Collect item page links from an album, including pagination."""
     if initial_soup is None:
-        raise RuntimeError(f"Failed to parse album landing page: {url}")
+        error_message = f"Failed to parse album landing page: {url}"
+        raise RuntimeError(error_message)
 
     # Extract item pages from the initial soup
     item_pages = extract_item_pages(initial_soup, host_page)
     if item_pages is None:
-        raise RuntimeError(f"Unable to extract album items from {url}")
+        error_message = f"Unable to extract album items from {url}"
+        raise RuntimeError(error_message)
 
     next_album_pages = extract_next_album_pages(initial_soup, url)
     if next_album_pages is not None:
         for next_page in next_album_pages:
             next_page_soup = await fetch_page(next_page)
+
             if next_page_soup is None:
-                raise RuntimeError(f"Failed to load paginated album page: {next_page}")
+                error_message = f"Failed to load paginated album page: {next_page}"
+                raise RuntimeError(error_message)
 
             next_item_pages = extract_item_pages(next_page_soup, host_page)
-            if not next_item_pages:
-                raise RuntimeError(
-                    f"Unable to extract items from paginated album page: {next_page}"
-                )
             item_pages.extend(next_item_pages)
 
     return item_pages
