@@ -75,6 +75,7 @@ LOG_MANAGER_CONFIG = {
 # ============================
 MAX_FILENAME_LEN = 120  # The maximum length for a file name.
 MAX_WORKERS = 3         # The maximum number of threads for concurrent downloads.
+MAX_RETRY = 5           # The maximum number of retries for downloading a single media.
 
 # Mapping of URL identifiers to a boolean for album (True) vs single file (False).
 URL_TYPE_MAPPING = {"a": True, "f": False, "i": False, "v": False}
@@ -190,6 +191,12 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         "--disable-disk-check",
         action="store_true",
         help="Disable the disk space check for available free space.",
+    )
+    parser.add_argument(
+        "--max-retry",
+        type=int,
+        default=MAX_RETRY,
+        help="Maximum number of retries for downloading a single media."
     )
 
 
