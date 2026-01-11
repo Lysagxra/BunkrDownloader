@@ -197,7 +197,7 @@ To download a single file or album without the UI, you can use this command:
 python3 downloader.py <bunkr_url> --disable-ui
 ```
 
-## Maximum number of retries
+## Maximum Number of Retries
 
 When the download fails, by default there is 5 retry attempts to download each media file again.
 You can control the number of maximum attempts with the `--max-retries` argument.
