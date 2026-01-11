@@ -50,17 +50,9 @@ class ProgressManager:
         """Return the width of the panel."""
         return self.config.panel_width
 
-    def get_success_count(self) -> int:
-        """Retrieve the number of successfully downloaded tasks."""
-        return self._result_counts[TaskResult.SUCCESS]
-
-    def get_failure_count(self) -> int:
-        """Retrieve the number of tasks that failed to download."""
-        return self._result_counts[TaskResult.FAILURE]
-
-    def get_skipped_count(self) -> int:
-        """Retrieve the number of skipped tasks."""
-        return self._result_counts[TaskResult.SKIPPED]
+    def get_task_stats(self, result: TaskResult) -> int:
+        """Return the count of tasks that ended with the specified result."""
+        return self._result_counts[result]
 
     def add_overall_task(self, description: str, num_tasks: int) -> None:
         """Add an overall progress task with a given description and total tasks."""
@@ -148,10 +140,6 @@ class ProgressManager:
         if len(self.config.overall_buffer) == self.config.overall_buffer.maxlen:
             completed_overall_id = self.config.overall_buffer.popleft().id
             self.overall_progress.remove_task(completed_overall_id)
-
-    def _add_task_result(self, task_result: TaskResult) -> None:
-        """Append statistics of media file download result."""
-        self._result_counts[task_result] += 1
 
     # Static methods
     @staticmethod

@@ -10,16 +10,14 @@ from __future__ import annotations
 import datetime
 import time
 from contextlib import nullcontext
-from typing import TYPE_CHECKING
 
 from rich.console import Group
 from rich.live import Live
 
+from src.config import TaskResult
+
 from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
-
-if TYPE_CHECKING:
-    from src.config import TaskResult
 
 
 class LiveManager:
@@ -126,14 +124,11 @@ class LiveManager:
         return f"{hours:02} hrs {minutes:02} mins {seconds:02} secs"
 
     def _log_results_summary(self) -> None:
-        success_count = self.progress_manager.get_success_count()
-        failure_count = self.progress_manager.get_failure_count()
-        skipped_count = self.progress_manager.get_skipped_count()
-
-        details = (
-            f"Successes: {success_count}\n"
-            f"Skipped:   {skipped_count}\n"
-            f"Failures:  {failure_count}"
+        max_stat_len = max(len(result.name) for result in TaskResult)
+        details = "\n".join(
+            f"{result.name.capitalize():<{max_stat_len}}: "
+            f"{self.progress_manager.get_task_stats(result)}"
+            for result in TaskResult
         )
         self.update_log(event="Results summary", details=details)
 

@@ -173,9 +173,9 @@ class ProgressConfig:
 class TaskResult(IntEnum):
     """Enumerate the possible outcomes for a processed task."""
 
-    SUCCESS = 1 # The task completed successfully.
-    FAILURE = 2 # The task failed due to an error.
-    SKIPPED = 3 # The task was intentionally skipped.
+    COMPLETED = 1 # The task completed successfully.
+    FAILED = 2    # The task failed due to an error.
+    SKIPPED = 3   # The task was intentionally skipped.
 
 # ============================
 # Argument Parsing

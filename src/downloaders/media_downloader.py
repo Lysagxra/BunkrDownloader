@@ -93,7 +93,7 @@ class MediaDownloader:
             )
             write_on_session_log(self.download_info.download_link)
             self.live_manager.update_task(self.download_info.task, visible=False)
-            self.live_manager.update_result(TaskResult.FAILURE)
+            self.live_manager.update_result(TaskResult.FAILED)
             return None
 
         formatted_filename = truncate_filename(self.download_info.filename)
@@ -118,7 +118,7 @@ class MediaDownloader:
         if failed_download:
             return self._handle_failed_download(is_final_attempt=is_final_attempt)
 
-        self.live_manager.update_result(TaskResult.SUCCESS)
+        self.live_manager.update_result(TaskResult.COMPLETED)
         return None
 
     # Private methods
@@ -257,5 +257,5 @@ class MediaDownloader:
             "Check the log file.",
         )
         self.live_manager.update_task(self.download_info.task, visible=False)
-        self.live_manager.update_result(TaskResult.FAILURE)
+        self.live_manager.update_result(TaskResult.FAILED)
         return None
