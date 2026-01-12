@@ -127,7 +127,7 @@ class LiveManager:
         max_stat_len = max(len(result.name) for result in TaskResult)
         details = "\n".join(
             f"{result.name.capitalize():<{max_stat_len}}: "
-            f"{self.progress_manager.get_task_stats(result)}"
+            f"{self.progress_manager.get_result_count(result)}"
             for result in TaskResult
         )
         self.update_log(event="Results summary", details=details)

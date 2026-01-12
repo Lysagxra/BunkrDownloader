@@ -35,6 +35,7 @@ from src.general_utils import (
 )
 from src.managers.live_manager import initialize_managers
 from src.url_utils import (
+    add_https_prefix,
     check_url_type,
     get_album_id,
     get_album_name,
@@ -100,8 +101,9 @@ async def validate_and_download(
     if not args.disable_disk_check:
         check_disk_space(live_manager, custom_path=args.custom_path)
 
-    soup = await fetch_page(url)
-    album_id = get_album_id(url) if check_url_type(url) else None
+    validated_url = add_https_prefix(url)
+    soup = await fetch_page(validated_url)
+    album_id = get_album_id(validated_url) if check_url_type(validated_url) else None
     album_name = get_album_name(soup)
 
     directory_name = format_directory_name(album_name, album_id)
@@ -117,7 +119,7 @@ async def validate_and_download(
 
     try:
         await handle_download_process(
-            session_info, url, soup, live_manager, args.max_retries,
+            session_info, validated_url, soup, live_manager, args.max_retries,
         )
 
     except (RequestConnectionError, Timeout, RequestException) as err:

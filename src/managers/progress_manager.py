@@ -50,7 +50,7 @@ class ProgressManager:
         """Return the width of the panel."""
         return self.config.panel_width
 
-    def get_task_stats(self, result: TaskResult) -> int:
+    def get_result_count(self, result: TaskResult) -> int:
         """Return the count of tasks that ended with the specified result."""
         return self._result_counts[result]
 

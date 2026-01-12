@@ -31,6 +31,14 @@ def get_host_page(url: str) -> str:
     return f"https://{url_netloc}"
 
 
+def add_https_prefix(url: str) -> str:
+    """Add the 'https://' prefix to the provided URL if it is not already present."""
+    if not url.startswith("https://"):
+        return f"https://{url}"
+
+    return url
+
+
 def replace_domain_with_fallback(url: str) -> str:
     """Replace the domain of the given URL with the configured fallback domain."""
     parsed_url = urlparse(url)
