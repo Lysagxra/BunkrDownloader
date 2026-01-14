@@ -10,14 +10,23 @@ from __future__ import annotations
 import datetime
 import time
 from contextlib import nullcontext
+from typing import TYPE_CHECKING
 
 from rich.console import Group
 from rich.live import Live
 
-from src.config import TaskResult
+from src.config import (
+    CompletedReason,
+    FailedReason,
+    SkippedReason,
+    TaskResult,
+)
 
 from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
+
+if TYPE_CHECKING:
+    from enum import IntEnum
 
 
 class LiveManager:
@@ -70,10 +79,6 @@ class LiveManager:
         """Call ProgressManager to update an individual task."""
         self.progress_manager.update_task(task_id, completed, advance, visible=visible)
 
-    def update_result(self, task_result: TaskResult) -> None:
-        """Update statistics of task results."""
-        self.progress_manager.update_result(task_result)
-
     def update_log(self, *, event: str, details: str) -> None:
         """Log an event and refreshes the live display."""
         self.logger_table.log(event, details, disable_ui=self.disable_ui)
@@ -97,7 +102,7 @@ class LiveManager:
         )
 
         # Log a summary of task execution results
-        self._log_results_summary()
+        self._log_detailed_results_summary()
 
         if not self.disable_ui:
             self.live.stop()
@@ -132,6 +137,40 @@ class LiveManager:
         )
         self.update_log(event="Results summary", details=details)
 
+    def _log_detailed_results_summary(self) -> None:
+        """Log task results with the corresponding task reason.
+
+        Avoid printing task reasons having one enum member only and task reasons with
+        zero records.
+        """
+        max_stat_len = max(len(result.name) for result in TaskResult)
+        details = []
+
+        reason_mapping = {
+            TaskResult.COMPLETED: CompletedReason,
+            TaskResult.FAILED: FailedReason,
+            TaskResult.SKIPPED: SkippedReason,
+        }
+
+        def log_reason(result: TaskResult, reason_class: type[IntEnum]) -> None:
+            for reason in reason_class:
+                count = self.progress_manager.get_result_count(result, reason)
+                if count > 0:
+                    reason_name = reason.name.replace("_", " ").capitalize()
+                    formatted_reason = f"- {reason_name}: {count}"
+                    details.append(formatted_reason)
+
+        for result in TaskResult:
+            result_count = self.progress_manager.get_result_count(result)
+            result_name = result.name.capitalize()
+            details.append(f"{result_name:<{max_stat_len}}: {result_count}")
+
+            if result in reason_mapping:
+                reason_class = reason_mapping[result]
+                if len(reason_class) > 1:
+                    log_reason(result, reason_class)
+
+        self.update_log(event="Results summary", details="\n".join(details))
 
 def initialize_managers(*, disable_ui: bool = False) -> LiveManager:
     """Initialize and return the managers for progress tracking and logging."""

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import shutil
 from collections import Counter
+from typing import TYPE_CHECKING
 
 from rich.panel import Panel
 from rich.progress import (
@@ -22,9 +23,16 @@ from rich.table import Column, Table
 from src.config import (
     PROGRESS_COLUMNS_SEPARATOR,
     PROGRESS_MANAGER_COLORS,
+    CompletedReason,
+    FailedReason,
     ProgressConfig,
+    SkippedReason,
+    TaskReason,
     TaskResult,
 )
+
+if TYPE_CHECKING:
+    from enum import IntEnum
 
 
 class ProgressManager:
@@ -44,15 +52,26 @@ class ProgressManager:
         self.overall_progress = self._create_progress_bar()
         self.task_progress = self._create_progress_bar(show_time=True)
         self.num_tasks = 0
-        self._result_counts: Counter[TaskResult] = Counter()
+        self._result_counts: dict[TaskResult, Counter[TaskReason]] = {
+            TaskResult.COMPLETED: Counter(),
+            TaskResult.FAILED: Counter(),
+            TaskResult.SKIPPED: Counter(),
+        }
+        self.reason_mapping: dict[TaskResult, type[IntEnum]] = {
+            TaskResult.COMPLETED: CompletedReason,
+            TaskResult.FAILED: FailedReason,
+            TaskResult.SKIPPED: SkippedReason,
+        }
 
     def get_panel_width(self) -> int:
         """Return the width of the panel."""
         return self.config.panel_width
 
-    def get_result_count(self, result: TaskResult) -> int:
-        """Return the count of tasks that ended with the specified result."""
-        return self._result_counts[result]
+    def get_result_count(
+        self, task_result: TaskResult, reason: IntEnum = TaskReason.REASON_ALL,
+    ) -> int:
+        """Return the count of tasks with the specified result and a reason."""
+        return self._result_counts[task_result][reason]
 
     def add_overall_task(self, description: str, num_tasks: int) -> None:
         """Add an overall progress task with a given description and total tasks."""
@@ -89,9 +108,21 @@ class ProgressManager:
         )
         self._update_overall_task(task_id)
 
-    def update_result(self, task_result: TaskResult) -> None:
-        """Update statistics of task results."""
-        self._result_counts[task_result] += 1
+    def update_result(self, task_reason: IntEnum) -> None:
+        """Update the task result statistics based on the provided task reason."""
+        task_result = self._get_task_result(task_reason)
+        reason_class = self.reason_mapping.get(self._get_task_result(task_reason))
+
+        if not isinstance(task_reason, reason_class):
+            log_message = (
+                f"Invalid reason type for {task_reason}: "
+                f"expected {reason_class.__name__}, "
+                f"got {type(task_reason).__name__}."
+            )
+            raise TypeError(log_message)
+
+        self._result_counts[task_result][task_reason] += 1
+        self._result_counts[task_result][TaskReason.REASON_ALL] += 1
 
     def create_progress_table(self, min_panel_width: int = 30) -> Table:
         """Create a formatted progress table for tracking the download."""
@@ -141,6 +172,20 @@ class ProgressManager:
             completed_overall_id = self.config.overall_buffer.popleft().id
             self.overall_progress.remove_task(completed_overall_id)
 
+    def _get_task_result(self, task_reason: IntEnum) -> TaskResult:
+        """Determina a quale TaskResult appartiene il task_reason."""
+        if isinstance(task_reason, CompletedReason):
+            return TaskResult.COMPLETED
+
+        if isinstance(task_reason, FailedReason):
+            return TaskResult.FAILED
+
+        if isinstance(task_reason, SkippedReason):
+            return TaskResult.SKIPPED
+
+        log_message = f"Unknown task reason type: {task_reason}"
+        raise ValueError(log_message)
+
     # Static methods
     @staticmethod
     def _adjust_description(description: str, max_length: int = 8) -> str:
@@ -153,7 +198,9 @@ class ProgressManager:
 
     @staticmethod
     def _create_progress_bar(
-        columns: list[Column] | None = None, *, show_time: bool = False,
+        columns: list[Column] | None = None,
+        *,
+        show_time: bool = False,
     ) -> Progress:
         """Create and returns a progress bar for tracking download progress."""
         if columns is None:

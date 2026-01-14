@@ -177,6 +177,29 @@ class TaskResult(IntEnum):
     FAILED = 2    # The task failed due to an error.
     SKIPPED = 3   # The task was intentionally skipped.
 
+class TaskReason(IntEnum):
+    """Enumerate the possible reasons per each task result."""
+
+    REASON_ALL = -1 # The total count of tasks per any group
+
+class CompletedReason(IntEnum):
+    """Enumerate the possible reasons for a completed task."""
+
+    DOWNLOAD_SUCCESS = 1
+
+class FailedReason(IntEnum):
+    """Enumerate the possible reasons for a failed task."""
+
+    MAX_RETRIES_REACHED = 1
+
+class SkippedReason(IntEnum):
+    """Enumerate the possible reasons for a skipped task."""
+
+    ALREADY_DOWNLOADED = 1
+    IGNORE_LIST = 2
+    INCLUDE_LIST = 3
+    DOMAIN_OFFLINE = 4
+
 # ============================
 # Argument Parsing
 # ============================
