@@ -16,13 +16,7 @@ from typing import TYPE_CHECKING
 from rich.console import Group
 from rich.live import Live
 
-from src.config import (
-    CompletedReason,
-    FailedReason,
-    SkippedReason,
-    TaskResult,
-    TASK_REASON_MAPPING,
-)
+from src.config import TaskResult, TASK_REASON_MAPPING
 from src.file_utils import get_session_entries_count, write_verbose_log
 
 from .log_manager import LoggerTable
