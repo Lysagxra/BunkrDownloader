@@ -8,7 +8,9 @@ Usage:
 from __future__ import annotations
 
 import asyncio
+import importlib
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from requests.exceptions import ConnectionError as RequestConnectionError
@@ -18,6 +20,7 @@ from src.bunkr_utils import get_bunkr_status
 from src.config import AlbumInfo, DownloadInfo, SessionInfo, parse_arguments
 from src.crawlers.crawler_utils import extract_all_album_item_pages, get_download_info
 from src.downloaders.album_downloader import AlbumDownloader, MediaDownloader
+from src.downloaders.retry_manager import run_session_retry_pass
 from src.file_utils import (
     create_download_directory,
     format_directory_name,
@@ -39,9 +42,6 @@ from src.url_utils import (
     get_host_page,
     get_identifier,
 )
-import importlib
-from pathlib import Path
-from src.downloaders.retry_manager import run_session_retry_pass
 
 if TYPE_CHECKING:
     from argparse import Namespace
@@ -63,6 +63,7 @@ async def handle_download_process(
     identifier = get_identifier(url, soup=initial_soup)
     safe_id = sanitize_directory_name(identifier) if identifier else None
     set_session_log_path(safe_id, download_path=session_info.download_path)
+
     # Album download
     if check_url_type(url):
         item_pages = await extract_all_album_item_pages(initial_soup, host_page, url)
@@ -122,7 +123,7 @@ async def validate_and_download(
 
     try:
         await handle_download_process(
-            session_info, validated_url, soup, live_manager, args.max_retries,
+            session_info, validated_url, soup, live_manager, args.retries,
         )
 
     except (RequestConnectionError, Timeout, RequestException) as err:
