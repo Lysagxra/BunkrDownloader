@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import shutil
 from collections import Counter
+from typing import Dict
 
 from rich.panel import Panel
 from rich.progress import (
@@ -24,6 +25,7 @@ from src.config import (
     PROGRESS_MANAGER_COLORS,
     ProgressConfig,
     TaskResult,
+    TaskReason,
 )
 
 
@@ -44,15 +46,19 @@ class ProgressManager:
         self.overall_progress = self._create_progress_bar()
         self.task_progress = self._create_progress_bar(show_time=True)
         self.num_tasks = 0
-        self._result_counts: Counter[TaskResult] = Counter()
+        self._result_counts: Dict[TaskResult, Counter[TaskReason]] = {
+            TaskResult.COMPLETED: Counter(),
+            TaskResult.FAILED: Counter(),
+            TaskResult.SKIPPED: Counter()
+        }
 
     def get_panel_width(self) -> int:
         """Return the width of the panel."""
         return self.config.panel_width
 
-    def get_result_count(self, result: TaskResult) -> int:
-        """Return the count of tasks that ended with the specified result."""
-        return self._result_counts[result]
+    def get_result_count(self, task_result: TaskResult, reason = TaskReason.REASONS_ALL) -> int:
+        """Return the count of tasks that ended with the specified result with a reason."""
+        return self._result_counts[task_result][reason]
 
     def add_overall_task(self, description: str, num_tasks: int) -> None:
         """Add an overall progress task with a given description and total tasks."""
@@ -89,9 +95,20 @@ class ProgressManager:
         )
         self._update_overall_task(task_id)
 
-    def update_result(self, task_result: TaskResult) -> None:
-        """Update statistics of task results."""
-        self._result_counts[task_result] += 1
+    def update_result_completed(self, task_reason: TaskReason.CompletedReason) -> None:
+        """Update statistics of completed task results by specific reason."""
+        self._result_counts[TaskResult.COMPLETED][task_reason] += 1
+        self._result_counts[TaskResult.COMPLETED][TaskReason.REASONS_ALL] += 1
+
+    def update_result_failed(self, task_reason: TaskReason.FailedReason) -> None:
+        """Update statistics of failed task results by specific reason."""
+        self._result_counts[TaskResult.FAILED][task_reason] += 1
+        self._result_counts[TaskResult.FAILED][TaskReason.REASONS_ALL] += 1
+
+    def update_result_skipped(self, task_reason: TaskReason.SkippedReason) -> None:
+        """Update statistics of skipped task results by specific reason."""
+        self._result_counts[TaskResult.SKIPPED][task_reason] += 1
+        self._result_counts[TaskResult.SKIPPED][TaskReason.REASONS_ALL] += 1
 
     def create_progress_table(self, min_panel_width: int = 30) -> Table:
         """Create a formatted progress table for tracking the download."""

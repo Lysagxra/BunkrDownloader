@@ -14,7 +14,7 @@ from contextlib import nullcontext
 from rich.console import Group
 from rich.live import Live
 
-from src.config import TaskResult
+from src.config import TaskResult, TaskReason
 
 from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
@@ -50,6 +50,7 @@ class LiveManager:
             event="Script started",
             details="The script has started execution.",
         )
+        self.update_result = self.ResultUpdater(self)
 
     def add_overall_task(self, description: str, num_tasks: int) -> None:
         """Call ProgressManager to add an overall task."""
@@ -69,10 +70,6 @@ class LiveManager:
     ) -> None:
         """Call ProgressManager to update an individual task."""
         self.progress_manager.update_task(task_id, completed, advance, visible=visible)
-
-    def update_result(self, task_result: TaskResult) -> None:
-        """Update statistics of task results."""
-        self.progress_manager.update_result(task_result)
 
     def update_log(self, *, event: str, details: str) -> None:
         """Log an event and refreshes the live display."""
@@ -97,7 +94,7 @@ class LiveManager:
         )
 
         # Log a summary of task execution results
-        self._log_results_summary()
+        self._log_detailed_results_summary()
 
         if not self.disable_ui:
             self.live.stop()
@@ -132,6 +129,54 @@ class LiveManager:
         )
         self.update_log(event="Results summary", details=details)
 
+    def _log_detailed_results_summary(self) -> None:
+        """logs task results with the corresponding task reason,
+        doesn't print task reasons having 1 enum member only and task reasons with zero records"""
+        
+        max_stat_len = max(len(result.name) for result in TaskResult)
+        details = []
+
+        for result in TaskResult:
+            result_count = self.progress_manager.get_result_count(result)
+            details.append(f"{result.name.capitalize():<{max_stat_len}}: {result_count}")
+
+            if result == TaskResult.COMPLETED and len(TaskReason.CompletedReason) > 1:
+                for reason in TaskReason.CompletedReason:
+                    count = self.progress_manager.get_result_count(result, reason)
+                    if count > 0:
+                        details.append(f"  - {reason.name.replace('_', ' ').capitalize()}: {count}")
+            
+            elif result == TaskResult.FAILED and len(TaskReason.FailedReason) > 1:
+                for reason in TaskReason.FailedReason:
+                    count = self.progress_manager.get_result_count(result, reason)
+                    if count > 0:
+                        details.append(f"  - {reason.name.replace('_', ' ').capitalize()}: {count}")
+
+            elif result == TaskResult.SKIPPED and len(TaskReason.SkippedReason) > 1:
+                for reason in TaskReason.SkippedReason:
+                    count = self.progress_manager.get_result_count(result, reason)
+                    if count > 0:
+                        details.append(f"  - {reason.name.replace('_', ' ').capitalize()}: {count}")
+
+        self.update_log(event="Results summary", details="\n".join(details))
+
+    class ResultUpdater:
+        """sub-class to access to task result update members via '.update_result' namespace """
+    
+        def __init__(self, live_manager: 'LiveManager'):
+            self._live_manager = live_manager
+
+        def add_completed(self, task_reason: TaskReason.CompletedReason) -> None:
+            """Update statistics of completed task results by specific reason."""
+            self._live_manager.progress_manager.update_result_completed(task_reason)
+
+        def add_failed(self, task_reason: TaskReason.FailedReason) -> None:
+            """Update statistics of failed task results by specific reason."""
+            self._live_manager.progress_manager.update_result_failed(task_reason)
+
+        def add_skipped(self, task_reason: TaskReason.SkippedReason) -> None:
+            """Update statistics of skipped task results by specific reason."""
+            self._live_manager.progress_manager.update_result_skipped(task_reason)
 
 def initialize_managers(*, disable_ui: bool = False) -> LiveManager:
     """Initialize and return the managers for progress tracking and logging."""
