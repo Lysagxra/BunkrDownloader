@@ -76,6 +76,7 @@ LOG_MANAGER_CONFIG = {
 # ============================
 MAX_FILENAME_LEN = 120  # The maximum length for a file name.
 MAX_WORKERS = 3         # The maximum number of threads for concurrent downloads.
+MAX_RETRIES = 5         # The maximum number of retries for downloading a single media.
 
 # Mapping of URL identifiers to a boolean for album (True) vs single file (False).
 URL_TYPE_MAPPING = {"a": True, "f": False, "i": False, "v": False}
@@ -138,6 +139,13 @@ DOWNLOAD_HEADERS = {
 # Data Classes
 # ============================
 @dataclass
+class AlbumInfo:
+    """Store the information about an album and its associated item pages."""
+
+    album_id: str
+    item_pages: list[str]
+
+@dataclass
 class DownloadInfo:
     """Represent the information related to a download task."""
 
@@ -155,13 +163,6 @@ class SessionInfo:
     download_path: str
 
 @dataclass
-class AlbumInfo:
-    """Store the information about an album and its associated item pages."""
-
-    album_id: str
-    item_pages: list[str]
-
-@dataclass
 class ProgressConfig:
     """Configuration for progress bar settings."""
 
@@ -171,6 +172,35 @@ class ProgressConfig:
     panel_width = 40
     overall_buffer: deque = field(default_factory=lambda: deque(maxlen=BUFFER_SIZE))
 
+class TaskResult(IntEnum):
+    """Enumerate the possible outcomes for a processed task."""
+
+    COMPLETED = 1 # The task completed successfully.
+    FAILED = 2    # The task failed due to an error.
+    SKIPPED = 3   # The task was intentionally skipped.
+
+class TaskReason(IntEnum):
+    """Enumerate the possible reasons per each task result."""
+
+    REASON_ALL = -1 # The total count of tasks per any group
+
+class CompletedReason(IntEnum):
+    """Enumerate the possible reasons for a completed task."""
+
+    DOWNLOAD_SUCCESS = 1
+
+class FailedReason(IntEnum):
+    """Enumerate the possible reasons for a failed task."""
+
+    MAX_RETRIES_REACHED = 1
+
+class SkippedReason(IntEnum):
+    """Enumerate the possible reasons for a skipped task."""
+
+    ALREADY_DOWNLOADED = 1
+    IGNORE_LIST = 2
+    INCLUDE_LIST = 3
+    DOMAIN_OFFLINE = 4
 
 # ============================
 # Argument Parsing
@@ -205,6 +235,11 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         help="Enable verbose logging to a file under logs/ in addition to the UI.",
     )
 
+        "--max-retries",
+        type=int,
+        default=MAX_RETRIES,
+        help="Maximum number of retries for downloading a single media.",
+    )
 
 
 def setup_parser(

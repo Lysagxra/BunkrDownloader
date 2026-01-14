@@ -1,8 +1,8 @@
 """Utilities for fetching pages, managing directories, and clearing the terminal.
 
-It includes functions to handle common tasks such as sending HTTP requests,
-parsing HTML, creating download directories, and clearing the terminal, making it
-reusable across projects.
+It includes functions to handle common tasks such as sending HTTP requests, parsing
+HTML, creating download directories, and clearing the terminal, making it reusable
+across projects.
 """
 
 from __future__ import annotations

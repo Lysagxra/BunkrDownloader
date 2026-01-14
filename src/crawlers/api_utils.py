@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from src.config import BUNKR_API, HTTPStatus
+from src.config import BUNKR_API, HEADERS, HTTPStatus
 from src.url_utils import get_identifier
 
 if TYPE_CHECKING:
@@ -32,6 +32,7 @@ def get_api_response(
 
     try:
         with requests.Session() as session:
+            session.headers.update(HEADERS)
             response = session.post(BUNKR_API, json={"slug": slug})
 
             if response.status_code != HTTPStatus.OK:
