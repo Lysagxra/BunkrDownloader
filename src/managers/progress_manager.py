@@ -23,6 +23,7 @@ from rich.table import Column, Table
 from src.config import (
     PROGRESS_COLUMNS_SEPARATOR,
     PROGRESS_MANAGER_COLORS,
+    TASK_REASON_MAPPING,
     CompletedReason,
     FailedReason,
     ProgressConfig,
@@ -61,11 +62,6 @@ class ProgressManager:
             TaskResult.COMPLETED: Counter(),
             TaskResult.FAILED: Counter(),
             TaskResult.SKIPPED: Counter(),
-        }
-        self.reason_mapping: dict[TaskResult, type[IntEnum]] = {
-            TaskResult.COMPLETED: CompletedReason,
-            TaskResult.FAILED: FailedReason,
-            TaskResult.SKIPPED: SkippedReason,
         }
 
     def get_panel_width(self) -> int:
@@ -131,7 +127,7 @@ class ProgressManager:
     def update_result(self, task_reason: IntEnum) -> None:
         """Update the task result statistics based on the provided task reason."""
         task_result = self._get_task_result(task_reason)
-        reason_class = self.reason_mapping.get(self._get_task_result(task_reason))
+        reason_class = TASK_REASON_MAPPING.get(self._get_task_result(task_reason))
 
         if not isinstance(task_reason, reason_class):
             log_message = (
