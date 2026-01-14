@@ -15,12 +15,7 @@ from typing import TYPE_CHECKING
 from rich.console import Group
 from rich.live import Live
 
-from src.config import (
-    CompletedReason,
-    FailedReason,
-    SkippedReason,
-    TaskResult,
-)
+from src.config import TASK_REASON_MAPPING, TaskResult
 
 from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
@@ -146,12 +141,6 @@ class LiveManager:
         max_stat_len = max(len(result.name) for result in TaskResult)
         details = []
 
-        reason_mapping = {
-            TaskResult.COMPLETED: CompletedReason,
-            TaskResult.FAILED: FailedReason,
-            TaskResult.SKIPPED: SkippedReason,
-        }
-
         def log_reason(result: TaskResult, reason_class: type[IntEnum]) -> None:
             for reason in reason_class:
                 count = self.progress_manager.get_result_count(result, reason)
@@ -165,8 +154,8 @@ class LiveManager:
             result_name = result.name.capitalize()
             details.append(f"{result_name:<{max_stat_len}}: {result_count}")
 
-            if result in reason_mapping:
-                reason_class = reason_mapping[result]
+            if result in TASK_REASON_MAPPING:
+                reason_class = TASK_REASON_MAPPING[result]
                 if len(reason_class) > 1:
                     log_reason(result, reason_class)
 

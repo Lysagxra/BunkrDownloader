@@ -170,6 +170,9 @@ class ProgressConfig:
     panel_width = 40
     overall_buffer: deque = field(default_factory=lambda: deque(maxlen=BUFFER_SIZE))
 
+# ============================
+# Results Summary
+# ============================
 class TaskResult(IntEnum):
     """Enumerate the possible outcomes for a processed task."""
 
@@ -199,6 +202,12 @@ class SkippedReason(IntEnum):
     IGNORE_LIST = 2
     INCLUDE_LIST = 3
     DOMAIN_OFFLINE = 4
+
+TASK_REASON_MAPPING = {
+    TaskResult.COMPLETED: CompletedReason,
+    TaskResult.FAILED: FailedReason,
+    TaskResult.SKIPPED: SkippedReason,
+}
 
 # ============================
 # Argument Parsing
