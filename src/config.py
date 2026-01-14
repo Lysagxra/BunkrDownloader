@@ -234,17 +234,17 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         action="store_true",
         help="Enable verbose logging to a file under logs/ in addition to the UI.",
     )
-
-        "--max-retries",
+    parser.add_argument(
+        "--retries",
         type=int,
-        default=MAX_RETRIES,
-        help="Maximum number of retries for downloading a single media.",
+        default=5,
+        help="Number of retry attempts for each file download (default: 5)",
     )
 
 
 def setup_parser(
-        *, include_url: bool = False, include_filters: bool = False,
-    ) -> ArgumentParser:
+    *, include_url: bool = False, include_filters: bool = False,
+) -> ArgumentParser:
     """Set up parser with optional argument groups."""
     parser = ArgumentParser(description="Command-line arguments.")
 
@@ -264,12 +264,6 @@ def setup_parser(
             nargs="+",
             help="Only download files whose names contain these substrings.",
         )
-    parser.add_argument(
-        "--retries",
-        type=int,
-        default=5,
-        help="Number of retry attempts for each file download (default: 5)",
-    )
 
     add_common_arguments(parser)
     return parser
