@@ -8,6 +8,7 @@ refresh of the live view.
 from __future__ import annotations
 
 import datetime
+import importlib
 import time
 from contextlib import nullcontext
 from typing import TYPE_CHECKING
@@ -21,16 +22,13 @@ from src.config import (
     SkippedReason,
     TaskResult,
 )
+from src.file_utils import get_session_entries_count, write_verbose_log
 
 from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
-import importlib
-
-from src.file_utils import write_verbose_log, get_session_entries_count
 
 if TYPE_CHECKING:
     from enum import IntEnum
-
 
 
 class LiveManager:  # pylint: disable=R0902,R0913
@@ -54,6 +52,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
         self.logger_table = logger_table
         self.disable_ui = disable_ui
         self.verbose = verbose
+
         # Track last announced paths so we can refresh the header if they change
         self._last_session_path: str | None = None
         self._last_verbose_path: str | None = None
@@ -65,13 +64,17 @@ class LiveManager:  # pylint: disable=R0902,R0913
             write_verbose_log(f"Session log: {session_path}")
             write_verbose_log(f"Verbose log: {verbose_path}")
             header = f"Session: {session_path} | Verbose: {verbose_path}"
+
             try:
                 self.logger_table.set_header_subtitle(header)
+
             except Exception:
                 self.logger_table.log("Logs", header)
+
             self.logger_table.log("Logs", header)
             self._last_session_path = session_path
             self._last_verbose_path = verbose_path
+
         self.progress_table = self.progress_manager.create_progress_table()
 
         # Set up the live display (rendering uses the created progress table)
@@ -95,6 +98,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
         """Increment the shared post-task retry counter."""
         try:
             self.progress_manager.increment_post_retry_count(amount)
+
         except Exception:
             pass
 
@@ -102,6 +106,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
         """Reset the shared post-task retry counter to zero."""
         try:
             self.progress_manager.reset_post_retry_count()
+
         except Exception:
             pass
 
@@ -109,10 +114,13 @@ class LiveManager:  # pylint: disable=R0902,R0913
         """Set the shared post-task retry counter to a specific value."""
         try:
             self.progress_manager.set_post_retry_count(value)
+
         except Exception:
             pass
 
-    def add_task(self, current_task: int = 0, total: int = 100, base_one: bool = False) -> None:
+    def add_task(
+        self, current_task: int = 0, total: int = 100, base_one: bool = False,
+    ) -> None:
         """Call ProgressManager to add an individual task.
 
         The `base_one` flag indicates whether `current_task` should be treated
@@ -138,6 +146,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
                 cfg = importlib.import_module("src.config")
                 session_path = getattr(cfg, "SESSION_LOG", "")
                 verbose_path = getattr(cfg, "VERBOSE_LOG", "")
+
                 if (
                     session_path != self._last_session_path
                     or verbose_path != self._last_verbose_path
@@ -145,13 +154,17 @@ class LiveManager:  # pylint: disable=R0902,R0913
                     write_verbose_log(f"Session log: {session_path}")
                     write_verbose_log(f"Verbose log: {verbose_path}")
                     header = f"Session: {session_path} | Verbose: {verbose_path}"
+
                     try:
                         self.logger_table.set_header_subtitle(header)
+
                     except Exception:
                         self.logger_table.log("Logs", header)
+
                     self.logger_table.log("Logs", header)
                     self._last_session_path = session_path
                     self._last_verbose_path = verbose_path
+
             except Exception:
                 pass
 
@@ -160,6 +173,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
             if not self.disable_ui:
                 timestamp = time.strftime("%H:%M:%S")
                 write_verbose_log(f"[{timestamp}] Event: {event} | Details: {details}")
+
         if not self.disable_ui:
             self.live.update(self._render_live_view())
 
@@ -190,6 +204,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
         # write to the verbose log when enabled).
         try:
             self.final_summary()
+
         except Exception:
             pass
 
@@ -207,6 +222,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
             deferred_count, session_path = (0, "")
             try:
                 deferred_count, session_path = get_session_entries_count()
+
             except Exception:
                 pass
 
@@ -218,6 +234,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
             # Log into the logger table
             try:
                 self.logger_table.log("Summary", summary, disable_ui=self.disable_ui)
+
             except Exception:
                 pass
 
@@ -225,6 +242,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
             if self.verbose:
                 try:
                     write_verbose_log(summary)
+
                 except Exception:
                     pass
 
@@ -232,8 +250,10 @@ class LiveManager:  # pylint: disable=R0902,R0913
             if self.disable_ui:
                 try:
                     print(summary, flush=True)
+
                 except Exception:
                     pass
+
         except Exception:
             pass
 
@@ -304,8 +324,11 @@ class LiveManager:  # pylint: disable=R0902,R0913
                     log_reason(result, reason_class)
 
         self.update_log(event="Results summary", details="\n".join(details))
-      
-def initialize_managers(*, disable_ui: bool = False, verbose: bool = False) -> LiveManager:
+
+
+def initialize_managers(
+    *, disable_ui: bool = False, verbose: bool = False,
+) -> LiveManager:
     """Initialize and return the managers for progress tracking and logging.
 
     The `verbose` flag is forwarded to the logger so logs can be duplicated to file.
