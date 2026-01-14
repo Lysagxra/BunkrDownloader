@@ -30,7 +30,7 @@ from src.file_utils import (
     truncate_filename,
     write_on_session_log,
     write_verbose_log,
-
+)
 import traceback
 
 from .download_utils import save_file_with_progress
