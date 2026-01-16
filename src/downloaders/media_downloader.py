@@ -214,7 +214,7 @@ class MediaDownloader:
                 tb = traceback.format_exc()
                 write_verbose_log(f"write_on_session_log raised (is_offline): {ex}\n{tb}")
             self.live_manager.update_task(self.download_info.task, visible=False)
-            self.live_manager.progress_manager.update_result(SkippedReason.DOMAIN_OFFLINE)
+            self.live_manager.update_summary(SkippedReason.DOMAIN_OFFLINE)
             return None
 
         formatted_filename = truncate_filename(self.download_info.filename)
@@ -255,7 +255,7 @@ class MediaDownloader:
         except Exception:
             pass
 
-        self.live_manager.progress_manager.update_result(CompletedReason.DOWNLOAD_SUCCESS)
+        self.live_manager.update_summary(CompletedReason.DOWNLOAD_SUCCESS)
         return None
 
     # Private methods
@@ -285,7 +285,7 @@ class MediaDownloader:
 
         # Check if the file already exists
         if Path(final_path).exists():
-            self.live_manager.progress_manager.update_result(SkippedReason.ALREADY_DOWNLOADED)
+            self.live_manager.update_summary(SkippedReason.ALREADY_DOWNLOADED)
             return log_and_skip_event(
                 f"{self.download_info.filename} (#{self.display_index}) has already been downloaded.",
             )
@@ -294,7 +294,7 @@ class MediaDownloader:
         if ignore_list and any(
             word in self.download_info.filename for word in ignore_list
         ):
-            self.live_manager.progress_manager.update_result(SkippedReason.IGNORE_LIST)
+            self.live_manager.update_summary(SkippedReason.IGNORE_LIST)
             return log_and_skip_event(
                 f"{self.download_info.filename} (#{self.display_index}) matches the ignore list.",
             )
@@ -303,7 +303,7 @@ class MediaDownloader:
         if include_list and all(
             word not in self.download_info.filename for word in include_list
         ):
-            self.live_manager.progress_manager.update_result(SkippedReason.INCLUDE_LIST)
+            self.live_manager.update_summary(SkippedReason.INCLUDE_LIST)
             return log_and_skip_event(
                 f"No included words found for {self.download_info.filename} (#{self.display_index}).",
             )
@@ -313,7 +313,7 @@ class MediaDownloader:
             self.download_info.download_link, self.session_info.bunkr_status,
         ):
             write_on_session_log(self.download_info.download_link)
-            self.live_manager.progress_manager.update_result(SkippedReason.DOMAIN_OFFLINE)
+            self.live_manager.update_summary(SkippedReason.DOMAIN_OFFLINE)
             return log_and_skip_event(
                 f"The subdomain for {self.download_info.download_link} has been "
                 "previously marked as offline.",
@@ -446,5 +446,5 @@ class MediaDownloader:
         except Exception:
             pass
         self.live_manager.update_task(self.download_info.task, visible=False)
-        self.live_manager.progress_manager.update_result(FailedReason.MAX_RETRIES_REACHED)
+        self.live_manager.update_summary(FailedReason.MAX_RETRIES_REACHED)
         return None

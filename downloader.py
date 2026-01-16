@@ -41,6 +41,7 @@ from src.url_utils import (
     get_album_name,
     get_host_page,
     get_identifier,
+    log_unavailable_url,
 )
 
 if TYPE_CHECKING:
@@ -107,6 +108,11 @@ async def validate_and_download(
 
     validated_url = add_https_prefix(url)
     soup = await fetch_page(validated_url)
+
+    if soup is None:
+        log_unavailable_url(live_manager, validated_url)
+        return
+
     album_id = get_album_id(validated_url) if check_url_type(validated_url) else None
     album_name = get_album_name(soup)
 

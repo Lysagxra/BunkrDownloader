@@ -16,11 +16,12 @@ from typing import TYPE_CHECKING
 from rich.console import Group
 from rich.live import Live
 
-from src.config import TaskResult, TASK_REASON_MAPPING
+from src.config import REFRESH_PER_SECOND, TASK_REASON_MAPPING, TaskResult
 from src.file_utils import get_session_entries_count, write_verbose_log
 
 from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
+from .summary_manager import SummaryManager
 
 if TYPE_CHECKING:
     from enum import IntEnum
@@ -37,14 +38,15 @@ class LiveManager:  # pylint: disable=R0902,R0913
         self,
         progress_manager: ProgressManager,
         logger_table: LoggerTable,
+        summary_manager: SummaryManager,
         *,
         disable_ui: bool = False,
-        refresh_per_second: int = 10,
         verbose: bool = False,
     ) -> None:
         """Initialize the progress manager and logger, and set up the live view."""
         self.progress_manager = progress_manager
         self.logger_table = logger_table
+        self.summary_manager = summary_manager
         self.disable_ui = disable_ui
         self.verbose = verbose
 
@@ -74,7 +76,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
 
         # Set up the live display (rendering uses the created progress table)
         self.live = (
-            Live(self._render_live_view(), refresh_per_second=refresh_per_second)
+            Live(self._render_live_view(), refresh_per_second=REFRESH_PER_SECOND)
             if not self.disable_ui
             else nullcontext()
         )
@@ -171,6 +173,10 @@ class LiveManager:  # pylint: disable=R0902,R0913
 
         if not self.disable_ui:
             self.live.update(self._render_live_view())
+
+    def update_summary(self, task_reason: IntEnum) -> None:
+        """Update the task summary based on the given reason."""
+        self.summary_manager.update_result(task_reason)
 
     def start(self) -> None:
         """Start the live display."""
@@ -280,7 +286,7 @@ class LiveManager:  # pylint: disable=R0902,R0913
         max_stat_len = max(len(result.name) for result in TaskResult)
         details = "\n".join(
             f"{result.name.capitalize():<{max_stat_len}}: "
-            f"{self.progress_manager.get_result_count(result)}"
+            f"{self.summary_manager.get_result_count(result)}"
             for result in TaskResult
         )
         self.update_log(event="Results summary", details=details)
@@ -296,14 +302,14 @@ class LiveManager:  # pylint: disable=R0902,R0913
 
         def log_reason(result: TaskResult, reason_class: type[IntEnum]) -> None:
             for reason in reason_class:
-                count = self.progress_manager.get_result_count(result, reason)
+                count = self.summary_manager.get_result_count(result, reason)
                 if count > 0:
                     reason_name = reason.name.replace("_", " ").capitalize()
                     formatted_reason = f"- {reason_name}: {count}"
                     details.append(formatted_reason)
 
         for result in TaskResult:
-            result_count = self.progress_manager.get_result_count(result)
+            result_count = self.summary_manager.get_result_count(result)
             result_name = result.name.capitalize()
             details.append(f"{result_name:<{max_stat_len}}: {result_count}")
 
@@ -324,9 +330,11 @@ def initialize_managers(
     """
     progress_manager = ProgressManager(task_name="Album", item_description="File")
     logger_table = LoggerTable(verbose=verbose)
+    summary_manager = SummaryManager()
     return LiveManager(
         progress_manager,
         logger_table,
+        summary_manager,
         disable_ui=disable_ui,
         verbose=verbose,
     )
