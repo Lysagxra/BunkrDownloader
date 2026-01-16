@@ -15,10 +15,11 @@ from typing import TYPE_CHECKING
 from rich.console import Group
 from rich.live import Live
 
-from src.config import TASK_REASON_MAPPING, TaskResult
+from src.config import REFRESH_PER_SECOND, TASK_REASON_MAPPING, TaskResult
 
 from .log_manager import LoggerTable
 from .progress_manager import ProgressManager
+from .summary_manager import SummaryManager
 
 if TYPE_CHECKING:
     from enum import IntEnum
@@ -35,17 +36,18 @@ class LiveManager:
         self,
         progress_manager: ProgressManager,
         logger_table: LoggerTable,
+        summary_manager: SummaryManager,
         *,
         disable_ui: bool = False,
-        refresh_per_second: int = 10,
     ) -> None:
         """Initialize the progress manager and logger, and set up the live view."""
         self.progress_manager = progress_manager
         self.progress_table = self.progress_manager.create_progress_table()
         self.logger_table = logger_table
+        self.summary_manager = summary_manager
         self.disable_ui = disable_ui
         self.live = (
-            Live(self._render_live_view(), refresh_per_second=refresh_per_second)
+            Live(self._render_live_view(), refresh_per_second=REFRESH_PER_SECOND)
             if not self.disable_ui
             else nullcontext()
         )
@@ -79,6 +81,10 @@ class LiveManager:
         self.logger_table.log(event, details, disable_ui=self.disable_ui)
         if not self.disable_ui:
             self.live.update(self._render_live_view())
+
+    def update_summary(self, task_reason: IntEnum) -> None:
+        """Update the task summary based on the given reason."""
+        self.summary_manager.update_result(task_reason)
 
     def start(self) -> None:
         """Start the live display."""
@@ -127,7 +133,7 @@ class LiveManager:
         max_stat_len = max(len(result.name) for result in TaskResult)
         details = "\n".join(
             f"{result.name.capitalize():<{max_stat_len}}: "
-            f"{self.progress_manager.get_result_count(result)}"
+            f"{self.summary_manager.get_result_count(result)}"
             for result in TaskResult
         )
         self.update_log(event="Results summary", details=details)
@@ -143,14 +149,14 @@ class LiveManager:
 
         def log_reason(result: TaskResult, reason_class: type[IntEnum]) -> None:
             for reason in reason_class:
-                count = self.progress_manager.get_result_count(result, reason)
+                count = self.summary_manager.get_result_count(result, reason)
                 if count > 0:
                     reason_name = reason.name.replace("_", " ").capitalize()
                     formatted_reason = f"- {reason_name}: {count}"
                     details.append(formatted_reason)
 
         for result in TaskResult:
-            result_count = self.progress_manager.get_result_count(result)
+            result_count = self.summary_manager.get_result_count(result)
             result_name = result.name.capitalize()
             details.append(f"{result_name:<{max_stat_len}}: {result_count}")
 
@@ -161,8 +167,15 @@ class LiveManager:
 
         self.update_log(event="Results summary", details="\n".join(details))
 
+
 def initialize_managers(*, disable_ui: bool = False) -> LiveManager:
     """Initialize and return the managers for progress tracking and logging."""
     progress_manager = ProgressManager(task_name="Album", item_description="File")
     logger_table = LoggerTable()
-    return LiveManager(progress_manager, logger_table, disable_ui=disable_ui)
+    summary_manager = SummaryManager()
+    return LiveManager(
+        progress_manager,
+        logger_table,
+        summary_manager,
+        disable_ui=disable_ui,
+    )

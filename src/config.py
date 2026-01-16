@@ -44,6 +44,7 @@ VALID_CHARACTERS_REGEX = r"[^a-zA-Z0-9 _-]"                  # Validate characte
 # ============================
 BUFFER_SIZE = 5                   # Maximum number of items showed in buffers.
 PROGRESS_COLUMNS_SEPARATOR = "•"  # Visual separator used between progress bar columns.
+REFRESH_PER_SECOND = 10           # Number of screen refreshes per second.
 
 # Colors used for the progress manager UI elements
 PROGRESS_MANAGER_COLORS = {
@@ -202,6 +203,7 @@ class SkippedReason(IntEnum):
     IGNORE_LIST = 2
     INCLUDE_LIST = 3
     DOMAIN_OFFLINE = 4
+    SERVICE_UNAVAILABLE = 5
 
 TASK_REASON_MAPPING = {
     TaskResult.COMPLETED: CompletedReason,
