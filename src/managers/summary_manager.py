@@ -54,7 +54,7 @@ class SummaryManager:
         self._result_counts[task_result][TaskReason.REASON_ALL] += 1
 
     def _get_task_result(self, task_reason: IntEnum) -> TaskResult:
-        """Determina a quale TaskResult appartiene il task_reason."""
+        """Determine the appropriate TaskResult for the task reason."""
         if isinstance(task_reason, CompletedReason):
             return TaskResult.COMPLETED
 
