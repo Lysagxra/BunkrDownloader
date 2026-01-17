@@ -103,7 +103,7 @@ class LiveManager:
         )
 
         # Log a summary of task execution results
-        self._log_detailed_results_summary()
+        self._log_results_summary()
 
         if not self.disable_ui:
             self.live.stop()
@@ -130,40 +130,31 @@ class LiveManager:
         return f"{hours:02} hrs {minutes:02} mins {seconds:02} secs"
 
     def _log_results_summary(self) -> None:
-        max_stat_len = max(len(result.name) for result in TaskResult)
-        details = "\n".join(
-            f"{result.name.capitalize():<{max_stat_len}}: "
-            f"{self.summary_manager.get_result_count(result)}"
-            for result in TaskResult
-        )
-        self.update_log(event="Results summary", details=details)
-
-    def _log_detailed_results_summary(self) -> None:
         """Log task results with the corresponding task reason.
 
         Avoid printing task reasons having one enum member only and task reasons with
         zero records.
         """
-        max_stat_len = max(len(result.name) for result in TaskResult)
+        max_stat_len = max(len(task_result.name) for task_result in TaskResult)
         details = []
 
-        def log_reason(result: TaskResult, reason_class: type[IntEnum]) -> None:
+        def log_reason(task_result: TaskResult, reason_class: type[IntEnum]) -> None:
             for reason in reason_class:
-                count = self.summary_manager.get_result_count(result, reason)
-                if count > 0:
+                num_results = self.summary_manager.get_result_count(task_result, reason)
+                if num_results > 0:
                     reason_name = reason.name.replace("_", " ").capitalize()
-                    formatted_reason = f"- {reason_name}: {count}"
+                    formatted_reason = f"- {reason_name}: {num_results}"
                     details.append(formatted_reason)
 
-        for result in TaskResult:
-            result_count = self.summary_manager.get_result_count(result)
-            result_name = result.name.capitalize()
-            details.append(f"{result_name:<{max_stat_len}}: {result_count}")
+        for task_result in TaskResult:
+            num_results = self.summary_manager.get_result_count(task_result)
+            result_name = task_result.name.capitalize()
+            details.append(f"{result_name:<{max_stat_len}}: {num_results}")
 
-            if result in TASK_REASON_MAPPING:
-                reason_class = TASK_REASON_MAPPING[result]
+            if task_result in TASK_REASON_MAPPING:
+                reason_class = TASK_REASON_MAPPING[task_result]
                 if len(reason_class) > 1:
-                    log_reason(result, reason_class)
+                    log_reason(task_result, reason_class)
 
         self.update_log(event="Results summary", details="\n".join(details))
 
