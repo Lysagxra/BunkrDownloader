@@ -47,11 +47,6 @@ class ProgressManager:
         # Count of downloads that exceeded their retry limit and will be retried
         # after the main tasks have finished.
         self.post_retry_count = 0
-        self._result_counts: dict[TaskResult, Counter[TaskReason]] = {
-            TaskResult.COMPLETED: Counter(),
-            TaskResult.FAILED: Counter(),
-            TaskResult.SKIPPED: Counter(),
-        }
 
     def get_panel_width(self) -> int:
         """Return the width of the panel."""
