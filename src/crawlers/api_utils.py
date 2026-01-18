@@ -50,10 +50,12 @@ def get_api_response(
 
 def decrypt_url(api_response: dict[str, bool | str | int]) -> str | None:
     """Decrypt an encrypted URL using a time-based secret key."""
+    if not isinstance(api_response, dict):
+        logging.warning(f"decrypt_url: api_response is not a dict or is None: {api_response}")
+        return None
     try:
         timestamp = api_response["timestamp"]
         encrypted_bytes = b64decode(api_response["url"])
-
     except KeyError as key_err:
         log_message = f"Missing required encryption data field: {key_err}"
         logging.exception(log_message)

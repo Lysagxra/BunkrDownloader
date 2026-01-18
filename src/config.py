@@ -21,8 +21,9 @@ if TYPE_CHECKING:
 # ============================
 DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be stored.
 URLS_FILE = "URLs.txt"         # The file containing the list of URLs to process.
-SESSION_LOG = "session.log"    # The file used to log errors.
-MIN_DISK_SPACE_GB = 3          # Minimum free disk space (in GB) required.
+SESSION_LOG = "session.log"    # The (default) filename for session logs; resolved by helpers.
+MIN_DISK_SPACE_GB = 2          # Minimum free disk space (in GB) required.
+LOG_OUTPUT_DIR = "logs"        # Directory where verbose log output files are stored.
 
 # ============================
 # API / Status Endpoints
@@ -152,6 +153,7 @@ class DownloadInfo:
     download_link: str
     filename: str
     task: int
+    display_index: int | None = None
 
 @dataclass
 class SessionInfo:
@@ -233,16 +235,27 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         help="Disable the disk space check for available free space.",
     )
     parser.add_argument(
-        "--max-retries",
+        "--session-id",
+        type=str,
+        default=None,
+        help="Identifier for the session log file (creates session/<id>.txt).",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose logging to a file under logs/ in addition to the UI.",
+    )
+    parser.add_argument(
+        "--retries",
         type=int,
-        default=MAX_RETRIES,
-        help="Maximum number of retries for downloading a single media.",
+        default=5,
+        help="Number of retry attempts for each file download (default: 5)",
     )
 
 
 def setup_parser(
-        *, include_url: bool = False, include_filters: bool = False,
-    ) -> ArgumentParser:
+    *, include_url: bool = False, include_filters: bool = False,
+) -> ArgumentParser:
     """Set up parser with optional argument groups."""
     parser = ArgumentParser(description="Command-line arguments.")
 
