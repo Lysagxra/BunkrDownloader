@@ -150,6 +150,8 @@ def get_album_name(soup: BeautifulSoup) -> str | None:
     raw_album_name = name_container.find("h1").get_text(strip=True)
     unescaped_album_name = html.unescape(raw_album_name)
 
+    fixed_album_name = unescaped_album_name
+
     # Attempt to fix mojibake (UTF-8 bytes mis-decoded as Latin-1). If encoding/decoding
     # fails, keep the decoded version
     with contextlib.suppress(UnicodeEncodeError, UnicodeDecodeError):
