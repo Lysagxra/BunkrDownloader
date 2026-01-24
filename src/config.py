@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be stored.
 URLS_FILE = "URLs.txt"         # The file containing the list of URLs to process.
 SESSION_LOG = "session.log"    # The file used to log errors.
-MIN_DISK_SPACE_GB = 2          # Minimum free disk space (in GB) required.
+MIN_DISK_SPACE_GB = 3          # Minimum free disk space (in GB) required.
 
 # ============================
 # API / Status Endpoints
@@ -30,6 +30,7 @@ MIN_DISK_SPACE_GB = 2          # Minimum free disk space (in GB) required.
 STATUS_PAGE = "https://status.bunkr.ru/"  # The URL of the status page for checking
                                           # service availability.
 BUNKR_API = "https://bunkr.cr/api/vs"     # The API for retrieving encryption data.
+FALLBACK_DOMAIN = "bunkr.cr"              # The domain used if the main one is offline.
 
 # ============================
 # Regex Patterns
@@ -43,6 +44,7 @@ VALID_CHARACTERS_REGEX = r"[^a-zA-Z0-9 _-]"                  # Validate characte
 # ============================
 BUFFER_SIZE = 5                   # Maximum number of items showed in buffers.
 PROGRESS_COLUMNS_SEPARATOR = "•"  # Visual separator used between progress bar columns.
+REFRESH_PER_SECOND = 10           # Number of screen refreshes per second.
 
 # Colors used for the progress manager UI elements
 PROGRESS_MANAGER_COLORS = {
@@ -74,6 +76,7 @@ LOG_MANAGER_CONFIG = {
 # ============================
 MAX_FILENAME_LEN = 120  # The maximum length for a file name.
 MAX_WORKERS = 3         # The maximum number of threads for concurrent downloads.
+MAX_RETRIES = 5         # The maximum number of retries for downloading a single media.
 
 # Mapping of URL identifiers to a boolean for album (True) vs single file (False).
 URL_TYPE_MAPPING = {"a": True, "f": False, "i": False, "v": False}
@@ -136,6 +139,13 @@ DOWNLOAD_HEADERS = {
 # Data Classes
 # ============================
 @dataclass
+class AlbumInfo:
+    """Store the information about an album and its associated item pages."""
+
+    album_id: str
+    item_pages: list[str]
+
+@dataclass
 class DownloadInfo:
     """Represent the information related to a download task."""
 
@@ -152,13 +162,6 @@ class SessionInfo:
     download_path: str
 
 @dataclass
-class AlbumInfo:
-    """Store the information about an album and its associated item pages."""
-
-    album_id: str
-    item_pages: list[str]
-
-@dataclass
 class ProgressConfig:
     """Configuration for progress bar settings."""
 
@@ -168,6 +171,45 @@ class ProgressConfig:
     panel_width = 40
     overall_buffer: deque = field(default_factory=lambda: deque(maxlen=BUFFER_SIZE))
 
+# ============================
+# Results Summary
+# ============================
+class TaskResult(IntEnum):
+    """Enumerate the possible outcomes for a processed task."""
+
+    COMPLETED = 1 # The task completed successfully.
+    FAILED = 2    # The task failed due to an error.
+    SKIPPED = 3   # The task was intentionally skipped.
+
+class TaskReason(IntEnum):
+    """Enumerate the possible reasons per each task result."""
+
+    REASON_ALL = -1 # The total count of tasks per any group
+
+class CompletedReason(IntEnum):
+    """Enumerate the possible reasons for a completed task."""
+
+    DOWNLOAD_SUCCESS = 1
+
+class FailedReason(IntEnum):
+    """Enumerate the possible reasons for a failed task."""
+
+    MAX_RETRIES_REACHED = 1
+
+class SkippedReason(IntEnum):
+    """Enumerate the possible reasons for a skipped task."""
+
+    ALREADY_DOWNLOADED = 1
+    IGNORE_LIST = 2
+    INCLUDE_LIST = 3
+    DOMAIN_OFFLINE = 4
+    SERVICE_UNAVAILABLE = 5
+
+TASK_REASON_MAPPING = {
+    TaskResult.COMPLETED: CompletedReason,
+    TaskResult.FAILED: FailedReason,
+    TaskResult.SKIPPED: SkippedReason,
+}
 
 # ============================
 # Argument Parsing
@@ -189,6 +231,12 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         "--disable-disk-check",
         action="store_true",
         help="Disable the disk space check for available free space.",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=MAX_RETRIES,
+        help="Maximum number of retries for downloading a single media.",
     )
 
 

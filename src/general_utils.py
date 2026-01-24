@@ -1,8 +1,8 @@
 """Utilities for fetching pages, managing directories, and clearing the terminal.
 
-It includes functions to handle common tasks such as sending HTTP requests,
-parsing HTML, creating download directories, and clearing the terminal, making it
-reusable across projects.
+It includes functions to handle common tasks such as sending HTTP requests, parsing
+HTML, creating download directories, and clearing the terminal, making it reusable
+across projects.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from .config import (
     HTTPStatus,
 )
 from .file_utils import write_on_session_log
-from .url_utils import change_domain_to_cr
+from .url_utils import replace_domain_with_fallback
 
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
@@ -65,7 +65,7 @@ async def fetch_page(url: str, retries: int = 5) -> BeautifulSoup | None:
             response = requests.Session().get(url, timeout=40)
             if response.status_code == HTTPStatus.FORBIDDEN and not tried_cr:
                 tried_cr = True
-                url = change_domain_to_cr(url)
+                url = replace_domain_with_fallback(url)
                 continue  # Retry immediately with .cr
 
             response.raise_for_status()

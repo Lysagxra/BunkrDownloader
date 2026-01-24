@@ -35,11 +35,13 @@ from src.general_utils import (
 )
 from src.managers.live_manager import initialize_managers
 from src.url_utils import (
+    add_https_prefix,
     check_url_type,
     get_album_id,
     get_album_name,
     get_host_page,
     get_identifier,
+    log_unavailable_url,
 )
 
 if TYPE_CHECKING:
@@ -55,6 +57,7 @@ async def handle_download_process(
     url: str,
     initial_soup: BeautifulSoup,
     live_manager: LiveManager,
+    max_retries: int,
 ) -> None:
     """Handle the download process for a Bunkr album or a single item."""
     host_page = get_host_page(url)
@@ -68,7 +71,7 @@ async def handle_download_process(
             album_info=AlbumInfo(album_id=identifier, item_pages=item_pages),
             live_manager=live_manager,
         )
-        await album_downloader.download_album()
+        await album_downloader.download_album(max_retries=max_retries)
 
     # Single item download
     else:
@@ -99,8 +102,14 @@ async def validate_and_download(
     if not args.disable_disk_check:
         check_disk_space(live_manager, custom_path=args.custom_path)
 
-    soup = await fetch_page(url)
-    album_id = get_album_id(url) if check_url_type(url) else None
+    validated_url = add_https_prefix(url)
+    soup = await fetch_page(validated_url)
+
+    if soup is None:
+        log_unavailable_url(live_manager, validated_url)
+        return
+
+    album_id = get_album_id(validated_url) if check_url_type(validated_url) else None
     album_name = get_album_name(soup)
 
     directory_name = format_directory_name(album_name, album_id)
@@ -115,7 +124,9 @@ async def validate_and_download(
     )
 
     try:
-        await handle_download_process(session_info, url, soup, live_manager)
+        await handle_download_process(
+            session_info, validated_url, soup, live_manager, args.max_retries,
+        )
 
     except (RequestConnectionError, Timeout, RequestException) as err:
         error_message = f"Error downloading from {url}: {err}"

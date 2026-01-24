@@ -7,6 +7,7 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.file_utils import remove_invalid_characters
 from src.general_utils import fetch_page
 from src.url_utils import get_url_based_filename
 
@@ -54,13 +55,25 @@ async def extract_all_album_item_pages(
     initial_soup: BeautifulSoup, host_page: str, url: str,
 ) -> list[str]:
     """Collect item page links from an album, including pagination."""
+    if initial_soup is None:
+        error_message = f"Failed to parse album landing page: {url}"
+        raise RuntimeError(error_message)
+
     # Extract item pages from the initial soup
     item_pages = extract_item_pages(initial_soup, host_page)
-    next_album_pages = extract_next_album_pages(initial_soup, url)
+    if item_pages is None:
+        error_message = f"Unable to extract album items from {url}"
+        raise RuntimeError(error_message)
 
+    next_album_pages = extract_next_album_pages(initial_soup, url)
     if next_album_pages is not None:
         for next_page in next_album_pages:
             next_page_soup = await fetch_page(next_page)
+
+            if next_page_soup is None:
+                error_message = f"Failed to load paginated album page: {next_page}"
+                raise RuntimeError(error_message)
+
             next_item_pages = extract_item_pages(next_page_soup, host_page)
             item_pages.extend(next_item_pages)
 
@@ -105,7 +118,8 @@ def format_item_filename(original_filename: str, url_based_filename: str) -> str
         return url_based_filename
 
     # Combine the base names with a hyphen and append the extension
-    return f"{original_base}-{url_base}{extension}"
+    valid_original_base = remove_invalid_characters(original_base)
+    return f"{valid_original_base}-{url_base}{extension}"
 
 
 async def get_download_info(item_url: str, item_soup: BeautifulSoup) -> tuple:

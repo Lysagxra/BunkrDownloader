@@ -142,7 +142,9 @@ class ProgressManager:
 
     @staticmethod
     def _create_progress_bar(
-        columns: list[Column] | None = None, *, show_time: bool = False,
+        columns: list[Column] | None = None,
+        *,
+        show_time: bool = False,
     ) -> Progress:
         """Create and returns a progress bar for tracking download progress."""
         if columns is None:
