@@ -75,7 +75,7 @@ def log_unavailable_url(live_manager: LiveManager, url: str) -> None:
         event="Service unavailable",
         details=f"The URL {url} is currently unavailable. Try again later.",
     )
-    live_manager.progress_manager.update_result(SkippedReason.SERVICE_UNAVAILABLE)
+    live_manager.update_summary(SkippedReason.SERVICE_UNAVAILABLE)
 
 
 def get_identifier(url: str, soup: BeautifulSoup | None = None) -> str:
