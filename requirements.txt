@@ -1,3 +1,0 @@
-beautifulsoup4==4.14.3
-Requests==2.32.5
-rich==14.2.0
