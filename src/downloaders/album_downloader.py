@@ -44,12 +44,19 @@ class AlbumDownloader:
             # Process the download of an item
             item_soup = await fetch_page(item_page)
             if item_soup is None:
-                self.live_manager.update_log(
-                    event="Fetch failed",
-                    details=f"Unable to load album item page: {item_page}",
-                )
-                error_message = "Failed to load album item page: {item_page}"
-                raise RuntimeError(error_message)
+                # Could not fetch page; log and hide task early.
+                try:
+                    self.live_manager.update_log(
+                        event="Fetch failed",
+                        details=f"Failed to fetch item page {item_page} (task {current_task + 1}).",
+                    )
+                except Exception:
+                    pass
+                try:
+                    self.live_manager.update_task(task, completed=100, visible=False)
+                except Exception:
+                    pass
+                return
 
             item_download_link, item_filename = await get_download_info(
                 item_page, item_soup,
@@ -57,12 +64,16 @@ class AlbumDownloader:
 
             # Download item
             if item_download_link:
+                # Compute a 1-based display index once and reuse it so other
+                # components can reference the same human-facing index.
+                display_index = current_task + 1
                 media_downloader = MediaDownloader(
                     session_info=self.session_info,
                     download_info=DownloadInfo(
                         download_link=item_download_link,
                         filename=item_filename,
                         task=task,
+                        display_index=display_index,
                     ),
                     live_manager=self.live_manager,
                     retries=max_retries,
@@ -70,6 +81,16 @@ class AlbumDownloader:
 
                 failed_download = await asyncio.to_thread(media_downloader.download)
                 if failed_download:
+                    # Ensure failed_download includes display_index if available.
+                    # Prefer the value from the MediaDownloader's DownloadInfo
+                    # (it should have been set during initialization).
+                    if "display_index" not in failed_download:
+                        try:
+                            failed_download["display_index"] = (
+                                media_downloader.download_info.display_index
+                            )
+                        except Exception:
+                            failed_download["display_index"] = display_index
                     self.failed_downloads.append(failed_download)
 
     async def download_album(
@@ -100,14 +121,24 @@ class AlbumDownloader:
         task: int,
         filename: str,
         download_link: str,
+        display_index: int | None = None,
     ) -> None:
         """Handle failed downloads and retries them."""
+        # Before retrying, re-show the task in the progress pane so users can
+        # observe its progress during the retry pass.
+        try:
+            self.live_manager.update_task(task, visible=True)
+        except Exception:
+            # If the task can't be updated (UI disabled or removed), continue silently.
+            pass
+
         media_downloader = MediaDownloader(
             session_info=self.session_info,
-            download_info=DownloadInfo(download_link, filename, task),
+            download_info=DownloadInfo(download_link, filename, task, display_index=display_index),
             live_manager=self.live_manager,
             retries=1,  # Retry once for failed downloads
         )
+
         # Run the synchronous download function in a separate thread
         await asyncio.to_thread(media_downloader.download)
 
@@ -118,5 +149,6 @@ class AlbumDownloader:
                 data["id"],
                 data["filename"],
                 data["download_link"],
+                data.get("display_index"),
             )
         self.failed_downloads.clear()

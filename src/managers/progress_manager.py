@@ -42,6 +42,11 @@ class ProgressManager:
         self.overall_progress = self._create_progress_bar()
         self.task_progress = self._create_progress_bar(show_time=True)
         self.num_tasks = 0
+        # Optional one-line status to display under the overall panel title
+        self.status_text = None
+        # Count of downloads that exceeded their retry limit and will be retried
+        # after the main tasks have finished.
+        self.post_retry_count = 0
 
     def get_panel_width(self) -> int:
         """Return the width of the panel."""
@@ -57,11 +62,26 @@ class ProgressManager:
             completed=0,
         )
 
-    def add_task(self, current_task: int = 0, total: int = 100) -> int:
-        """Add an individual task to the task progress bar."""
+    def add_task(self, current_task: int = 0, total: int = 100, base_one: bool = False) -> int:
+        """Add an individual task to the task progress bar.
+
+        Parameters:
+        - current_task: zero-based index by default. If `base_one` is True,
+          `current_task` is interpreted as a 1-based position and displayed
+          directly (useful for retry passes where callers prefer to pass 1-based
+          positions).
+        - total: task total for the individual progress bar.
+        - base_one: when True, do not add 1 to `current_task` when building the
+          description.
+        """
+        if base_one:
+            disp_current = current_task
+        else:
+            disp_current = current_task + 1
+
         task_description = (
             f"[{self.config.color}]{self.config.item_description} "
-            f"{current_task + 1}/{self.num_tasks}"
+            f"{disp_current}/{self.num_tasks}"
         )
         return self.task_progress.add_task(task_description, total=total)
 
@@ -92,6 +112,7 @@ class ProgressManager:
             Panel.fit(
                 self.overall_progress,
                 title=f"[bold {self.config.color}]Overall Progress",
+                subtitle=self._build_overall_subtitle(),
                 border_style=PROGRESS_MANAGER_COLORS["overall_border_color"],
                 padding=(1, 1),
                 width=panel_width,
@@ -106,20 +127,69 @@ class ProgressManager:
         )
         return progress_table
 
+    def set_overall_status(self, status: str | None) -> None:
+        """Set a short status line shown under the Overall Progress panel title.
+
+        This is used by callers (for example LiveManager) to display small
+        one-line hints such as the session/verbose log paths.
+        """
+        self.status_text = status
+
+    def increment_post_retry_count(self, amount: int = 1) -> None:
+        """Increment the post-task retry counter by `amount` (default 1)."""
+        try:
+            self.post_retry_count += int(amount)
+        except (TypeError, ValueError):
+            # If given a bad value, just increment by one as a safe fallback
+            self.post_retry_count += 1
+
+    def reset_post_retry_count(self) -> None:
+        """Reset the post-task retry counter to zero."""
+        self.post_retry_count = 0
+
+    def set_post_retry_count(self, value: int) -> None:
+        """Set the post-task retry counter to a specific integer value."""
+        try:
+            self.post_retry_count = max(0, int(value))
+        except (TypeError, ValueError):
+            # Ignore invalid values and leave the counter unchanged
+            pass
+
+    def _build_overall_subtitle(self) -> str:
+        """Return the formatted subtitle for the overall panel including status and retry count."""
+        base = self.status_text or ""
+        retry_part = f"Post task retries: {self.post_retry_count}"
+        if base:
+            return f"{base}  {retry_part}"
+        return retry_part
+
     # Private methods
     def _update_overall_task(self, task_id: int) -> None:
         """Advance the overall progress bar and removes old tasks."""
-        # Access the latest task dynamically
+        if not self.overall_progress.tasks:
+            return
+
+        if task_id < 0 or task_id >= len(self.task_progress.tasks):
+            return
+
+        # Access the latest overall task dynamically
         current_overall_task = self.overall_progress.tasks[-1]
 
         # If the task is finished, remove it and update the overall progress
-        if self.task_progress.tasks[task_id].finished:
-            self.overall_progress.advance(current_overall_task.id)
-            self.task_progress.update(task_id, visible=False)
+        try:
+            if self.task_progress.tasks[task_id].finished:
+                self.overall_progress.advance(current_overall_task.id)
+                self.task_progress.update(task_id, visible=False)
+        except Exception:
+            # Guard against race conditions where tasks disappear concurrently
+            return
 
         # Track completed overall tasks
-        if current_overall_task.finished:
-            self.config.overall_buffer.append(current_overall_task)
+        try:
+            if current_overall_task.finished:
+                self.config.overall_buffer.append(current_overall_task)
+        except Exception:
+            pass
 
         # Cleanup completed overall tasks
         self._cleanup_completed_overall_tasks()
@@ -148,8 +218,9 @@ class ProgressManager:
     ) -> Progress:
         """Create and returns a progress bar for tracking download progress."""
         if columns is None:
+            # Use an ASCII-safe spinner to avoid terminal glyph issues
             columns = [
-                SpinnerColumn(),
+                SpinnerColumn(spinner_name="line"),
                 BarColumn(),
                 TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
             ]
@@ -158,3 +229,22 @@ class ProgressManager:
             columns += [PROGRESS_COLUMNS_SEPARATOR, TimeRemainingColumn()]
 
         return Progress("{task.description}", *columns)
+
+    # Accessor methods for external consumers like LiveManager
+    def get_total_tasks(self) -> int:
+        """Return the configured total number of overall tasks."""
+        return int(self.num_tasks or 0)
+
+    def get_completed_tasks(self) -> int:
+        """Return the number of completed overall tasks tracked by the progress bar."""
+        try:
+            return sum(1 for t in self.overall_progress.tasks if t.finished)
+        except Exception:
+            return 0
+
+    def get_post_retry_count(self) -> int:
+        """Return the post-retry counter value."""
+        try:
+            return int(self.post_retry_count)
+        except Exception:
+            return 0
