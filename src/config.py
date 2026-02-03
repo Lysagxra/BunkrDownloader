@@ -27,10 +27,10 @@ MIN_DISK_SPACE_GB = 3          # Minimum free disk space (in GB) required.
 # ============================
 # API / Status Endpoints
 # ============================
-STATUS_PAGE = "https://status.bunkr.ru/"  # The URL of the status page for checking
-                                          # service availability.
+STATUS_PAGE = "https://status.bunkr.ru/"  # The URL of the status page.
 BUNKR_API = "https://bunkr.cr/api/vs"     # The API for retrieving encryption data.
 FALLBACK_DOMAIN = "bunkr.cr"              # The domain used if the main one is offline.
+DOWNLOAD_REFERER = "https://get.bunkrr.su/"
 
 # ============================
 # Regex Patterns
@@ -75,7 +75,7 @@ LOG_MANAGER_CONFIG = {
 # Download Settings
 # ============================
 MAX_FILENAME_LEN = 120  # The maximum length for a file name.
-MAX_WORKERS = 3         # The maximum number of threads for concurrent downloads.
+MAX_WORKERS = 1         # The maximum number of threads for concurrent downloads.
 MAX_RETRIES = 5         # The maximum number of retries for downloading a single media.
 
 # Mapping of URL identifiers to a boolean for album (True) vs single file (False).
@@ -122,17 +122,17 @@ FETCH_ERROR_MESSAGES: dict[HTTPStatus, str] = {
 }
 
 # Headers used for general HTTP requests.
-HEADERS = {
+HEADERS : dict[str, str] = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:136.0) Gecko/20100101 Firefox/136.0"
     ),
 }
 
 # Headers specifically tailored for download requests.
-DOWNLOAD_HEADERS = {
+DOWNLOAD_HEADERS: dict[str, str] = {
     **HEADERS,
     "Connection": "keep-alive",
-    "Referer": "https://get.bunkrr.su/",
+    "Referer": DOWNLOAD_REFERER,
 }
 
 # ============================
@@ -177,14 +177,14 @@ class ProgressConfig:
 class TaskResult(IntEnum):
     """Enumerate the possible outcomes for a processed task."""
 
-    COMPLETED = 1 # The task completed successfully.
-    FAILED = 2    # The task failed due to an error.
-    SKIPPED = 3   # The task was intentionally skipped.
+    COMPLETED = 1  # The task completed successfully.
+    FAILED = 2     # The task failed due to an error.
+    SKIPPED = 3    # The task was intentionally skipped.
 
 class TaskReason(IntEnum):
     """Enumerate the possible reasons per each task result."""
 
-    REASON_ALL = -1 # The total count of tasks per any group
+    REASON_ALL = -1  # The total count of tasks per any group.
 
 class CompletedReason(IntEnum):
     """Enumerate the possible reasons for a completed task."""
@@ -205,7 +205,7 @@ class SkippedReason(IntEnum):
     DOMAIN_OFFLINE = 4
     SERVICE_UNAVAILABLE = 5
 
-TASK_REASON_MAPPING = {
+TASK_REASON_MAPPING: dict[TaskResult, type[IntEnum]] = {
     TaskResult.COMPLETED: CompletedReason,
     TaskResult.FAILED: FailedReason,
     TaskResult.SKIPPED: SkippedReason,

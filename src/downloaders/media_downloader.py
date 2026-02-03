@@ -263,4 +263,5 @@ class MediaDownloader:
         )
         self.live_manager.update_task(self.download_info.task, visible=False)
         self.live_manager.update_summary(FailedReason.MAX_RETRIES_REACHED)
+        write_on_session_log(self.download_info.download_link)
         return None

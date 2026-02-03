@@ -25,7 +25,7 @@ def fetch_page(url: str) -> BeautifulSoup | None:
 
 
 def get_bunkr_status() -> dict[str, str]:
-    """Fetch the status of servers from the status page and returns a dictionary."""
+    """Fetch the status of servers from the status page and return a dictionary."""
     soup = fetch_page(STATUS_PAGE)
     if soup is None:
         logging.warning("Unable to fetch status page; continuing without host data.")

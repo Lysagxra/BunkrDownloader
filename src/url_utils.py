@@ -73,7 +73,7 @@ def log_unavailable_url(live_manager: LiveManager, url: str) -> None:
     """
     live_manager.update_log(
         event="Service unavailable",
-        details=f"The URL {url} is currently unavailable. Try again later.",
+        details=f"The page {url} is currently unavailable. Verify the link and retry.",
     )
     live_manager.update_summary(SkippedReason.SERVICE_UNAVAILABLE)
 
@@ -149,11 +149,10 @@ def get_album_name(soup: BeautifulSoup) -> str | None:
 
     raw_album_name = name_container.find("h1").get_text(strip=True)
     unescaped_album_name = html.unescape(raw_album_name)
+    fixed_album_name = unescaped_album_name  # Prevent UnboundLocalError
 
-    fixed_album_name = unescaped_album_name
-
-    # Attempt to fix mojibake (UTF-8 bytes mis-decoded as Latin-1). If encoding/decoding
-    # fails, keep the decoded version
+    # Attempt to fix mojibake (UTF-8 bytes mis-decoded as Latin-1).
+    # If encoding/decoding fails, keep the decoded version.
     with contextlib.suppress(UnicodeEncodeError, UnicodeDecodeError):
         fixed_album_name = unescaped_album_name.encode("latin1").decode("utf-8")
 

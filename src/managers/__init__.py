@@ -7,7 +7,7 @@ Modules:
                     progress tracking.
     - log_manager: Manages the logging activities.
     - progress_manager: Manages progress tracking and reporting with tailored displays.
-    - summary_manager: 
+    - summary_manager: Manages and presents final summaries of execution results.
 
 This package is designed to be reusable and modular, allowing its components to be
 easily imported and used across different parts of the application.
