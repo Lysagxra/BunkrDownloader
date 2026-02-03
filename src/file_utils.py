@@ -17,6 +17,9 @@ from .config import (
     MAX_FILENAME_LEN,
     SESSION_LOG,
     VALID_CHARACTERS_REGEX,
+    DownloadInfo,
+    FailedReason,
+    SkippedReason,
 )
 
 
@@ -35,10 +38,34 @@ def write_file(filename: str, content: str = "") -> None:
         file.write(content)
 
 
-def write_on_session_log(content: str) -> None:
-    """Append content to the session log file."""
+def write_on_session_log(
+    content: str | DownloadInfo,
+    *,
+    reason: FailedReason | SkippedReason | None = None,
+    outcome: str | None = None,
+) -> None:
+    """Append a structured entry to the session log file."""
+    # Base entry: either extract fields from DownloadInfo or use the raw message
+    entry = (
+        {
+            "task": content.task,
+            "filename": content.filename,
+            "download_link": content.download_link,
+        }
+        if isinstance(content, DownloadInfo)
+        else {"message": content}
+    )
+
+    # Include optional metadata if provided
+    if outcome:
+        entry["outcome"] = outcome
+
+    if reason:
+        entry["reason"] = reason.name
+
+    # Append the entry to the session log file
     with Path(SESSION_LOG).open("a", encoding="utf-8") as file:
-        file.write(f"{content}\n")
+        file.write(f"{entry}\n")
 
 
 def format_directory_name(directory_name: str, directory_id: str | None) -> str | None:
@@ -59,7 +86,7 @@ def sanitize_directory_name(directory_name: str) -> str:
     """
     invalid_chars_dict = {
         "nt": r'[\\/:*?"<>|]',  # Windows
-        "posix": r"[/:]",       # macOS and Linux
+        "posix": r"[/:]",  # macOS and Linux
     }
     invalid_chars = invalid_chars_dict.get(os.name)
     return re.sub(invalid_chars, "_", directory_name)
