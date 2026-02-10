@@ -15,7 +15,7 @@ from argparse import Namespace
 from downloader import parse_arguments, validate_and_download
 from src.bunkr_utils import get_bunkr_status
 from src.config import SESSION_LOG, URLS_FILE
-from src.file_utils import read_file, write_file
+from src.file_utils import create_urls_file_backup, read_file, write_file
 from src.general_utils import check_python_version, clear_terminal
 from src.managers.live_manager import initialize_managers
 
@@ -41,6 +41,9 @@ async def main() -> None:
     # Check Python version and parse arguments
     check_python_version()
     args = parse_arguments(common_only=True)
+
+    # Backup the URLs file
+    create_urls_file_backup()
 
     # Read and process URLs, ignoring empty lines
     urls = [url.strip() for url in read_file(URLS_FILE) if url.strip()]

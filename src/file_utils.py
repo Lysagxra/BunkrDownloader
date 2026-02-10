@@ -9,13 +9,17 @@ from __future__ import annotations
 import logging
 import os
 import re
+import shutil
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import (
+    BACKUP_FOLDER,
     DOWNLOAD_FOLDER,
     MAX_FILENAME_LEN,
     SESSION_LOG,
+    URLS_FILE,
     VALID_CHARACTERS_REGEX,
     DownloadInfo,
     FailedReason,
@@ -124,6 +128,23 @@ def create_download_directory(
         sys.exit(1)
 
     return str(download_path)
+
+
+def create_urls_file_backup() -> None:
+    """Create a timestamped backup of the URLs file in the configured backup folder."""
+    backup_folder = Path(BACKUP_FOLDER)
+
+    try:
+        backup_folder.mkdir(parents=True, exist_ok=True)
+
+    except OSError as os_err:
+        log_message = f"Error creating 'Backups' directory: {os_err}"
+        logging.exception(log_message)
+        sys.exit(1)
+
+    timestamp = datetime.now(timezone.utc).strftime("%d%m%Y_%H%M%S")
+    backup_file = Path(f"URLs_{timestamp}.txt.bak")
+    shutil.copy2(URLS_FILE, backup_folder / backup_file)
 
 
 def remove_invalid_characters(text: str) -> str:
