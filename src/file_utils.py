@@ -51,6 +51,7 @@ def write_on_session_log(
             "task": content.task,
             "filename": content.filename,
             "download_link": content.download_link,
+            "item_url": content.item_url,
         }
         if isinstance(content, DownloadInfo)
         else {"message": content}

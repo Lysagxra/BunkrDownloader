@@ -149,6 +149,7 @@ class AlbumInfo:
 class DownloadInfo:
     """Represent the information related to a download task."""
 
+    item_url: str
     download_link: str
     filename: str
     task: int

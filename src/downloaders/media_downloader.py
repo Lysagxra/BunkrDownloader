@@ -251,6 +251,7 @@ class MediaDownloader:
                 "id": self.download_info.task,
                 "filename": self.download_info.filename,
                 "download_link": self.download_info.download_link,
+                "item_url": self.download_info.item_url,
             }
 
         self.live_manager.update_log(

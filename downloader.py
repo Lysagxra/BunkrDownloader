@@ -19,6 +19,7 @@ from src.config import (
     AlbumInfo,
     DownloadInfo,
     SessionInfo,
+    SkippedReason,
     parse_arguments,
 )
 from src.crawlers.crawler_utils import (
@@ -26,7 +27,11 @@ from src.crawlers.crawler_utils import (
     get_download_info,
 )
 from src.downloaders.album_downloader import AlbumDownloader, MediaDownloader
-from src.file_utils import create_download_directory, format_directory_name
+from src.file_utils import (
+    create_download_directory,
+    format_directory_name,
+    write_on_session_log,
+)
 from src.general_utils import (
     check_disk_space,
     check_python_version,
@@ -82,6 +87,7 @@ async def handle_download_process(
         media_downloader = MediaDownloader(
             session_info=session_info,
             download_info=DownloadInfo(
+                item_url=url,
                 download_link=download_link,
                 filename=filename,
                 task=task,
@@ -106,6 +112,9 @@ async def validate_and_download(
     soup = await fetch_page(validated_url)
 
     if soup is None:
+        write_on_session_log(
+            f"Request error for {url}", reason=SkippedReason.SERVICE_UNAVAILABLE,
+        )
         log_unavailable_url(live_manager, validated_url)
         return
 
@@ -125,7 +134,11 @@ async def validate_and_download(
 
     try:
         await handle_download_process(
-            session_info, validated_url, soup, live_manager, args.max_retries,
+            session_info,
+            validated_url,
+            soup,
+            live_manager,
+            args.max_retries,
         )
 
     except (RequestConnectionError, Timeout, RequestException) as err:

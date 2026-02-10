@@ -52,7 +52,8 @@ class AlbumDownloader:
                 raise RuntimeError(error_message)
 
             item_download_link, item_filename = await get_download_info(
-                item_page, item_soup,
+                item_page,
+                item_soup,
             )
 
             # Download item
@@ -60,6 +61,7 @@ class AlbumDownloader:
                 media_downloader = MediaDownloader(
                     session_info=self.session_info,
                     download_info=DownloadInfo(
+                        item_url=item_page,
                         download_link=item_download_link,
                         filename=item_filename,
                         task=task,
@@ -73,7 +75,9 @@ class AlbumDownloader:
                     self.failed_downloads.append(failed_download)
 
     async def download_album(
-        self, max_workers: int = MAX_WORKERS, max_retries: int = MAX_RETRIES,
+        self,
+        max_workers: int = MAX_WORKERS,
+        max_retries: int = MAX_RETRIES,
     ) -> None:
         """Handle the album download."""
         num_tasks = len(self.album_info.item_pages)
@@ -95,16 +99,11 @@ class AlbumDownloader:
             await self._process_failed_downloads()
 
     # Private methods
-    async def _retry_failed_download(
-        self,
-        task: int,
-        filename: str,
-        download_link: str,
-    ) -> None:
+    async def _retry_failed_download(self, failed_download_info: DownloadInfo) -> None:
         """Handle failed downloads and retries them."""
         media_downloader = MediaDownloader(
             session_info=self.session_info,
-            download_info=DownloadInfo(download_link, filename, task),
+            download_info=failed_download_info,
             live_manager=self.live_manager,
             retries=1,  # Retry once for failed downloads
         )
@@ -114,9 +113,12 @@ class AlbumDownloader:
     async def _process_failed_downloads(self) -> None:
         """Process any failed downloads after the initial attempt."""
         for data in self.failed_downloads:
-            await self._retry_failed_download(
-                data["id"],
-                data["filename"],
-                data["download_link"],
+            failed_download_info = DownloadInfo(
+                item_url=data["item_url"],
+                download_link=data["download_link"],
+                filename=data["filename"],
+                task=data["id"],
             )
+            await self._retry_failed_download(failed_download_info)
+
         self.failed_downloads.clear()
