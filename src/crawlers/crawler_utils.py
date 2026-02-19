@@ -89,14 +89,34 @@ async def get_item_download_link(
     return decrypt_url(api_response)
 
 
+def decrypt_cf_email(cf_email_hex: str) -> str:
+    """Decrypt a Cloudflare-protected email address."""
+    raw_bytes = bytes.fromhex(cf_email_hex)
+    key = raw_bytes[0]
+    decrypted_bytes = bytes(byte ^ key for byte in raw_bytes[1:])
+    return decrypted_bytes.decode("utf-8")
+
+
 def get_item_filename(item_soup: BeautifulSoup) -> str:
     """Extract the filename from the provided HTML soup."""
     item_filename_container = item_soup.find(
         "h1",
         {"class": "text-subs font-semibold text-base sm:text-lg truncate"},
     )
+
+    # Decrypt Cloudflare email protection if present
+    cf_email_tag = item_filename_container.find(class_="__cf_email__")
+    if cf_email_tag:
+        cf_email_hex = cf_email_tag.get("data-cfemail")
+        decrypted_email = decrypt_cf_email(cf_email_hex)
+        cf_email_tag.replace_with(decrypted_email)
+
     item_filename = item_filename_container.get_text()
-    return item_filename.encode("latin1").decode("utf-8")
+
+    try:
+        return item_filename.encode("latin1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return item_filename
 
 
 def format_item_filename(original_filename: str, url_based_filename: str) -> str:

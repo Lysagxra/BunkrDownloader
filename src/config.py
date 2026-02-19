@@ -38,7 +38,7 @@ DOWNLOAD_REFERER = "https://get.bunkrr.su/"
 # ============================
 MEDIA_SLUG_REGEX = r'const\s+slug\s*=\s*"([a-zA-Z0-9_-]+)"'  # Extract media slug.
 VALID_SLUG_REGEX = r"^[a-zA-Z0-9_-]+$"                       # Validate media slug.
-VALID_CHARACTERS_REGEX = r"[^a-zA-Z0-9 _-]"                  # Validate characters.
+VALID_CHARACTERS_REGEX = r'[<>:"/\\|?*\x00-\x1f]'  # Strip only filesystem-illegal chars
 
 # ============================
 # UI & Table Settings
