@@ -57,7 +57,8 @@ async def fetch_page(url: str, retries: int = 5) -> BeautifulSoup | None:
             logging.exception(log_message)
             return None
 
-        return BeautifulSoup(response.content, "html.parser")  # Use raw bytes to let BS4 detect encoding
+        # Use raw bytes to let BS4 detect encoding
+        return BeautifulSoup(response.content, "html.parser")
 
     for attempt in range(retries):
         try:
