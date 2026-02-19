@@ -115,6 +115,7 @@ def get_item_filename(item_soup: BeautifulSoup) -> str:
 
     try:
         return item_filename.encode("latin1").decode("utf-8")
+
     except (UnicodeEncodeError, UnicodeDecodeError):
         return item_filename
 
