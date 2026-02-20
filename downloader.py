@@ -1,4 +1,9 @@
-"""Python-based downloader for Bunkr albums and files."""
+"""Python-based downloader for Bunkr albums and files.
+
+Usage:
+    Run the script from the command line with a valid album or media URL:
+        python3 downloader.py <album_or_media_url>
+"""
 
 from __future__ import annotations
 
@@ -47,7 +52,9 @@ from src.url_utils import (
 
 if TYPE_CHECKING:
     from argparse import Namespace
+
     from bs4 import BeautifulSoup
+
     from src.managers.live_manager import LiveManager
 
 
@@ -61,7 +68,8 @@ async def handle_download_process(
     """Handle the download process for a Bunkr album or a single item."""
     host_page = get_host_page(url)
     identifier = get_identifier(url, soup=initial_soup)
-
+    
+    # Album download
     if check_url_type(url):
         item_pages = await extract_all_album_item_pages(initial_soup, host_page, url)
         album_downloader = AlbumDownloader(
@@ -70,6 +78,8 @@ async def handle_download_process(
             live_manager=live_manager,
         )
         await album_downloader.download_album(max_retries=max_retries)
+
+    # Single item download
     else:
         download_link, filename = await get_download_info(url, initial_soup)
         live_manager.add_overall_task(identifier, num_tasks=1)
@@ -95,7 +105,8 @@ async def validate_and_download(
     args: Namespace,
     download_path: str,
 ) -> None:
-    """Validate URL and initiate download to the provided path."""
+    """Validate the provided URL, and initiate the download process."""
+    # Check the available disk space on the download path before starting the download
     if not args.disable_disk_check:
         check_disk_space(live_manager, custom_path=args.custom_path)
 
@@ -122,12 +133,12 @@ async def validate_and_download(
 
 
 async def main() -> None:
-    """Single URL entry point."""
+    """Initialize the download process."""
     clear_terminal()
     check_python_version()
 
-    args = parse_arguments()
     bunkr_status = get_bunkr_status()
+    args = parse_arguments()
     live_manager = initialize_managers(disable_ui=args.disable_ui)
     
     # Centralized path logic
@@ -135,8 +146,15 @@ async def main() -> None:
 
     try:
         with live_manager.live:
-            await validate_and_download(bunkr_status, args.url, live_manager, args, path)
+            await validate_and_download(
+                bunkr_status, 
+                args.url, 
+                live_manager, 
+                args, 
+                path
+            )
             live_manager.stop()
+
     except KeyboardInterrupt:
         sys.exit(1)
 

@@ -1,4 +1,12 @@
-"""Main module to read Bunkr URLs from a file and download from them."""
+"""Main module to read Bunkr URLs from a file, and download from them.
+
+This module manages the entire download process by leveraging asynchronous operations,
+allowing for efficient handling of multiple URLs.
+
+Usage:
+    To run the module, execute the script directly. It will process URLs listed in
+    'URLs.txt' and log the session activities in 'session_log.txt'.
+"""
 
 import asyncio
 import os
@@ -11,6 +19,7 @@ from src.config import SESSION_LOG, URLS_FILE, resolve_download_path
 from src.file_utils import create_urls_file_backup, read_file, write_file
 from src.general_utils import check_python_version, clear_terminal
 from src.managers.live_manager import initialize_managers
+
 
 async def process_urls(urls: list[str], args: Namespace, download_path: str) -> None:
     """Validate and downloads items for a list of URLs."""
@@ -29,26 +38,30 @@ async def process_urls(urls: list[str], args: Namespace, download_path: str) -> 
         live_manager.stop()
 
 async def main() -> None:
-    """Bulk URL entry point."""
+    """Run the script and process URLs."""
+    # Clear the terminal and session log file
     clear_terminal()
     write_file(SESSION_LOG)
+
+    # Check Python version and parse arguments
     check_python_version()
-    
     args = parse_arguments(common_only=True)
     final_download_path = resolve_download_path(args)
 
-    # Pre-create the root folder
+    # Backup the URLs file & Pre-create the root folder
     os.makedirs(final_download_path, exist_ok=True)
     create_urls_file_backup()
 
+    # Read and process URLs, ignoring empty lines
     urls = [url.strip() for url in read_file(URLS_FILE) if url.strip()]
     await process_urls(urls, args, final_download_path)
 
-    # Clean up URLs file after success
+    # Clear URLs file
     write_file(URLS_FILE)
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+
     except KeyboardInterrupt:
         sys.exit(1)
