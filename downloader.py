@@ -1,9 +1,4 @@
-"""Python-based downloader for Bunkr albums and files.
-
-Usage:
-    Run the script from the command line with a valid album or media URL:
-        python3 downloader.py <album_or_media_url>
-"""
+"""Python-based downloader for Bunkr albums and files."""
 
 from __future__ import annotations
 
@@ -21,6 +16,7 @@ from src.config import (
     SessionInfo,
     SkippedReason,
     parse_arguments,
+    resolve_download_path,
 )
 from src.crawlers.crawler_utils import (
     extract_all_album_item_pages,
@@ -51,9 +47,7 @@ from src.url_utils import (
 
 if TYPE_CHECKING:
     from argparse import Namespace
-
     from bs4 import BeautifulSoup
-
     from src.managers.live_manager import LiveManager
 
 
@@ -68,7 +62,6 @@ async def handle_download_process(
     host_page = get_host_page(url)
     identifier = get_identifier(url, soup=initial_soup)
 
-    # Album download
     if check_url_type(url):
         item_pages = await extract_all_album_item_pages(initial_soup, host_page, url)
         album_downloader = AlbumDownloader(
@@ -77,8 +70,6 @@ async def handle_download_process(
             live_manager=live_manager,
         )
         await album_downloader.download_album(max_retries=max_retries)
-
-    # Single item download
     else:
         download_link, filename = await get_download_info(url, initial_soup)
         live_manager.add_overall_task(identifier, num_tasks=1)
@@ -101,10 +92,10 @@ async def validate_and_download(
     bunkr_status: dict[str, str],
     url: str,
     live_manager: LiveManager,
-    args: Namespace | None = None,
+    args: Namespace,
+    download_path: str,
 ) -> None:
-    """Validate the provided URL, and initiate the download process."""
-    # Check the available disk space on the download path before starting the download
+    """Validate URL and initiate download to the provided path."""
     if not args.disable_disk_check:
         check_disk_space(live_manager, custom_path=args.custom_path)
 
@@ -112,20 +103,10 @@ async def validate_and_download(
     soup = await fetch_page(validated_url)
 
     if soup is None:
-        write_on_session_log(
-            f"Request error for {url}", reason=SkippedReason.SERVICE_UNAVAILABLE,
-        )
+        write_on_session_log(f"Request error for {url}", reason=SkippedReason.SERVICE_UNAVAILABLE)
         log_unavailable_url(live_manager, validated_url)
         return
 
-    album_id = get_album_id(validated_url) if check_url_type(validated_url) else None
-    album_name = get_album_name(soup)
-
-    directory_name = format_directory_name(album_name, album_id)
-    download_path = create_download_directory(
-        directory_name,
-        custom_path=args.custom_path,
-    )
     session_info = SessionInfo(
         args=args,
         bunkr_status=bunkr_status,
@@ -134,37 +115,28 @@ async def validate_and_download(
 
     try:
         await handle_download_process(
-            session_info,
-            validated_url,
-            soup,
-            live_manager,
-            args.max_retries,
+            session_info, validated_url, soup, live_manager, args.max_retries
         )
-
     except (RequestConnectionError, Timeout, RequestException) as err:
-        error_message = f"Error downloading from {url}: {err}"
-        raise RuntimeError(error_message) from err
+        raise RuntimeError(f"Error downloading from {url}: {err}") from err
 
 
 async def main() -> None:
-    """Initialize the download process."""
+    """Single URL entry point."""
     clear_terminal()
     check_python_version()
 
-    bunkr_status = get_bunkr_status()
     args = parse_arguments()
+    bunkr_status = get_bunkr_status()
     live_manager = initialize_managers(disable_ui=args.disable_ui)
+    
+    # Centralized path logic
+    path = resolve_download_path(args)
 
     try:
         with live_manager.live:
-            await validate_and_download(
-                bunkr_status,
-                args.url,
-                live_manager,
-                args=args,
-            )
+            await validate_and_download(bunkr_status, args.url, live_manager, args, path)
             live_manager.stop()
-
     except KeyboardInterrupt:
         sys.exit(1)
 
