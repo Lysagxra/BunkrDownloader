@@ -9,33 +9,28 @@ Usage:
 """
 
 import asyncio
-import os
 import sys
 from argparse import Namespace
 
 from downloader import parse_arguments, validate_and_download
 from src.bunkr_utils import get_bunkr_status
-from src.config import SESSION_LOG, URLS_FILE, resolve_download_path
+from src.config import SESSION_LOG, URLS_FILE
 from src.file_utils import create_urls_file_backup, read_file, write_file
 from src.general_utils import check_python_version, clear_terminal
 from src.managers.live_manager import initialize_managers
 
 
-async def process_urls(urls: list[str], args: Namespace, download_path: str) -> None:
+async def process_urls(urls: list[str], args: Namespace) -> None:
     """Validate and downloads items for a list of URLs."""
     bunkr_status = get_bunkr_status()
     live_manager = initialize_managers(disable_ui=args.disable_ui)
 
     with live_manager.live:
         for url in urls:
-            await validate_and_download(
-                bunkr_status, 
-                url, 
-                live_manager, 
-                args=args, 
-                download_path=download_path
-            )
+            await validate_and_download(bunkr_status, url, live_manager, args=args)
+
         live_manager.stop()
+
 
 async def main() -> None:
     """Run the script and process URLs."""
@@ -46,18 +41,17 @@ async def main() -> None:
     # Check Python version and parse arguments
     check_python_version()
     args = parse_arguments(common_only=True)
-    final_download_path = resolve_download_path(args)
 
-    # Backup the URLs file & Pre-create the root folder
-    os.makedirs(final_download_path, exist_ok=True)
+    # Backup the URLs file
     create_urls_file_backup()
 
     # Read and process URLs, ignoring empty lines
     urls = [url.strip() for url in read_file(URLS_FILE) if url.strip()]
-    await process_urls(urls, args, final_download_path)
+    await process_urls(urls, args)
 
     # Clear URLs file
     write_file(URLS_FILE)
+
 
 if __name__ == "__main__":
     try:
