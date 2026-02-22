@@ -6,7 +6,6 @@ settings into a single location.
 
 from __future__ import annotations
 
-import os
 from argparse import ArgumentParser
 from collections import deque
 from dataclasses import dataclass, field
@@ -15,6 +14,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from argparse import Namespace
+
 
 # ============================
 # Paths and Files
@@ -137,16 +137,6 @@ DOWNLOAD_HEADERS: dict[str, str] = {
 }
 
 # ============================
-# Path Resolution Helper
-# ============================
-def resolve_download_path(args: Namespace) -> str:
-    """Centralized path resolution to strip duplication across scripts."""
-    base_dir = args.custom_path if args.custom_path else "."
-    if args.no_download_folder and args.custom_path:
-        return base_dir
-    return os.path.join(base_dir, DOWNLOAD_FOLDER)
-
-# ============================
 # Data Classes
 # ============================
 @dataclass
@@ -235,11 +225,6 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         help="The directory where the downloaded content will be saved.",
     )
     parser.add_argument(
-        "--no-download-folder",
-        action="store_true",
-        help="If using --custom-path, save files directly in that directory without creating a 'Downloads' subfolder.",
-    )
-    parser.add_argument(
         "--disable-ui",
         action="store_true",
         help="Disable the user interface.",
@@ -256,6 +241,7 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         help="Maximum number of retries for downloading a single media.",
     )
 
+
 def setup_parser(
         *, include_url: bool = False, include_filters: bool = False,
     ) -> ArgumentParser:
@@ -270,7 +256,7 @@ def setup_parser(
             "--ignore",
             type=str,
             nargs="+",
-            help="Skip files whose names contain any of these substrings",
+            help="Skip files whose names contain any of these substrings.",
         )
         parser.add_argument(
             "--include",
@@ -282,10 +268,11 @@ def setup_parser(
     add_common_arguments(parser)
     return parser
 
+
 def parse_arguments(*, common_only: bool = False) -> Namespace:
     """Full argument parser (including URL, filters, and common)."""
     parser = (
-        setup_parser(include_filters=True) if common_only
+        setup_parser() if common_only
         else setup_parser(include_url=True, include_filters=True)
     )
     return parser.parse_args()
