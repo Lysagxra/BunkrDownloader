@@ -48,7 +48,7 @@ class AlbumDownloader:
                     event="Fetch failed",
                     details=f"Unable to load album item page: {item_page}",
                 )
-                error_message = "Failed to load album item page: {item_page}"
+                error_message = f"Failed to load album item page: {item_page}"
                 raise RuntimeError(error_message)
 
             item_download_link, item_filename = await get_download_info(
