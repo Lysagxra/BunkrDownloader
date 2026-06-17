@@ -7,7 +7,7 @@ integrating with live task displays.
 import asyncio
 from asyncio import Semaphore
 
-from src.config import MAX_RETRIES, MAX_WORKERS, AlbumInfo, DownloadInfo, SessionInfo
+from src.config import MAX_RETRIES, MAX_WORKERS, AlbumInfo, DownloadInfo, FailedReason, SessionInfo
 from src.crawlers.crawler_utils import get_download_info
 from src.general_utils import fetch_page
 from src.managers.live_manager import LiveManager
@@ -65,6 +65,16 @@ class AlbumDownloader:
                 failed_download = await asyncio.to_thread(media_downloader.download)
                 if failed_download:
                     self.failed_downloads.append(failed_download)
+
+            else:
+                # URL could not be resolved after all retries — report as failed
+                # so the user knows which files need attention.
+                self.live_manager.update_log(
+                    event="Download failed",
+                    details=f"Could not resolve a download URL for {item_filename}.",
+                )
+                self.live_manager.update_task(task, completed=100, visible=False)
+                self.live_manager.update_summary(FailedReason.MAX_RETRIES_REACHED)
 
     async def download_album(
         self,
