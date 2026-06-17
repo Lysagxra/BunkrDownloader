@@ -92,8 +92,8 @@ async def get_download_response(
             if not base_url or not path:
                 return None
 
-            parsed = urlparse(base_url)
-            return urlunparse(parsed._replace(path=path))
+            parsed_url = urlparse(base_url)
+            return urlunparse(parsed_url._replace(path=path))
 
         except (aiohttp.ClientError, asyncio.TimeoutError):
             if attempt < max_retries:
@@ -133,13 +133,12 @@ async def get_api_response(
     if not cdn_url and not unsigned_url:
         return None
 
-    source = unsigned_url or item_url
-    slug = PurePosixPath(urlparse(source).path).name
-
+    source_url = unsigned_url or item_url
+    media_slug = PurePosixPath(urlparse(source_url).path).name
     media_path = (
         urlparse(cdn_url).path
         if cdn_url
-        else f"/storage/media/{slug}"
+        else f"/storage/media/{media_slug}"
     )
 
     for attempt in range(1, max_retries + 1):
@@ -153,11 +152,11 @@ async def get_api_response(
                 data = await response.json()
 
             token = data.get("token")
-            expires = data.get("ex")
+            expires_at = data.get("ex")
             base_url = cdn_url or unsigned_url
 
             if token and expires and base_url:
-                return f"{base_url}?token={token}&ex={expires}"
+                return f"{base_url}?token={token}&ex={expires_at}"
 
             # API responded but returned no token — return plain CDN URL.
             return cdn_url
