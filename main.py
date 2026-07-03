@@ -38,7 +38,7 @@ async def _process_one_url(
     live_manager: LiveManager,
     args: Namespace,
     rate_limiter: RateLimiter,
-) -> bool:
+) -> bool: # pylint: disable=broad-exception-caught
     """Run validate_and_download for one URL with a last-resort safety net.
 
     Returns:
@@ -50,9 +50,9 @@ async def _process_one_url(
         return await validate_and_download(
             bunkr_status, url, live_manager, args=args, rate_limiter=rate_limiter,
         )
-    except KeyboardInterrupt:
+    except KeyboardInterrupt: # pylint: disable=try-except-raise
         raise
-    except Exception:  # noqa: BLE001 - last-resort safety net
+    except Exception:   # noqa: BLE001 - last-resort safety net
         logging.exception("Unexpected error while processing %s", url)
         return True
 
