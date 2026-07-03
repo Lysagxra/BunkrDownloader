@@ -1,0 +1,45 @@
+# Example configuration file for BunkrDownloader.
+#
+# Copy this file to "bunkr.toml" in the same folder as downloader.py / main.py
+# (or point to it explicitly with --config path/to/file.toml) to set your own
+# defaults for any CLI flag below, so you don't have to retype them every run.
+#
+# Precedence: an explicit command-line flag always overrides the value here.
+# Any key you omit (or comment out) falls back to the built-in default.
+
+# Directory where downloaded content is saved.
+# custom_path = "D:/Downloads/Bunkr"
+
+# Save files without a "Downloads" subfolder.
+# no_download_folder = false
+
+# Disable the live terminal UI (plain log lines instead).
+# disable_ui = false
+
+# Skip the free-disk-space check before downloading.
+# disable_disk_check = false
+
+# Maximum number of retries for downloading a single media file.
+# max_retries = 5
+
+# Number of parallel connections used for chunked downloads.
+# Set to 1 to disable chunked downloading entirely.
+connections = 4
+
+# Maximum total download speed in KB/s, shared across every connection and
+# every concurrently downloading file. Omit (or comment out) for unlimited.
+# rate_limit = 2000
+
+# Preview downloads without actually downloading anything.
+# dry_run = false
+
+# Number of URLs from URLs.txt to process concurrently (main.py batch mode
+# only). 1 = sequential (default). Values above 1 switch to plain log
+# output since the live progress bars only support one album at a time.
+# max_concurrent_urls = 1
+
+# Skip files whose names contain any of these substrings.
+# ignore = ["sample", "trailer"]
+
+# Only download files whose names contain at least one of these substrings.
+# include = ["mp4", "mkv"]
