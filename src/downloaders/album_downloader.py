@@ -8,7 +8,15 @@ import asyncio
 from asyncio import Semaphore
 from pathlib import Path
 
-from src.config import MAX_RETRIES, MAX_WORKERS, AlbumInfo, DownloadInfo, FailedReason, SessionInfo, SkippedReason
+from src.config import (
+    MAX_RETRIES,
+    MAX_WORKERS,
+    AlbumInfo,
+    DownloadInfo,
+    FailedReason,
+    SessionInfo,
+    SkippedReason,
+)
 from src.crawlers.crawler_utils import get_download_info
 from src.file_utils import truncate_filename
 from src.general_utils import fetch_page
