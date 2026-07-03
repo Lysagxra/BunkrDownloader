@@ -51,7 +51,7 @@ async def _resolve_item(
     session_info: SessionInfo,
     cached_items: dict[str, dict],
     semaphore: asyncio.Semaphore,
-) -> dict:
+) -> dict: # pylint: disable=too-many-return-statements
     """Resolve filename, size and status for one item without downloading it."""
     async with semaphore:
         cached = cached_items.get(item_page)
@@ -108,7 +108,7 @@ async def run_dry_run(
     cached_items: dict[str, dict],
     console: Console,
     max_workers: int = MAX_WORKERS,
-) -> None:
+) -> None:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     """Print a preview table of what a download would do, without downloading.
 
     Args:
