@@ -134,7 +134,7 @@ async def run_dry_run_for_url(
     url: str,
     args: Namespace,
     console: Console,
-) -> None:
+) -> None: # pylint: disable=too-many-locals
     """Preview an album or single-item download without downloading anything.
 
     Mirrors the path-resolution steps of validate_and_download/
