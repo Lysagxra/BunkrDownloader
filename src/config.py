@@ -11,12 +11,20 @@ from argparse import ArgumentParser
 from collections import deque
 from dataclasses import dataclass, field
 from enum import IntEnum
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+try:
+    import tomllib  # Python 3.11+ standard library
+except ModuleNotFoundError:
+    import tomli as tomllib  # Python 3.10 fallback (see requirements.txt)
 
 from .version import get_version_string
 
 if TYPE_CHECKING:
     from argparse import Namespace
+
+    from .rate_limiter import RateLimiter
 
 
 # ============================
@@ -81,9 +89,12 @@ LOG_MANAGER_CONFIG = {
 # ============================
 # Download Settings
 # ============================
-MAX_FILENAME_LEN = 120  # The maximum length for a file name.
-MAX_WORKERS = 3         # The maximum number of threads for concurrent downloads.
-MAX_RETRIES = 5         # The maximum number of retries for downloading a single media.
+MAX_FILENAME_LEN = 120   # The maximum length for a file name.
+MAX_WORKERS = 3          # The maximum number of threads for concurrent downloads.
+MAX_RETRIES = 5          # The maximum number of retries for downloading a single media.
+DEFAULT_CONNECTIONS = 4  # Default number of parallel connections for chunked downloads.
+CHUNK_MAX_RETRIES = 4    # Max retry attempts for a single failed chunk.
+CHUNK_BASE_DELAY = 1.5   # Base delay (seconds) for chunk retry exponential backoff.
 
 # Mapping of URL identifiers to a boolean for album (True) vs single file (False).
 URL_TYPE_MAPPING = {"a": True, "f": False, "i": False, "v": False}
@@ -106,6 +117,20 @@ THRESHOLDS = [
 
 # Default chunk size for files larger than the largest threshold.
 LARGE_FILE_CHUNK_SIZE = 16 * MB
+
+# Minimum file size required to trigger a parallel chunked download.
+MIN_PARALLEL_SIZE = 5 * MB
+
+# ── Work-stealing unit sizing ────────────────────────────────────────────
+# A file selected for chunked download is split into many small "work
+# units" rather than exactly --connections equal pieces. Worker threads
+# pull units from a shared queue (via ThreadPoolExecutor) as they finish,
+# so a slow connection only delays its own next unit instead of blocking
+# threads that finished early — i.e. naive load balancing without having
+# to renegotiate byte ranges mid-flight.
+UNITS_PER_CONNECTION = 4        # Target oversubscription factor.
+MIN_WORK_UNIT_SIZE = 4 * MB     # Floor: avoids excessive tiny-file overhead.
+MAX_WORK_UNIT_SIZE = 64 * MB    # Ceiling: keeps granularity meaningful.
 
 # ============================
 # HTTP / Network
@@ -168,6 +193,7 @@ class SessionInfo:
     args: Namespace | None
     bunkr_status: dict[str, str]
     download_path: str
+    rate_limiter: RateLimiter | None = None
 
 @dataclass
 class ProgressConfig:
@@ -220,6 +246,89 @@ TASK_REASON_MAPPING: dict[TaskResult, type[IntEnum]] = {
 }
 
 # ============================
+# Config file (bunkr.toml)
+# ============================
+# Maps each overridable CLI dest name to (built-in default, type validator).
+# Precedence when resolving the final value: explicit CLI flag > bunkr.toml
+# value > built-in default below. All CLI args participating in this need
+# default=None so an unset flag can be distinguished from an explicit one.
+_CONFIG_FIELDS: dict[str, tuple[object, object]] = {
+    "custom_path": (None, lambda v: isinstance(v, str)),
+    "no_download_folder": (False, lambda v: isinstance(v, bool)),
+    "disable_ui": (False, lambda v: isinstance(v, bool)),
+    "disable_disk_check": (False, lambda v: isinstance(v, bool)),
+    "max_retries": (MAX_RETRIES, lambda v: isinstance(v, int) and not isinstance(v, bool)),
+    "connections": (
+        DEFAULT_CONNECTIONS, lambda v: isinstance(v, int) and not isinstance(v, bool),
+    ),
+    "rate_limit": (
+        None, lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
+    ),
+    "dry_run": (False, lambda v: isinstance(v, bool)),
+    "max_concurrent_urls": (
+        1, lambda v: isinstance(v, int) and not isinstance(v, bool),
+    ),
+    "ignore": (None, lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v)),
+    "include": (None, lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v)),
+}
+
+
+def _find_config_file(explicit_path: str | None) -> Path | None:
+    """Resolve the bunkr.toml path: explicit --config, else cwd/bunkr.toml."""
+    if explicit_path:
+        path = Path(explicit_path)
+        return path if path.is_file() else None
+
+    default_path = Path.cwd() / "bunkr.toml"
+    return default_path if default_path.is_file() else None
+
+
+def _load_toml_config(path: Path) -> dict:
+    """Load a TOML config file, returning {} on any read/parse failure."""
+    try:
+        with path.open("rb") as f:
+            return tomllib.load(f)
+    except (OSError, tomllib.TOMLDecodeError) as exc:
+        print(f"Warning: could not read config file '{path}': {exc}")
+        return {}
+
+
+def apply_config_file_defaults(args: Namespace) -> Namespace:
+    """Fill any CLI flag left unset (None) from bunkr.toml, then built-ins.
+
+    Precedence: explicit CLI flag > bunkr.toml value > built-in default.
+    Only mutates attributes that already exist on `args` — parsers that
+    don't include a given option (e.g. --ignore/--include in common_only
+    mode) are left untouched. Unknown TOML keys are ignored. A TOML value
+    with the wrong type is ignored (with a warning) in favor of the
+    built-in default, rather than letting a bad config crash the program.
+    """
+    config_path = _find_config_file(getattr(args, "config", None))
+    toml_data = _load_toml_config(config_path) if config_path else {}
+
+    for key, (builtin_default, is_valid) in _CONFIG_FIELDS.items():
+        if not hasattr(args, key):
+            continue  # this parser variant doesn't expose this option
+
+        if getattr(args, key) is not None:
+            continue  # explicitly set via CLI — config file never overrides it
+
+        if key in toml_data:
+            value = toml_data[key]
+            if is_valid(value):
+                setattr(args, key, value)
+                continue
+            print(
+                f"Warning: bunkr.toml '{key}' has an invalid value "
+                f"({value!r}); using the default instead.",
+            )
+
+        setattr(args, key, builtin_default)
+
+    return args
+
+
+# ============================
 # Argument Parsing
 # ============================
 def add_common_arguments(parser: ArgumentParser) -> None:
@@ -233,23 +342,81 @@ def add_common_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--no-download-folder",
         action="store_true",
+        default=None,
         help="Save files without a 'Downloads' subfolder.",
     )
     parser.add_argument(
         "--disable-ui",
         action="store_true",
+        default=None,
         help="Disable the user interface.",
     )
     parser.add_argument(
         "--disable-disk-check",
         action="store_true",
+        default=None,
         help="Disable the disk space check for available free space.",
     )
     parser.add_argument(
         "--max-retries",
         type=int,
-        default=MAX_RETRIES,
-        help="Maximum number of retries for downloading a single media.",
+        default=None,
+        help=f"Maximum number of retries for downloading a single media "
+        f"(default: {MAX_RETRIES}).",
+    )
+    parser.add_argument(
+        "--connections",
+        type=int,
+        default=None,
+        help=(
+            "Number of parallel connections used for chunked downloads "
+            f"(default: {DEFAULT_CONNECTIONS}). Set to 1 to disable chunked "
+            "downloading."
+        ),
+    )
+    parser.add_argument(
+        "--rate-limit",
+        type=float,
+        default=None,
+        metavar="KB/S",
+        help=(
+            "Maximum total download speed in KB/s, shared across all "
+            "connections and concurrently downloading files "
+            "(default: unlimited)."
+        ),
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=None,
+        help=(
+            "List the files that would be downloaded (with sizes and "
+            "skip/filter status) without downloading or writing anything."
+        ),
+    )
+    parser.add_argument(
+        "--max-concurrent-urls",
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "Number of URLs from URLs.txt to process concurrently "
+            "(default: 1 — sequential, same as before). Values above 1 "
+            "disable the live progress UI (falls back to plain log lines) "
+            "since the progress display only supports tracking one album "
+            "at a time."
+        ),
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Path to a TOML config file providing default values for any "
+            "of the above flags (default: looks for ./bunkr.toml). "
+            "Explicit CLI flags always take precedence over the config file."
+        ),
     )
     parser.add_argument(
         "--version",
@@ -273,12 +440,14 @@ def setup_parser(
             "--ignore",
             type=str,
             nargs="+",
+            default=None,
             help="Skip files whose names contain any of these substrings.",
         )
         parser.add_argument(
             "--include",
             type=str,
             nargs="+",
+            default=None,
             help="Only download files whose names contain these substrings.",
         )
 
@@ -287,9 +456,15 @@ def setup_parser(
 
 
 def parse_arguments(*, common_only: bool = False) -> Namespace:
-    """Full argument parser (including URL, filters, and common)."""
+    """Full argument parser (including URL, filters, and common).
+
+    After parsing, any flag left unset on the command line is filled in
+    from bunkr.toml (if present) and finally from built-in defaults — see
+    apply_config_file_defaults.
+    """
     parser = (
         setup_parser() if common_only
         else setup_parser(include_url=True, include_filters=True)
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    return apply_config_file_defaults(args)
