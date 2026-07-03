@@ -31,6 +31,11 @@ class RateLimiter:
         self._last_refill = time.monotonic()
         self._lock = threading.Lock()
 
+    @property
+    def is_limited(self) -> bool:
+        """Return True if a rate cap is active."""
+        return self.rate is not None
+
     def consume(self, n_bytes: int) -> None:
         """Block the calling thread until n_bytes of bandwidth budget is free.
 
