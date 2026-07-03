@@ -211,7 +211,7 @@ def _attempt_chunk_once(
     headers: dict[str, str],
     on_progress,
     rate_limiter: RateLimiter | None = None,
-) -> bool:
+) -> bool:  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Make a single attempt to download one byte-range chunk to disk.
 
     Any bytes written during a failed attempt are credited back (negative
@@ -258,7 +258,7 @@ def _download_single_chunk(
     headers: dict[str, str],
     on_progress,
     rate_limiter: RateLimiter | None = None,
-) -> bool:
+) -> bool:  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Download one byte-range chunk to disk, retrying with backoff on failure.
 
     Skips the download entirely when the .partN file already has the correct
@@ -309,7 +309,7 @@ def download_chunks(
     task: int,
     live_manager: LiveManager,
     rate_limiter: RateLimiter | None = None,
-) -> tuple[list[Path], list[int], bool]:
+) -> tuple[list[Path], list[int], bool]:  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     """Download all work units in parallel using a thread pool.
 
     The file is split into more units than worker threads (see
@@ -392,7 +392,7 @@ def save_file_with_chunks(
     headers: dict[str, str],
     content_length: int,
     rate_limiter: RateLimiter | None = None,
-) -> bool:
+) -> bool:  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Download a file using parallel byte-range chunks with resume support.
 
     Each chunk is saved to a dedicated .partN file so that an interrupted
