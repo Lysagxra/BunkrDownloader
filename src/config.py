@@ -1,7 +1,7 @@
 """Configuration module for managing constants and settings used across the project.
 
-These configurations aim to improve modularity and readability by consolidating
-settings into a single location.
+These configurations aim to improve modularity and readability by consolidating settings
+into a single location.
 """
 
 from __future__ import annotations
@@ -15,11 +15,7 @@ from enum import IntEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-try:
-    import tomllib  # Python 3.11+ standard library
-
-except ModuleNotFoundError:
-    import tomli as tomllib  # Python 3.10 fallback (see requirements.txt)
+import tomllib  # Python 3.11+ standard library
 
 from .version import get_version_string
 
@@ -123,13 +119,12 @@ LARGE_FILE_CHUNK_SIZE = 16 * MB
 # Minimum file size required to trigger a parallel chunked download.
 MIN_PARALLEL_SIZE = 5 * MB
 
-# ===================== Work-stealing unit sizing =====================
-# A file selected for chunked download is split into many small "work
-# units" rather than exactly --connections equal pieces. Worker threads
-# pull units from a shared queue (via ThreadPoolExecutor) as they finish,
-# so a slow connection only delays its own next unit instead of blocking
-# threads that finished early — i.e. naive load balancing without having
-# to renegotiate byte ranges mid-flight.
+# ============================
+# Work-stealing unit sizing
+# ============================
+# Split the file into more work units than available connections. ThreadPoolExecutor
+# assigns the next pending unit to each free worker, providing dynamic load balancing: a
+# slow worker only affects its current unit instead of delaying the entire download.
 UNITS_PER_CONNECTION = 4        # Target oversubscription factor.
 MIN_WORK_UNIT_SIZE = 4 * MB     # Floor: avoids excessive tiny-file overhead.
 MAX_WORK_UNIT_SIZE = 64 * MB    # Ceiling: keeps granularity meaningful.
@@ -196,6 +191,31 @@ class SessionInfo:
     bunkr_status: dict[str, str]
     download_path: str
     rate_limiter: RateLimiter | None = None
+
+@dataclass(slots=True)
+class ChunkInfo:
+    """Configuration and callbacks required to download file chunks."""
+
+    headers: dict[str, str]
+    on_progress: callable
+    rate_limiter: RateLimiter | None = None
+
+@dataclass(slots=True)
+class DownloadConfig:
+    """Configuration required to download a file."""
+
+    content_length: int
+    num_connections: int
+    headers: dict[str, str]
+    rate_limiter: RateLimiter | None = None
+
+@dataclass(slots=True)
+class RetryConfig:
+    """Retry behavior configuration."""
+
+    retries: int = MAX_RETRIES
+    # True when an external caller retries failures; False for standalone downloads.
+    has_external_retry: bool = False
 
 @dataclass
 class ProgressConfig:

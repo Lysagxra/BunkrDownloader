@@ -16,7 +16,7 @@ class VersionInfo(NamedTuple):
     release_level: Literal["alpha", "beta", "final"]
 
 
-version_info = VersionInfo(major=1, minor=2, micro=4, release_level="final")
+version_info = VersionInfo(major=1, minor=2, micro=5, release_level="final")
 is_prerelease = version_info.release_level != "final"
 
 __author__ = "Lysagxra"

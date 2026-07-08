@@ -20,6 +20,7 @@ from src.config import (
     KB,
     AlbumInfo,
     DownloadInfo,
+    RetryConfig,
     SessionInfo,
     SkippedReason,
     parse_arguments,
@@ -62,6 +63,15 @@ if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
 
 
+def has_cached_item_pages(cached_state: dict | None, identifier: str) -> bool:
+    """Check whether the cached state contains item pages for the given album."""
+    return (
+        cached_state is not None
+        and cached_state.get("album_id") == identifier
+        and cached_state.get("item_pages")
+    )
+
+
 async def get_item_pages_with_cache(
     url: str,
     identifier: str,
@@ -76,11 +86,7 @@ async def get_item_pages_with_cache(
     host_page = get_host_page(url)
     cached_state = load_album_state(session_info.download_path)
 
-    if (
-        cached_state
-        and cached_state["album_id"] == identifier
-        and cached_state["item_pages"]
-    ):
+    if has_cached_item_pages(cached_state, identifier):
         # Reuse cached item pages to avoid re-crawling paginated listings.
         item_pages = cached_state["item_pages"]
         cached_items = cached_state["items"]
@@ -145,6 +151,7 @@ async def handle_download_process(
             task=task,
         ),
         live_manager=live_manager,
+        retry_config = RetryConfig(),
     )
     return media_downloader.download()
 
@@ -162,11 +169,7 @@ async def get_album_items(
     host_page = get_host_page(validated_url)
     cached_state = load_album_state(download_path)
 
-    if (
-        cached_state
-        and cached_state["album_id"] == identifier
-        and cached_state["item_pages"]
-    ):
+    if has_cached_item_pages(cached_state, identifier):
         return cached_state["item_pages"], cached_state["items"]
 
     item_pages = await extract_all_album_item_pages(soup, host_page, validated_url)

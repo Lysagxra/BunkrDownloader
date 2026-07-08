@@ -25,6 +25,8 @@ from src.config import (
     MIN_WORK_UNIT_SIZE,
     THRESHOLDS,
     UNITS_PER_CONNECTION,
+    ChunkInfo,
+    DownloadConfig,
 )
 
 if TYPE_CHECKING:
@@ -138,9 +140,6 @@ def _compute_unit_ranges(
     """
     target_units = max(num_connections * UNITS_PER_CONNECTION, 1)
     raw_unit_size = content_length / target_units
-    # unit_size = int(min(max(raw_unit_size, MIN_WORK_UNIT_SIZE), MAX_WORK_UNIT_SIZE))
-    # unit_size = max(unit_size, 1)
-    # num_units = max(-(-content_length // unit_size), 1)  # ceil division
     unit_size = max(
         MIN_WORK_UNIT_SIZE,
         min(int(raw_unit_size), MAX_WORK_UNIT_SIZE),
@@ -185,7 +184,7 @@ def _load_or_create_plan(
                 return [tuple(pair) for pair in data["ranges"]]
 
         except (json.JSONDecodeError, KeyError, OSError):
-            pass  # Corrupt or unreadable metadata -- recompute below.
+            pass  # Corrupt or unreadable -- recompute below.
 
     ranges = _compute_unit_ranges(content_length, num_connections)
 
@@ -210,15 +209,13 @@ def _attempt_chunk_once(
     url: str,
     byte_range: tuple[int, int],
     path: Path,
-    headers: dict[str, str],
-    on_progress: callable,
-    rate_limiter: RateLimiter | None = None,
+    chunk_info: ChunkInfo,
 ) -> bool:
     """Make a single attempt to download one byte-range chunk to disk.
 
-    Any bytes written during a failed attempt are credited back (negative
-    delta) via on_progress so the overall progress bar stays accurate when
-    a retry re-downloads the same range from scratch.
+    Any bytes written during a failed attempt are credited back (negative delta) via
+    on_progress so the overall progress bar stays accurate when a retry re-downloads
+    the same range from scratch.
 
     Returns:
         True on failure, False on success.
@@ -228,7 +225,7 @@ def _attempt_chunk_once(
     end_byte = byte_range[1]
 
     expected = end_byte - start_byte + 1
-    chunk_headers = {**headers, "Range": f"bytes={start_byte}-{end_byte}"}
+    chunk_headers = {**chunk_info.headers, "Range": f"bytes={start_byte}-{end_byte}"}
     written = 0
 
     try:
@@ -243,20 +240,22 @@ def _attempt_chunk_once(
                 for data in response.iter_content(chunk_size=LARGE_FILE_CHUNK_SIZE):
                     if data:
                         file.write(data)
-                        if rate_limiter:
-                            rate_limiter.consume(len(data))
+                        num_bytes = len(data)
 
-                        written += len(data)
-                        on_progress(len(data))
+                        if chunk_info.rate_limiter:
+                            chunk_info.rate_limiter.consume(num_bytes)
+
+                        written += num_bytes
+                        chunk_info.on_progress(num_bytes)
 
         if path.exists() and path.stat().st_size == expected:
             return False
 
     except (RequestException, OSError):
-        on_progress(-written)
+        chunk_info.on_progress(-written)
         return True
 
-    on_progress(-written)
+    chunk_info.on_progress(-written)
     return True
 
 
@@ -264,9 +263,7 @@ def _download_single_chunk(
     url: str,
     byte_range: tuple[int, int],
     path: Path,
-    headers: dict[str, str],
-    on_progress: callable,
-    rate_limiter: RateLimiter | None = None,
+    chunk_info: ChunkInfo,
 ) -> bool:
     """Download one byte-range chunk to disk, retrying with backoff on failure.
 
@@ -284,7 +281,7 @@ def _download_single_chunk(
 
     # Resume: chunk already complete from a previous run, skip entirely.
     if path.exists() and path.stat().st_size == expected:
-        on_progress(expected)
+        chunk_info.on_progress(expected)
         return False
 
     for attempt in range(1, CHUNK_MAX_RETRIES + 1):
@@ -292,9 +289,10 @@ def _download_single_chunk(
             url,
             (start_byte, end_byte),
             path,
-            headers,
-            on_progress,
-            rate_limiter,
+            # headers,
+            # on_progress,
+            # rate_limiter,
+            chunk_info,
         )
         if not failed:
             return False
@@ -308,13 +306,10 @@ def _download_single_chunk(
 
 def download_chunks(
     url: str,
-    content_length: int,
-    num_connections: int,
     base_path: Path,
-    headers: dict[str, str],
     task: int,
     live_manager: LiveManager,
-    rate_limiter: RateLimiter | None = None,
+    download_config: DownloadConfig,
 ) -> tuple[list[Path], list[int], bool]:
     """Download all work units in parallel using a thread pool.
 
@@ -323,36 +318,41 @@ def download_chunks(
     it finishes one, so fast connections pick up extra work instead of waiting on a slow
     one. Progress is tracked in a thread-safe manner across all workers.
     """
-    ranges = _load_or_create_plan(base_path, content_length, num_connections)
+    ranges = _load_or_create_plan(
+        base_path, download_config.content_length, download_config.num_connections,
+    )
     chunk_paths = [_chunk_path(base_path, indx) for indx in range(len(ranges))]
     expected_sizes = [end_byte - start_byte + 1 for start_byte, end_byte in ranges]
 
     lock = threading.Lock()
-    total_downloaded = [0]  # mutable container for thread-safe accumulation
+    total_downloaded= [0]  # mutable container for thread-safe accumulation
 
-    def on_progress(n_bytes: int) -> None:
+    def on_progress(num_bytes: int) -> None:
         with lock:
-            total_downloaded[0] += n_bytes
-            pct = min((total_downloaded[0] / content_length) * 100, 100.0)
-            live_manager.update_task(task, completed=pct)
+            total_downloaded[0] += num_bytes
+            completed = min(
+                (total_downloaded[0] / download_config.content_length) * 100,
+                100.0,
+            )
+            live_manager.update_task(task, completed=completed)
 
     any_failed = False
-    max_workers = min(num_connections, len(ranges))
+    max_workers = min(download_config.num_connections, len(ranges))
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {
             pool.submit(
                 _download_single_chunk,
                 url,
-                (start_byte, end_byte),
+                byte_range,
                 path,
-                headers,
-                on_progress,
-                rate_limiter,
-            ): indx
-            for indx, ((start_byte, end_byte), path) in enumerate(
-                zip(ranges, chunk_paths),
-            )
+                ChunkInfo(
+                    headers=download_config.headers,
+                    on_progress=on_progress,
+                    rate_limiter=download_config.rate_limiter,
+                ),
+            ): path
+            for byte_range, path in zip(ranges, chunk_paths)
         }
 
         for future in as_completed(futures):
@@ -362,10 +362,7 @@ def download_chunks(
     return chunk_paths, expected_sizes, any_failed
 
 
-def verify_chunks(
-    chunk_paths: list[Path],
-    expected_sizes: list[int],
-) -> bool:
+def verify_chunks(chunk_paths: list[Path], expected_sizes: list[int]) -> bool:
     """Verify every chunk file exists and has the expected byte count."""
     return all(
         path.exists() and path.stat().st_size == size
@@ -375,10 +372,10 @@ def verify_chunks(
 
 def merge_chunks(chunk_paths: list[Path], final_path: Path) -> None:
     """Concatenate ordered .partN files into the final destination file."""
-    with final_path.open("wb") as dst:
-        for chunk in chunk_paths:
-            with chunk.open("rb") as src:
-                shutil.copyfileobj(src, dst)
+    with final_path.open("wb") as destination_file:
+        for chunk_path in chunk_paths:
+            with chunk_path.open("rb") as chunk_file:
+                shutil.copyfileobj(chunk_file, destination_file)
 
 
 def cleanup(chunk_paths: list[Path], base_path: Path) -> None:
@@ -394,12 +391,9 @@ def cleanup(chunk_paths: list[Path], base_path: Path) -> None:
 def save_file_with_chunks(
     url: str,
     download_path: str,
-    num_connections: int,
     task: int,
     live_manager: LiveManager,
-    headers: dict[str, str],
-    content_length: int,
-    rate_limiter: RateLimiter | None = None,
+    download_config: DownloadConfig,
 ) -> bool:
     """Download a file using parallel byte-range chunks with resume support.
 
@@ -415,13 +409,10 @@ def save_file_with_chunks(
     base_path = Path(download_path)
     chunk_paths, expected_sizes, any_failed = download_chunks(
         url,
-        content_length,
-        num_connections,
         base_path,
-        headers,
         task,
         live_manager,
-        rate_limiter,
+        download_config,
     )
 
     if any_failed or not verify_chunks(chunk_paths, expected_sizes):

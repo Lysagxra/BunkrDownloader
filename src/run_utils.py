@@ -49,6 +49,7 @@ async def run_dry_run(
 
     return []
 
+
 def build_rate_limiter(args: Namespace) -> RateLimiter:
     """Build a RateLimiter from CLI args (rate_limit in KB/s)."""
     rate_limit = getattr(args, "rate_limit", None)

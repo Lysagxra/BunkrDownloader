@@ -17,11 +17,12 @@ from requests import RequestException
 from src.bunkr_utils import mark_subdomain_as_offline, subdomain_is_offline
 from src.config import (
     DOWNLOAD_HEADERS,
-    MAX_RETRIES,
     CompletedReason,
+    DownloadConfig,
     DownloadInfo,
     FailedReason,
     HTTPStatus,
+    RetryConfig,
     SessionInfo,
     SkippedReason,
 )
@@ -51,19 +52,13 @@ class MediaDownloader:
         session_info: SessionInfo,
         download_info: DownloadInfo,
         live_manager: LiveManager,
-        retries: int = MAX_RETRIES,
-        *,
-        has_external_retry: bool = False,
+        retry_config: RetryConfig,
     ) -> None:
         """Initialize the MediaDownloader instance."""
         self.session_info = session_info
         self.download_info = download_info
         self.live_manager = live_manager
-        self.retries = retries
-        # True when a caller (e.g. AlbumDownloader) will retry this item again later if
-        # it fails. When False (the default, used for standalone single-file URLs), a
-        # failure is treated as final immediately since nothing else will retry it.
-        self.has_external_retry = has_external_retry
+        self.retry_config = retry_config
 
     def attempt_download(self, final_path: str) -> bool:
         """Attempt to download the file, using parallel chunks when possible.
@@ -84,7 +79,7 @@ class MediaDownloader:
         num_connections = getattr(self.session_info.args, "connections", 1)
         rate_limiter = self.session_info.rate_limiter
 
-        for attempt in range(self.retries):
+        for attempt in range(self.retry_config.retries):
             try:
                 supports_range, content_length = detect_range_support(
                     self.download_info.download_link, DOWNLOAD_HEADERS,
@@ -98,12 +93,14 @@ class MediaDownloader:
                     chunked_failed = save_file_with_chunks(
                         self.download_info.download_link,
                         final_path,
-                        num_connections,
                         self.download_info.task,
                         self.live_manager,
-                        DOWNLOAD_HEADERS,
-                        content_length,
-                        rate_limiter=rate_limiter,
+                        DownloadConfig(
+                            content_length=content_length,
+                            num_connections=num_connections,
+                            headers=DOWNLOAD_HEADERS,
+                            rate_limiter=rate_limiter,
+                        ),
                     )
                     if not chunked_failed:
                         return False
@@ -151,7 +148,7 @@ class MediaDownloader:
             caller (has_external_retry=True).
 
         """
-        is_final_attempt = not self.has_external_retry
+        is_final_attempt = not self.retry_config.has_external_retry
         is_offline = subdomain_is_offline(
             self.download_info.download_link,
             self.session_info.bunkr_status,
@@ -255,10 +252,10 @@ class MediaDownloader:
         self.live_manager.update_log(
             event=event,
             details=f"{event} for {self.download_info.filename} "
-            f"({attempt + 1}/{self.retries})...",
+            f"({attempt + 1}/{self.retry_config.retries})...",
         )
 
-        if attempt < self.retries - 1:
+        if attempt < self.retry_config.retries - 1:
             delay = 3 ** (attempt + 1) + random.uniform(1, 3)  # noqa: S311
             time.sleep(delay)
             return True
@@ -298,7 +295,7 @@ class MediaDownloader:
                 details=f"Bad gateway for {self.download_info.filename}.",
             )
             # Setting retries to 1 forces an immediate failure on the next check.
-            self.retries = 1
+            self.retry_config.retries = 1
             return False
 
         # Do not retry, exit the loop

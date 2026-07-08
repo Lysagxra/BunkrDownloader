@@ -16,6 +16,7 @@ from src.config import (
     AlbumInfo,
     DownloadInfo,
     FailedReason,
+    RetryConfig,
     SessionInfo,
     SkippedReason,
 )
@@ -82,7 +83,7 @@ class AlbumDownloader:
                     self.live_manager.update_summary(SkippedReason.ALREADY_DOWNLOADED)
                     return
                 # The cached file is missing (user deleted it, or the state
-                # was stale) — fall through and process normally below.
+                # was stale) -- fall through and process normally below.
 
             task = self.live_manager.add_task(current_task=current_task)
 
@@ -104,8 +105,10 @@ class AlbumDownloader:
                         task=task,
                     ),
                     live_manager=self.live_manager,
-                    retries=max_retries,
-                    has_external_retry=True,
+                    retry_config=RetryConfig(
+                        retries=max_retries,
+                        has_external_retry=True,
+                    ),
                 )
 
                 failed_download = await asyncio.to_thread(media_downloader.download)
@@ -232,8 +235,9 @@ class AlbumDownloader:
             session_info=self.session_info,
             download_info=failed_download_info,
             live_manager=self.live_manager,
-            retries=1,                 # Retry once for failed downloads
-            has_external_retry=False,  # this is the last chance, finalize either way
+            # Retry once for failed downloads. No external retries are available after
+            # this attempt.
+            retry_config=RetryConfig(retries=1, has_external_retry=False),
         )
         # Run the synchronous download function in a separate thread
         return await asyncio.to_thread(media_downloader.download)
