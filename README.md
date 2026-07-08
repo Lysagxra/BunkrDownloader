@@ -17,7 +17,7 @@
 
 ## Dependencies
 
-- Python 3
+- Python 3.11+
 - `BeautifulSoup` (bs4) - for HTML parsing
 - `requests` - for HTTP requests
 - `rich` - for progress display in the terminal
