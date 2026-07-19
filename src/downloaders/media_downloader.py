@@ -317,6 +317,19 @@ class MediaDownloader:
                 details=f"Max retries reached for {self.download_info.filename}. "
                 "It will be retried one more time after all other tasks.",
             )
+            # Hide this row now. AlbumDownloader only retries failed items in
+            # _process_failed_downloads, which runs *after every item in the
+            # album has been attempted* -- on a large album with many dead
+            # links, leaving each of these rows visible in the meantime piles
+            # up hundreds of stalled "File N/total" entries and pushes the
+            # actively-downloading items off screen. The row reappears on its
+            # own during the later retry if that retry makes real progress
+            # (update_task defaults to visible=True for progress callbacks).
+            self.live_manager.update_task(
+                self.download_info.task,
+                completed=None,
+                visible=False,
+            )
             return True
 
         self.live_manager.update_log(
@@ -331,7 +344,7 @@ class MediaDownloader:
         self,
         reason: FailedReason | SkippedReason,
         *,
-        completed: int | None = None,
+        completed: int | None = 100,
     ) -> None:
         outcome = reason.__class__.__name__.replace("Reason", "")
 
