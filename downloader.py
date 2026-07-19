@@ -28,9 +28,10 @@ from src.config import (
 from src.crawlers.crawler_utils import (
     extract_all_album_item_pages,
     get_download_info,
+    has_cached_item_pages,
 )
 from src.downloaders.album_downloader import AlbumDownloader, MediaDownloader
-from src.dry_run import run_dry_run
+from src.dry_run import execute_dry_run
 from src.file_utils import (
     create_download_directory,
     format_directory_name,
@@ -61,15 +62,6 @@ if TYPE_CHECKING:
     from bs4 import BeautifulSoup
 
     from src.managers.live_manager import LiveManager
-
-
-def has_cached_item_pages(cached_state: dict | None, identifier: str) -> bool:
-    """Check whether the cached state contains item pages for the given album."""
-    return (
-        cached_state is not None
-        and cached_state.get("album_id") == identifier
-        and cached_state.get("item_pages")
-    )
 
 
 async def get_item_pages_with_cache(
@@ -176,7 +168,7 @@ async def get_album_items(
     return item_pages, {}
 
 
-async def run_dry_run_for_url(
+async def execute_url_dry_run(
     bunkr_status: dict[str, str],
     url: str,
     args: Namespace,
@@ -208,10 +200,10 @@ async def run_dry_run_for_url(
     session_info = SessionInfo(
         args=args, bunkr_status=bunkr_status, download_path=download_path,
     )
-    item_pages, cached_items = get_album_items(
+    item_pages, cached_items = await get_album_items(
         validated_url, soup, download_path, identifier,
     )
-    await run_dry_run(identifier, item_pages, session_info, cached_items, console)
+    await execute_dry_run(identifier, item_pages, session_info, cached_items, console)
 
 
 async def validate_and_download(
@@ -287,7 +279,7 @@ async def main() -> None:
 
     # Dry-run skips downloads and Live UI, printing a simple console table.
     if getattr(args, "dry_run", False):
-        await run_dry_run_for_url(bunkr_status, args.url, args, Console())
+        await execute_url_dry_run(bunkr_status, args.url, args, Console())
         return
 
     rate_limit = getattr(args, "rate_limit", None)

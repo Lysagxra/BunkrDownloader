@@ -63,16 +63,15 @@ class MediaDownloader:
     def attempt_download(self, final_path: str) -> bool:
         """Attempt to download the file, using parallel chunks when possible.
 
-        If the server supports byte-range requests and the file is large enough,
-        the download is split into num_connections parallel chunks (each saved
-        as a .partN file to allow resuming).  Falls back to the original
-        single-connection stream when chunking is not applicable.
+        If the server supports byte-range requests and the file is large enough, the
+        download is split into num_connections parallel chunks (each saved as a .partN
+        file to allow resuming). Falls back to the original single-connection stream
+        when chunking is not applicable.
 
-        The chunked path honors the same outer retry budget (--max-retries)
-        as the single-connection fallback: a persistent failure (all internal
-        per-chunk retries exhausted) triggers the same exponential back-off
-        and re-attempt cycle via _retry_with_backoff, instead of giving up
-        after a single call.
+        The chunked path honors the same outer retry budget (--max-retries) as the
+        single-connection fallback: a persistent failure (all internal per-chunk retries
+        exhausted) triggers the same exponential back-off and re-attempt cycle via
+        _retry_with_backoff, instead of giving up after a single call.
 
         Returns True if the download failed, False on success.
         """
@@ -305,10 +304,9 @@ class MediaDownloader:
     def _handle_failed_download(self, *, is_final_attempt: bool) -> bool:
         """Handle a failed download after all retry attempts.
 
-        Always returns True (failed). When this is not the final attempt,
-        only a log line is emitted -- the caller (AlbumDownloader) already
-        has everything it needs to retry the item itself and is expected
-        to do so. The session log is only written on the final attempt,
+        Always returns True (failed). When this is not the final attempt, only a log
+        line is emitted -- the caller (AlbumDownloader) already has everything it needs
+        to retry the item itself. The session log is only written on the final attempt,
         since that is the only point at which the outcome is permanent.
         """
         if not is_final_attempt:
@@ -317,14 +315,8 @@ class MediaDownloader:
                 details=f"Max retries reached for {self.download_info.filename}. "
                 "It will be retried one more time after all other tasks.",
             )
-            # Hide this row now. AlbumDownloader only retries failed items in
-            # _process_failed_downloads, which runs *after every item in the
-            # album has been attempted* -- on a large album with many dead
-            # links, leaving each of these rows visible in the meantime piles
-            # up hundreds of stalled "File N/total" entries and pushes the
-            # actively-downloading items off screen. The row reappears on its
-            # own during the later retry if that retry makes real progress
-            # (update_task defaults to visible=True for progress callbacks).
+            # Hide stalled rows until retries to avoid cluttering the UI during large
+            # albums. Rows reappear automatically when retries make progress.
             self.live_manager.update_task(
                 self.download_info.task,
                 completed=None,
@@ -353,7 +345,6 @@ class MediaDownloader:
             reason=reason,
             outcome=outcome,
         )
-
         self.live_manager.update_task(
             self.download_info.task,
             completed=completed,

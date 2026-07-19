@@ -187,8 +187,8 @@ def matches_ignore_list(filename: str, ignore_list: list[str] | None) -> bool:
 def matches_include_list(filename: str, include_list: list[str] | None) -> bool:
     """Return True if --include is set and filename matches none of its words.
 
-    A True return means the file should be EXCLUDED (it failed to match the
-    required include list), mirroring matches_ignore_list's "should exclude"
-    semantics so both predicates compose the same way at call sites.
+    A True return means the file should be EXCLUDED (it failed to match the required
+    include list), mirroring matches_ignore_list's "should exclude" semantics so both
+    predicates compose the same way at call sites.
     """
     return bool(include_list) and all(word not in filename for word in include_list)

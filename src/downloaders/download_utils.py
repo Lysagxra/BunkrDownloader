@@ -27,6 +27,7 @@ from src.config import (
     UNITS_PER_CONNECTION,
     ChunkInfo,
     DownloadConfig,
+    DownloadPlan,
 )
 
 if TYPE_CHECKING:
@@ -304,6 +305,21 @@ def _download_single_chunk(
     return True
 
 
+def _build_download_plan(
+    base_path: Path,
+    content_length: int,
+    num_connections: int,
+) -> DownloadPlan:
+    ranges = _load_or_create_plan(base_path, content_length, num_connections)
+    num_ranges = len(ranges)
+    return DownloadPlan(
+        ranges=ranges,
+        num_ranges=num_ranges,
+        chunk_paths=[_chunk_path(base_path, indx) for indx in range(num_ranges)],
+        expected_sizes=[end - start + 1 for start, end in ranges],
+    )
+
+
 def download_chunks(
     url: str,
     base_path: Path,
@@ -318,14 +334,8 @@ def download_chunks(
     it finishes one, so fast connections pick up extra work instead of waiting on a slow
     one. Progress is tracked in a thread-safe manner across all workers.
     """
-    ranges = _load_or_create_plan(
-        base_path, download_config.content_length, download_config.num_connections,
-    )
-    chunk_paths = [_chunk_path(base_path, indx) for indx in range(len(ranges))]
-    expected_sizes = [end_byte - start_byte + 1 for start_byte, end_byte in ranges]
-
     lock = threading.Lock()
-    total_downloaded= [0]  # mutable container for thread-safe accumulation
+    total_downloaded = [0]  # mutable container for thread-safe accumulation
 
     def on_progress(num_bytes: int) -> None:
         with lock:
@@ -337,7 +347,12 @@ def download_chunks(
             live_manager.update_task(task, completed=completed)
 
     any_failed = False
-    max_workers = min(download_config.num_connections, len(ranges))
+    download_plan = _build_download_plan(
+        base_path,
+        download_config.content_length,
+        download_config.num_connections,
+    )
+    max_workers = min(download_config.num_connections, download_plan.num_ranges)
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {
@@ -352,14 +367,17 @@ def download_chunks(
                     rate_limiter=download_config.rate_limiter,
                 ),
             ): path
-            for byte_range, path in zip(ranges, chunk_paths)
+            for byte_range, path in zip(download_plan.ranges, download_plan.chunk_paths)
         }
 
         for future in as_completed(futures):
             if future.result():
                 any_failed = True
 
-    return chunk_paths, expected_sizes, any_failed
+    expected_sizes = [
+        end_byte - start_byte + 1 for start_byte, end_byte in download_plan.ranges
+    ]
+    return download_plan.chunk_paths, expected_sizes, any_failed
 
 
 def verify_chunks(chunk_paths: list[Path], expected_sizes: list[int]) -> bool:

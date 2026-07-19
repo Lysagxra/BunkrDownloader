@@ -136,18 +136,18 @@ async def get_api_response(
                 response.raise_for_status()
                 data = await response.json()
 
-            token = data.get("token")
-            expires_at = data.get("ex")
-            base_url = cdn_url or unsigned_url
-
-            if token and expires_at and base_url:
-                return f"{base_url}?token={token}&ex={expires_at}"
-
-            # API responded but returned no token -> return plain CDN URL.
-            return cdn_url
-
         except (aiohttp.ClientError, asyncio.TimeoutError):
             if attempt < _DEFAULT_MAX_RETRIES:
                 await asyncio.sleep(_DEFAULT_BASE_DELAY * (2 ** (attempt - 1)))
+
+        token = data.get("token")
+        expires_at = data.get("ex")
+        base_url = cdn_url or unsigned_url
+
+        if token and expires_at and base_url:
+            return f"{base_url}?token={token}&ex={expires_at}"
+
+        # API responded but returned no token -> return plain CDN URL.
+        return cdn_url
 
     return None

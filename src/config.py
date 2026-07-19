@@ -227,6 +227,15 @@ class ProgressConfig:
     panel_width = 40
     overall_buffer: deque = field(default_factory=lambda: deque(maxlen=BUFFER_SIZE))
 
+@dataclass(frozen=True)
+class DownloadPlan:
+    """Describe how a file should be downloaded in chunks."""
+
+    ranges: list[tuple[int, int]]
+    num_ranges: int
+    chunk_paths: list[Path]
+    expected_sizes: list[int]
+
 # ============================
 # Results Summary
 # ============================
@@ -270,10 +279,10 @@ TASK_REASON_MAPPING: dict[TaskResult, type[IntEnum]] = {
 # ============================
 # Config file (bunkr.toml)
 # ============================
-# Maps each overridable CLI dest name to (built-in default, type validator).
-# Precedence when resolving the final value: explicit CLI flag > bunkr.toml
-# value > built-in default below. All CLI args participating in this need
-# default=None so an unset flag can be distinguished from an explicit one.
+# Maps each overridable CLI dest name to (built-in default, type validator). Precedence
+# when resolving the final value: explicit CLI flag > bunkr.toml value > built-in
+# default below. All CLI args participating in this need default=None so an unset flag
+# can be distinguished from an explicit one.
 _CONFIG_FIELDS: dict[str, tuple[object, object]] = {
     "custom_path": (None, lambda v: isinstance(v, str)),
     "no_download_folder": (False, lambda v: isinstance(v, bool)),
@@ -300,7 +309,6 @@ _CONFIG_FIELDS: dict[str, tuple[object, object]] = {
     ),
 }
 
-
 def _find_config_file(explicit_path: str | None) -> Path | None:
     """Resolve the bunkr.toml path: explicit --config, else cwd/bunkr.toml."""
     if explicit_path:
@@ -326,12 +334,11 @@ def _load_toml_config(path: Path) -> dict:
 def apply_config_file_defaults(args: Namespace) -> Namespace:
     """Fill any CLI flag left unset (None) from bunkr.toml, then built-ins.
 
-    Precedence: explicit CLI flag > bunkr.toml value > built-in default.
-    Only mutates attributes that already exist on `args` — parsers that
-    don't include a given option (e.g. --ignore/--include in common_only
-    mode) are left untouched. Unknown TOML keys are ignored. A TOML value
-    with the wrong type is ignored (with a warning) in favor of the
-    built-in default, rather than letting a bad config crash the program.
+    Precedence: explicit CLI flag > bunkr.toml value > built-in default. Only mutates
+    attributes that already exist on `args` — parsers that don't include a given option
+    (e.g. --ignore/--include in common_only mode) are left untouched. Unknown TOML keys
+    are ignored. A TOML value with the wrong type is ignored (with a warning) in favor
+    of the built-in default, rather than letting a bad config crash the program.
     """
     config_path = _find_config_file(getattr(args, "config", None))
     toml_data = _load_toml_config(config_path) if config_path else {}
@@ -358,7 +365,6 @@ def apply_config_file_defaults(args: Namespace) -> Namespace:
         setattr(args, key, builtin_default)
 
     return args
-
 
 # ============================
 # Argument Parsing

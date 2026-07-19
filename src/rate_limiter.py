@@ -35,9 +35,9 @@ class RateLimiter:
     def consume(self, n_bytes: int) -> None:
         """Block the calling thread until n_bytes of bandwidth budget is free.
 
-        Safe to call concurrently from many threads; each call only blocks
-        the thread that called it; other threads keep accumulating/spending
-        tokens independently while one is sleeping.
+        Safe to call concurrently from many threads; each call only blocks the thread
+        that called it; other threads keep accumulating/spending tokens independently
+        while one is sleeping.
 
         A single call may request more bytes than the bucket's max burst capacity
         (self.rate) -- e.g. a single large HTTP read. Tokens are allowed to go negative

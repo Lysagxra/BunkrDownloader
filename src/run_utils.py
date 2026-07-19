@@ -6,7 +6,7 @@ from argparse import Namespace
 
 from rich.console import Console
 
-from downloader import initialize_managers, run_dry_run_for_url, validate_and_download
+from downloader import execute_url_dry_run, initialize_managers, validate_and_download
 from src.config import KB
 from src.managers.live_manager import LiveManager
 from src.rate_limiter import RateLimiter
@@ -39,13 +39,13 @@ async def process_one_url(
         return True
 
 
-async def run_dry_run(
+async def inspect_urls(
     urls: list[str], bunkr_status: dict[str, str], args: Namespace,
 ) -> list[str]:
-    """Run a dry-run preview for a list of URLs without downloading anything."""
+    """Execute a dry-run preview for a list of URLs without downloading anything."""
     console = Console()
     for url in urls:
-        await run_dry_run_for_url(bunkr_status, url, args, console)
+        await execute_url_dry_run(bunkr_status, url, args, console)
 
     return []
 

@@ -21,9 +21,9 @@ from src.file_utils import create_urls_file_backup, log_session_start, read_file
 from src.general_utils import check_python_version, clear_terminal
 from src.run_utils import (
     build_rate_limiter,
+    inspect_urls,
     log_failed_urls,
     run_concurrent,
-    run_dry_run,
     run_sequential,
 )
 
@@ -37,7 +37,7 @@ async def process_urls(urls: list[str], args: Namespace) -> list[str]:
 
     # Dry-run skips downloads and bypasses Live UI, printing a preview per URL.
     if getattr(args, "dry_run", False):
-        return await run_dry_run(urls, bunkr_status, args)
+        return await inspect_urls(urls, bunkr_status, args)
 
     # Shared RateLimiter ensures --rate-limit applies across all concurrent downloads.
     rate_limiter = build_rate_limiter(args)

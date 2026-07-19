@@ -11,14 +11,14 @@ from bs4 import BeautifulSoup
 from .config import HEADERS, STATUS_PAGE
 
 
-def fetch_page(url: str) -> BeautifulSoup | None:
-    """Fetch the HTML content of a page at the given URL."""
+def fetch_status_page() -> BeautifulSoup | None:
+    """Fetch the HTML content of the status page."""
     try:
-        response = requests.get(url, headers=HEADERS, timeout=10)
+        response = requests.get(STATUS_PAGE, headers=HEADERS, timeout=5)
         response.raise_for_status()
 
     except requests.RequestException:
-        logging.exception("An error occurred while fetching the status page.")
+        logging.warning("An error occurred while fetching the status page")
         return None
 
     return BeautifulSoup(response.text, "html.parser")
@@ -26,7 +26,7 @@ def fetch_page(url: str) -> BeautifulSoup | None:
 
 def get_bunkr_status() -> dict[str, str]:
     """Fetch the status of servers from the status page and return a dictionary."""
-    soup = fetch_page(STATUS_PAGE)
+    soup = fetch_status_page()
     if soup is None:
         logging.warning("Unable to fetch status page; continuing without host data.")
         return {}

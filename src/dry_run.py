@@ -1,9 +1,8 @@
 """Preview mode for --dry-run: resolve filenames and sizes without downloading.
 
-Performs the same crawl/resolve/filter steps as a real download (page
-fetch, signed-URL resolution, --ignore/--include filtering, on-disk and
-cached-state existence checks) but never calls MediaDownloader and never
-writes any downloaded content to disk.
+Performs the same crawl/resolve/filter steps as a real download (page fetch, signed-URL
+resolution, --ignore/--include filtering, on-disk and cached-state existence checks) but
+never calls MediaDownloader and never writes any downloaded content to disk.
 """
 
 from __future__ import annotations
@@ -21,6 +20,8 @@ from src.file_utils import matches_ignore_list, matches_include_list, truncate_f
 from src.general_utils import fetch_page
 
 if TYPE_CHECKING:
+    from argparse import Namespace
+
     from rich.console import Console
 
     from src.config import SessionInfo
@@ -49,6 +50,20 @@ def _format_size(num_bytes: int | None) -> str:
     return f"{value:.1f} TB"
 
 
+def _get_filter_status(filename: str, args: Namespace) -> str | None:
+    """Return the filter status for a filename based on CLI arguments."""
+    ignore_list = getattr(args, "ignore", None) if args else None
+    include_list = getattr(args, "include", None) if args else None
+
+    if matches_ignore_list(filename, ignore_list):
+        return "filtered_ignore"
+
+    if matches_include_list(filename, include_list):
+        return "filtered_include"
+
+    return None
+
+
 async def _resolve_item(
     item_page: str,
     session_info: SessionInfo,
@@ -60,13 +75,12 @@ async def _resolve_item(
         cached = cached_items.get(item_page)
         if cached and cached.get("status") == "completed":
             filename = cached.get("filename", "")
-            expected_path = (
-                Path(session_info.download_path) / truncate_filename(filename)
-            )
-            if expected_path.exists():
+            file_path = Path(session_info.download_path) / truncate_filename(filename)
+
+            if file_path.exists():
                 return {
                     "filename": filename,
-                    "size": expected_path.stat().st_size,
+                    "size": file_path.stat().st_size,
                     "status": "already_downloaded",
                 }
 
@@ -78,15 +92,9 @@ async def _resolve_item(
         if not download_link:
             return {"filename": filename, "size": None, "status": "unresolved"}
 
-        args = session_info.args
-        ignore_list = getattr(args, "ignore", None) if args else None
-        include_list = getattr(args, "include", None) if args else None
-
-        if matches_ignore_list(filename, ignore_list):
-            return {"filename": filename, "size": None, "status": "filtered_ignore"}
-
-        if matches_include_list(filename, include_list):
-            return {"filename": filename, "size": None, "status": "filtered_include"}
+        filter_status = _get_filter_status(filename, session_info.args)
+        if filter_status:
+            return {"filename": filename, "size": None, "status": filter_status}
 
         final_path = Path(session_info.download_path) / truncate_filename(filename)
         if final_path.exists():
@@ -97,7 +105,9 @@ async def _resolve_item(
             }
 
         _, content_length = await asyncio.to_thread(
-            detect_range_support, download_link, DOWNLOAD_HEADERS,
+            detect_range_support,
+            download_link,
+            DOWNLOAD_HEADERS,
         )
         size = content_length if content_length and content_length > 0 else None
         return {"filename": filename, "size": size, "status": "would_download"}
@@ -125,7 +135,7 @@ def process_results_rows(results: list[dict], table: Table) -> tuple[int, dict]:
     return total_download_bytes, counts
 
 
-async def run_dry_run(
+async def execute_dry_run(
     album_id: str,
     item_pages: list[str],
     session_info: SessionInfo,
@@ -135,7 +145,10 @@ async def run_dry_run(
     """Print a preview table of what a download would do, without downloading."""
     semaphore = asyncio.Semaphore(MAX_WORKERS)
     results = await asyncio.gather(
-        *(_resolve_item(p, session_info, cached_items, semaphore) for p in item_pages),
+        *(
+            _resolve_item(page, session_info, cached_items, semaphore)
+            for page in item_pages
+        ),
     )
 
     table = Table(title=f"Dry run — {album_id} ({len(item_pages)} item(s))")

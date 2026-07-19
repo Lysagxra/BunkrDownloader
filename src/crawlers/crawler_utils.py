@@ -16,6 +16,15 @@ from src.url_utils import get_url_based_filename
 from .api_utils import get_api_response
 
 
+def has_cached_item_pages(cached_state: dict | None, identifier: str) -> bool:
+    """Check whether the cached state contains item pages for the given album."""
+    return (
+        cached_state is not None
+        and cached_state.get("album_id") == identifier
+        and cached_state.get("item_pages")
+    )
+
+
 def extract_next_album_pages(initial_soup: BeautifulSoup, url: str) -> list[str] | None:
     """Extract pagination links for subsequent album pages from an HTML document."""
     pagination_nav = initial_soup.find("nav", {"class": "pagination"})
