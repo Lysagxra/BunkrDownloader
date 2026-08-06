@@ -88,7 +88,7 @@ async def _resolve_item(
         if item_soup is None:
             return {"filename": item_page, "size": None, "status": "fetch_failed"}
 
-        download_link, filename = await get_download_info(item_page, item_soup)
+        download_link, filename = await get_download_info(item_page, item_soup, session_info.clean_name)
         if not download_link:
             return {"filename": filename, "size": None, "status": "unresolved"}
 

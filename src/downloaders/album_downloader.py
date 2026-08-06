@@ -92,6 +92,7 @@ class AlbumDownloader:
             item_download_link, item_filename = await get_download_info(
                 item_page,
                 item_soup,
+                self.session_info.clean_name,
             )
 
             # Download item

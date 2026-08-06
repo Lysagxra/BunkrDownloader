@@ -160,7 +160,7 @@ def format_item_filename(original_filename: str, url_based_filename: str) -> str
     return f"{valid_original_base}-{url_base}{extension}"
 
 
-async def get_download_info(item_url: str, item_soup: BeautifulSoup) -> tuple:
+async def get_download_info(item_url: str, item_soup: BeautifulSoup, clean_name: bool) -> tuple:
     """Gather download information (link and filename) for the item."""
     async with aiohttp.ClientSession() as session:
         item_download_link = await get_item_download_link(
@@ -168,6 +168,9 @@ async def get_download_info(item_url: str, item_soup: BeautifulSoup) -> tuple:
         )
 
     item_filename = get_item_filename(item_soup)
+    if clean_name:
+        return item_download_link, item_filename
+
     url_based_filename = (
         get_url_based_filename(item_download_link) if item_download_link else None
     )

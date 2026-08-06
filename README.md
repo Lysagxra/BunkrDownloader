@@ -91,6 +91,25 @@ You can either download an entire album or a specific file:
 ```
 python3 downloader.py https://bunkr.si/a/PUK068QE       # Download album
 python3 downloader.py https://bunkr.fi/f/gBrv5f8tAGlGW  # Download single media
+
+## Preserve original filenames
+
+By default the downloader may generate filenames based on the URL. Use the
+`--clean-name` flag to preserve the original filename found on the item page.
+
+### Usage
+
+```bash
+python3 downloader.py <bunkr_url> --clean-name
+```
+
+### Dry-run example
+
+```bash
+python3 downloader.py --dry-run --clean-name <bunkr_url>
+```
+
+The flag is optional and defaults to `False`.
 ```
 
 ## Selective Download
