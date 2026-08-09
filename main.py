@@ -33,7 +33,8 @@ if TYPE_CHECKING:
 
 async def process_urls(urls: list[str], args: Namespace) -> list[str]:
     """Validate and download items for a list of URLs."""
-    bunkr_status = get_bunkr_status()
+#    bunkr_status = get_bunkr_status()
+    bunkr_status = {}
 
     # Dry-run skips downloads and bypasses Live UI, printing a preview per URL.
     if getattr(args, "dry_run", False):

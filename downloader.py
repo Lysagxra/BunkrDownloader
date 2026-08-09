@@ -274,7 +274,8 @@ async def main() -> None:
     clear_terminal()
     check_python_version()
 
-    bunkr_status = get_bunkr_status()
+#    bunkr_status = get_bunkr_status()
+    bunkr_status = {}
     args = parse_arguments()
 
     # Dry-run skips downloads and Live UI, printing a simple console table.
