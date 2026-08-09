@@ -15,7 +15,6 @@ from requests.exceptions import ConnectionError as RequestConnectionError
 from requests.exceptions import RequestException, Timeout
 from rich.console import Console
 
-from src.bunkr_utils import get_bunkr_status
 from src.config import (
     KB,
     AlbumInfo,
