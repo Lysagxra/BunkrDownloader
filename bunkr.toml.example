@@ -19,6 +19,9 @@
 # Skip the free-disk-space check before downloading.
 # disable_disk_check = false
 
+# Preserve the original filename and add a (N) suffix to prevent duplicates.
+# clean_name = false
+
 # Maximum number of retries for downloading a single media file.
 # max_retries = 5
 

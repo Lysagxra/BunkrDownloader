@@ -129,7 +129,11 @@ async def handle_download_process(
         return await album_downloader.download_album(max_retries=max_retries)
 
     # Single item download
-    download_link, filename = await get_download_info(url, initial_soup)
+    download_link, filename = await get_download_info(
+        url,
+        initial_soup,
+        session_info.clean_name,
+    )
     live_manager.add_overall_task(identifier, num_tasks=1)
     task = live_manager.add_task()
 
@@ -197,7 +201,10 @@ async def execute_url_dry_run(
         no_download_folder=args.no_download_folder,
     )
     session_info = SessionInfo(
-        args=args, bunkr_status=bunkr_status, download_path=download_path,
+        args=args,
+        bunkr_status=bunkr_status,
+        download_path=download_path,
+        clean_name=args.clean_name,
     )
     item_pages, cached_items = await get_album_items(
         validated_url, soup, download_path, identifier,
@@ -247,6 +254,7 @@ async def validate_and_download(
         args=args,
         bunkr_status=bunkr_status,
         download_path=download_path,
+        clean_name=args.clean_name,
         rate_limiter=rate_limiter,
     )
 

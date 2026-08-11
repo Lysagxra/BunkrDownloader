@@ -21,7 +21,7 @@ from src.config import (
     SkippedReason,
 )
 from src.crawlers.crawler_utils import get_download_info
-from src.file_utils import truncate_filename
+from src.file_utils import reserve_unique_filename, truncate_filename
 from src.general_utils import fetch_page
 from src.managers.state_manager import save_album_state
 
@@ -52,6 +52,7 @@ class AlbumDownloader:
         # round-trip.
         self.cached_items = dict(cached_items or {})
         self._state_lock = asyncio.Lock()
+        self._reserved_filenames: set[str] = set()
 
     async def execute_item_download(
         self,
@@ -92,7 +93,11 @@ class AlbumDownloader:
             item_download_link, item_filename = await get_download_info(
                 item_page,
                 item_soup,
+                self.session_info.clean_name,
             )
+
+            if self.session_info.clean_name:
+                item_filename = await self._reserve_filename_for_item(item_filename)
 
             # Download item
             if item_download_link:
@@ -200,6 +205,21 @@ class AlbumDownloader:
                 self.album_info.item_pages,
                 self.cached_items,
             )
+
+    async def _reserve_filename_for_item(self, filename: str) -> str:
+        """Reserve an unique filename for this album run.
+
+        Prevents concurrent tasks from selecting the same '(N)' candidate when
+        multiple items share the same original filename.
+        """
+        async with self._state_lock:
+            unique_filename = reserve_unique_filename(
+                self.session_info.download_path,
+                filename,
+                self._reserved_filenames,
+            )
+            self._reserved_filenames.add(unique_filename)
+            return unique_filename
 
     async def _fetch_page_with_retries(
         self,
