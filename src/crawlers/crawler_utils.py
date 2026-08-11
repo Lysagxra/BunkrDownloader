@@ -152,7 +152,11 @@ def format_item_filename(original_filename: str, url_based_filename: str) -> str
     extension = Path(original_filename).suffix
     url_base = Path(url_based_filename).stem
 
-    if original_base in url_base:
+    has_matching_prefix = url_base.startswith((
+        f"{original_base}-",
+        f"{original_base}_",
+    ))
+    if url_base == original_base or has_matching_prefix:
         return url_based_filename
 
     # Combine the base names with a hyphen and append the extension
