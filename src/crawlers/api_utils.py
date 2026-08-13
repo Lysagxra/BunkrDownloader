@@ -23,9 +23,9 @@ if TYPE_CHECKING:
     from bs4 import BeautifulSoup
 
 
-_DEFAULT_MAX_RETRIES = 4
+_DEFAULT_MAX_RETRIES = 3
 _DEFAULT_BASE_DELAY = 2.0
-_DEFAULT_TIMEOUT = 30
+_DEFAULT_TIMEOUT = 10
 
 
 def unescape_js_path(value: str) -> str:
@@ -55,7 +55,6 @@ def extract_file_id(soup: BeautifulSoup) -> str | None:
     return script.get("data-file-id")
 
 
-
 async def _request_json(
     session: aiohttp.ClientSession,
     method: str,
@@ -64,6 +63,10 @@ async def _request_json(
     json: dict[str, str] | None = None,
     params: dict[str, str] | None = None,
 ) -> dict[str, object] | None:
+    # Force gzip/deflate for non-landing page assets to avoid Brotli (br) responses
+    # from the download API.
+    headers = {"Accept-Encoding": "gzip, deflate"} if method == "POST" else None
+
     for attempt in range(1, _DEFAULT_MAX_RETRIES + 1):
         try:
             async with session.request(
@@ -71,6 +74,7 @@ async def _request_json(
                 api_url,
                 json=json,
                 params=params,
+                headers=headers,
                 timeout=aiohttp.ClientTimeout(total=_DEFAULT_TIMEOUT),
             ) as response:
                 response.raise_for_status()

@@ -170,9 +170,7 @@ async def get_download_info(
     """Gather download information (link and filename) for the item."""
     async with aiohttp.ClientSession() as session:
         item_download_link = await get_item_download_link(
-            session,
-            item_url,
-            soup=item_soup,
+            session, item_url, soup=item_soup,
         )
 
     item_filename = get_item_filename(item_soup)

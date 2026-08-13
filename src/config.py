@@ -41,7 +41,7 @@ MIN_DISK_SPACE_GB = 3          # Minimum free disk space (in GB) required.
 STATUS_PAGE = "https://status.bunkr.ru/"          # Service status page.
 BUNKR_API = "https://glb-apisign.cdn.cr/sign"     # Signature API endpoint.
 DOWNLOAD_API = "https://dl.bunkr.cr/api/_001_v2"  # Download API endpoint.
-DOWNLOAD_REFERER = "https://get.bunkrr.su/"       # Referer used for downloads requests.
+DOWNLOAD_REFERER = "https://dl.bunkrr.cr/"        # Referer used for downloads requests.
 FALLBACK_DOMAIN = "bunkr.cr"                      # Default fallback domain.
 
 # ============================
@@ -118,7 +118,7 @@ THRESHOLDS = [
 LARGE_FILE_CHUNK_SIZE = 16 * MB
 
 # Minimum file size required to trigger a parallel chunked download.
-MIN_PARALLEL_SIZE = 5 * MB
+MIN_PARALLEL_SIZE = 64 * MB
 
 # ============================
 # Work-stealing unit sizing

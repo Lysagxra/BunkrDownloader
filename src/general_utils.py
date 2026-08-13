@@ -62,7 +62,7 @@ async def fetch_page(url: str, retries: int = 5) -> BeautifulSoup | None:
 
     for attempt in range(retries):
         try:
-            response = requests.Session().get(url, timeout=40)
+            response = requests.Session().get(url, timeout=30)
             if response.status_code == HTTPStatus.FORBIDDEN and not tried_fallback:
                 tried_fallback = True
                 url = replace_domain_with_fallback(url)
