@@ -226,8 +226,8 @@ def _build_numbered_filename(filename: str, index: int) -> str:
     base_name = remove_invalid_characters(filename_path.stem) or "file"
     suffix = "" if index == 0 else f" ({index})"
 
-    available_len = MAX_FILENAME_LEN - len(extension) - len(suffix)
-    available_len = max(1, available_len)
+    available_len = max(1, MAX_FILENAME_LEN - len(extension) - len(suffix))
     base_name = base_name[:available_len]
 
-    return str(filename_path.with_name(f"{base_name}{suffix}{extension}"))
+    numbered_filename = f"{base_name}{suffix}{extension}"
+    return str(filename_path.with_name(numbered_filename))

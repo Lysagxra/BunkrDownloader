@@ -120,6 +120,7 @@ async def run_concurrent(
 
     return [url for url, failed in results if failed]
 
+
 def log_failed_urls(failed_urls: list[str]) -> None:
     """Log a summary and list of failed URLs."""
     logging.warning("\n%d URL(s) failed and may need attention:", len(failed_urls))

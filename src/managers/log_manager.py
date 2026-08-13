@@ -27,10 +27,7 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 class LoggerTable:
     """Class for logging events and displaying them in a table with scrolling rows."""
 
-    def __init__(
-        self,
-        max_rows: int = 4,
-    ) -> None:
+    def __init__(self, max_rows: int = 4) -> None:
         """Initialize the table with a circular buffer for scrolling rows."""
         # Circular buffer for scrolling rows
         self.row_buffer = deque(maxlen=max_rows)

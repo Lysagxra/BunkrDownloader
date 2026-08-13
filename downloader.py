@@ -226,7 +226,6 @@ async def validate_and_download(
         around for a retry), False if it succeeded or was skipped.
 
     """
-    # Check the available disk space on the download path before starting the download
     if not args.disable_disk_check:
         check_disk_space(live_manager, custom_path=args.custom_path)
 
