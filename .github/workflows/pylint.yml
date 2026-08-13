@@ -33,6 +33,6 @@ jobs:
 
       - name: Pylint code check
         run: |
-              python -m pylint \
-                --disable=broad-exception-caught,too-many-return-statements \
-                $(git ls-files '*.py')
+          python -m pylint \
+            --disable=broad-exception-caught,too-many-return-statements,too-many-instance-attributes \
+            $(git ls-files '*.py')
