@@ -190,6 +190,7 @@ class SessionInfo:
     args: Namespace | None
     bunkr_status: dict[str, str]
     download_path: str
+    clean_name: bool
     rate_limiter: RateLimiter | None = None
 
 @dataclass(slots=True)
@@ -394,6 +395,12 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         action="store_true",
         default=None,
         help="Disable the disk space check for available free space.",
+    )
+    parser.add_argument(
+        "--clean-name",
+        action="store_true",
+        default=False,
+        help="Keep the original filenames of downloaded files.",
     )
     parser.add_argument(
         "--max-retries",

@@ -16,7 +16,7 @@ from rich.table import Table
 from src.config import DOWNLOAD_HEADERS, KB, MAX_WORKERS
 from src.crawlers.crawler_utils import get_download_info
 from src.downloaders.download_utils import detect_range_support
-from src.file_utils import matches_ignore_list, matches_include_list, truncate_filename
+from src.file_utils import matches_ignore_list, matches_include_list, reserve_unique_filename, truncate_filename
 from src.general_utils import fetch_page
 
 if TYPE_CHECKING:
@@ -69,6 +69,8 @@ async def _resolve_item(
     session_info: SessionInfo,
     cached_items: dict[str, dict],
     semaphore: asyncio.Semaphore,
+    reserved_names: set[str],
+    reservation_lock: asyncio.Lock,
 ) -> dict:
     """Resolve filename, size and status for one item without downloading it."""
     async with semaphore:
@@ -88,9 +90,18 @@ async def _resolve_item(
         if item_soup is None:
             return {"filename": item_page, "size": None, "status": "fetch_failed"}
 
-        download_link, filename = await get_download_info(item_page, item_soup)
+        download_link, filename = await get_download_info(item_page, item_soup, session_info.clean_name)
         if not download_link:
             return {"filename": filename, "size": None, "status": "unresolved"}
+
+        if session_info.clean_name:
+            async with reservation_lock:
+                filename = reserve_unique_filename(
+                    session_info.download_path,
+                    filename,
+                    reserved_names,
+                )
+                reserved_names.add(filename)
 
         filter_status = _get_filter_status(filename, session_info.args)
         if filter_status:
@@ -144,9 +155,18 @@ async def execute_dry_run(
 ) -> None:
     """Print a preview table of what a download would do, without downloading."""
     semaphore = asyncio.Semaphore(MAX_WORKERS)
+    reserved_names: set[str] = set()
+    reservation_lock = asyncio.Lock()
     results = await asyncio.gather(
         *(
-            _resolve_item(page, session_info, cached_items, semaphore)
+            _resolve_item(
+                page,
+                session_info,
+                cached_items,
+                semaphore,
+                reserved_names,
+                reservation_lock,
+            )
             for page in item_pages
         ),
     )

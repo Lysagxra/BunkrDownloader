@@ -179,6 +179,27 @@ def truncate_filename(filename: str) -> str:
     return str(filename_path.with_name(formatted_filename))
 
 
+def reserve_unique_filename(
+    download_path: str,
+    filename: str,
+    reserved_names: set[str] | None = None,
+) -> str:
+    """Pick the first available filename, using '(N)' suffixes on conflicts."""
+    directory = Path(download_path)
+    index = 0
+
+    while True:
+        candidate = _build_numbered_filename(filename, index)
+        if reserved_names and candidate in reserved_names:
+            index += 1
+            continue
+
+        if not (directory / candidate).exists():
+            return candidate
+
+        index += 1
+
+
 def matches_ignore_list(filename: str, ignore_list: list[str] | None) -> bool:
     """Return True if filename matches any word in the --ignore list."""
     return bool(ignore_list) and any(word in filename for word in ignore_list)
@@ -192,3 +213,21 @@ def matches_include_list(filename: str, include_list: list[str] | None) -> bool:
     predicates compose the same way at call sites.
     """
     return bool(include_list) and all(word not in filename for word in include_list)
+
+
+def _build_numbered_filename(filename: str, index: int) -> str:
+    """Return filename formatted as 'name (index).ext' when index > 0.
+
+    The base name is sanitized and truncated so the extension and numbering suffix
+    always fit within MAX_FILENAME_LEN.
+    """
+    filename_path = Path(filename)
+    extension = filename_path.suffix
+    base_name = remove_invalid_characters(filename_path.stem) or "file"
+    suffix = "" if index == 0 else f" ({index})"
+
+    available_len = MAX_FILENAME_LEN - len(extension) - len(suffix)
+    available_len = max(1, available_len)
+    base_name = base_name[:available_len]
+
+    return str(filename_path.with_name(f"{base_name}{suffix}{extension}"))
