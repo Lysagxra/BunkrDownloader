@@ -132,7 +132,7 @@ async def handle_download_process(
     download_link, filename = await get_download_info(
         url,
         initial_soup,
-        session_info.clean_name,
+        clean_name=session_info.clean_name,
     )
     live_manager.add_overall_task(identifier, num_tasks=1)
     task = live_manager.add_task()

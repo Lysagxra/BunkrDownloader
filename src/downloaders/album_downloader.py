@@ -93,7 +93,7 @@ class AlbumDownloader:
             item_download_link, item_filename = await get_download_info(
                 item_page,
                 item_soup,
-                self.session_info.clean_name,
+                clean_name=self.session_info.clean_name,
             )
 
             if self.session_info.clean_name:
@@ -181,11 +181,10 @@ class AlbumDownloader:
     ) -> None:
         """Record this item's outcome and persist the album state to disk.
 
-        Marks the item "completed" only when the download did not fail AND
-        the file is verifiably present on disk -- this stays accurate
-        regardless of *why* the download call returned success (a fresh
-        download, an already-existed skip, or an offline-domain skip all
-        funnel through here).
+        Marks the item "completed" only when the download did not fail AND the file is
+        verifiably present on disk -- this stays accurate regardless of why the download
+        call returned success (a fresh download, an already-existed skip, or an
+        offline-domain skip all funnel through here).
         """
         is_completed = False
         if not failed:
@@ -209,8 +208,8 @@ class AlbumDownloader:
     async def _reserve_filename_for_item(self, filename: str) -> str:
         """Reserve an unique filename for this album run.
 
-        Prevents concurrent tasks from selecting the same '(N)' candidate when
-        multiple items share the same original filename.
+        Prevents concurrent tasks from selecting the same '(N)' candidate when multiple
+        items share the same original filename.
         """
         async with self._state_lock:
             unique_filename = reserve_unique_filename(

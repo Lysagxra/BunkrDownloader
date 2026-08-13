@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from urllib.parse import urlparse
 
 import requests
@@ -31,26 +30,24 @@ def get_bunkr_status() -> dict[str, str]:
 #        logging.warning("Unable to fetch status page; continuing without host data.")
         return {}
 
-    bunkr_status = {}
+    bunkr_status: dict[str, str] = {}
+    server_items = soup.find_all(
+        "div",
+        {
+            "class": (
+                "flex items-center gap-4 py-4 border-b border-soft last:border-b-0"
+            ),
+        },
+    )
 
-    try:
-        server_items = soup.find_all(
-            "div",
-            {
-                "class": (
-                    "flex items-center gap-4 py-4 border-b border-soft last:border-b-0"
-                ),
-            },
-        )
+    for server_item in server_items:
+        server_name = server_item.find("p").get_text(strip=True)
+        server_status = server_item.find("span").get_text(strip=True)
 
-        for server_item in server_items:
-            server_name = server_item.find("p").get_text(strip=True)
-            server_status = server_item.find("span").get_text(strip=True)
-            bunkr_status[server_name] = server_status
+        if server_name is None or server_status is None:
+            continue
 
-    except AttributeError:
-        logging.exception("Error extracting server data")
-        return {}
+        bunkr_status[server_name] = server_status
 
     return bunkr_status
 

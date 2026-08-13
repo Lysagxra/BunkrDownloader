@@ -20,6 +20,7 @@ import tomllib  # Python 3.11+ standard library
 from .version import get_version_string
 
 if TYPE_CHECKING:
+    import asyncio
     from argparse import Namespace
 
     from .rate_limiter import RateLimiter
@@ -200,6 +201,16 @@ class ChunkInfo:
     headers: dict[str, str]
     on_progress: callable
     rate_limiter: RateLimiter | None = None
+
+@dataclass
+class ResolveContext:
+    """Context shared while resolving items."""
+
+    session_info: SessionInfo
+    cached_items: dict[str, dict]
+    semaphore: asyncio.Semaphore
+    reserved_names: set[str]
+    reservation_lock: asyncio.Lock
 
 @dataclass(slots=True)
 class DownloadConfig:

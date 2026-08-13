@@ -13,10 +13,15 @@ from typing import TYPE_CHECKING
 
 from rich.table import Table
 
-from src.config import DOWNLOAD_HEADERS, KB, MAX_WORKERS
+from src.config import DOWNLOAD_HEADERS, KB, MAX_WORKERS, ResolveContext
 from src.crawlers.crawler_utils import get_download_info
 from src.downloaders.download_utils import detect_range_support
-from src.file_utils import matches_ignore_list, matches_include_list, reserve_unique_filename, truncate_filename
+from src.file_utils import (
+    matches_ignore_list,
+    matches_include_list,
+    reserve_unique_filename,
+    truncate_filename,
+)
 from src.general_utils import fetch_page
 
 if TYPE_CHECKING:
@@ -64,50 +69,60 @@ def _get_filter_status(filename: str, args: Namespace) -> str | None:
     return None
 
 
-async def _resolve_item(
+def _get_cached_result(
     item_page: str,
-    session_info: SessionInfo,
-    cached_items: dict[str, dict],
-    semaphore: asyncio.Semaphore,
-    reserved_names: set[str],
-    reservation_lock: asyncio.Lock,
-) -> dict:
-    """Resolve filename, size and status for one item without downloading it."""
-    async with semaphore:
-        cached = cached_items.get(item_page)
-        if cached and cached.get("status") == "completed":
-            filename = cached.get("filename", "")
-            file_path = Path(session_info.download_path) / truncate_filename(filename)
+    context: ResolveContext,
+) -> dict | None:
+    """Return the cached result if the item has already been downloaded."""
+    cached = context.cached_items.get(item_page)
+    if not cached or cached.get("status") != "completed":
+        return None
 
-            if file_path.exists():
-                return {
-                    "filename": filename,
-                    "size": file_path.stat().st_size,
-                    "status": "already_downloaded",
-                }
+    filename = cached.get("filename", "")
+    file_path = Path(context.session_info.download_path) / truncate_filename(filename)
+    if not file_path.exists():
+        return None
+
+    return {
+        "filename": filename,
+        "size": file_path.stat().st_size,
+        "status": "already_downloaded",
+    }
+
+
+async def _resolve_item(item_page: str, context: ResolveContext) -> dict:
+    """Resolve filename, size and status for one item without downloading it."""
+    async with context.semaphore:
+        cached_result = _get_cached_result(item_page, context)
+        if cached_result:
+            return cached_result
 
         item_soup = await fetch_page(item_page)
         if item_soup is None:
             return {"filename": item_page, "size": None, "status": "fetch_failed"}
 
-        download_link, filename = await get_download_info(item_page, item_soup, session_info.clean_name)
+        download_link, filename = await get_download_info(
+            item_page, item_soup, clean_name=context.session_info.clean_name,
+        )
         if not download_link:
             return {"filename": filename, "size": None, "status": "unresolved"}
 
-        if session_info.clean_name:
-            async with reservation_lock:
+        if context.session_info.clean_name:
+            async with context.reservation_lock:
                 filename = reserve_unique_filename(
-                    session_info.download_path,
+                    context.session_info.download_path,
                     filename,
-                    reserved_names,
+                    context.reserved_names,
                 )
-                reserved_names.add(filename)
+                context.reserved_names.add(filename)
 
-        filter_status = _get_filter_status(filename, session_info.args)
+        filter_status = _get_filter_status(filename, context.session_info.args)
         if filter_status:
             return {"filename": filename, "size": None, "status": filter_status}
 
-        final_path = Path(session_info.download_path) / truncate_filename(filename)
+        final_path = (
+            Path(context.session_info.download_path) / truncate_filename(filename)
+        )
         if final_path.exists():
             return {
                 "filename": filename,
@@ -157,18 +172,15 @@ async def execute_dry_run(
     semaphore = asyncio.Semaphore(MAX_WORKERS)
     reserved_names: set[str] = set()
     reservation_lock = asyncio.Lock()
+    context = ResolveContext(
+        session_info=session_info,
+        cached_items=cached_items,
+        semaphore=semaphore,
+        reserved_names=reserved_names,
+        reservation_lock=reservation_lock,
+    )
     results = await asyncio.gather(
-        *(
-            _resolve_item(
-                page,
-                session_info,
-                cached_items,
-                semaphore,
-                reserved_names,
-                reservation_lock,
-            )
-            for page in item_pages
-        ),
+        *(_resolve_item(item_page, context) for item_page in item_pages),
     )
 
     table = Table(title=f"Dry run — {album_id} ({len(item_pages)} item(s))")
