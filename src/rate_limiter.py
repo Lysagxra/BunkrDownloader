@@ -32,7 +32,7 @@ class RateLimiter:
         """Return True if a rate cap is active."""
         return self.rate is not None
 
-    def consume(self, n_bytes: int) -> None:
+    def consume(self, num_bytes: int) -> None:
         """Block the calling thread until n_bytes of bandwidth budget is free.
 
         Safe to call concurrently from many threads; each call only blocks the thread
@@ -41,11 +41,11 @@ class RateLimiter:
 
         A single call may request more bytes than the bucket's max burst capacity
         (self.rate) -- e.g. a single large HTTP read. Tokens are allowed to go negative
-        ("debt") in that case rather than requiring tokens >= n_bytes, which could never
-        be satisfied since tokens are capped at self.rate; the resulting sleep duration
-        below correctly repays that debt at the configured rate either way.
+        ("debt") in that case rather than requiring tokens >= num_bytes, which could
+        never be satisfied since tokens are capped at self.rate; the resulting sleep
+        duration below correctly repays that debt at the configured rate either way.
         """
-        if self.rate is None or n_bytes <= 0:
+        if self.rate is None or num_bytes <= 0:
             return
 
         with self._lock:
@@ -53,7 +53,7 @@ class RateLimiter:
             elapsed = now - self._last_refill
             self._last_refill = now
             self._tokens = min(self.rate, self._tokens + elapsed * self.rate)
-            self._tokens -= n_bytes
+            self._tokens -= num_bytes
             deficit = -self._tokens
 
         if deficit > 0:

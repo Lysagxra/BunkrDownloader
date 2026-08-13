@@ -15,13 +15,15 @@ from enum import IntEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import tomllib  # Python 3.11+ standard library
+import tomllib
 
 from .version import get_version_string
 
 if TYPE_CHECKING:
     import asyncio
     from argparse import Namespace
+
+    from bs4 import BeautifulSoup
 
     from .rate_limiter import RateLimiter
 
@@ -193,6 +195,30 @@ class SessionInfo:
     download_path: str
     clean_name: bool
     rate_limiter: RateLimiter | None = None
+
+class UrlType(IntEnum):
+    """Supported Bunkr URL types."""
+
+    ALBUM = 1
+    MEDIA = 2
+
+@dataclass(frozen=True, slots=True)
+class UrlInfo:
+    """Information about a resolved Bunkr URL."""
+
+    url: str
+    url_type: UrlType
+    soup: BeautifulSoup
+
+    @property
+    def is_album(self) -> bool:
+        """Return whether the URL points to an album."""
+        return self.url_type is UrlType.ALBUM
+
+    @property
+    def is_media(self) -> bool:
+        """Return whether the URL points to a single media."""
+        return self.url_type is UrlType.MEDIA
 
 @dataclass(slots=True)
 class ChunkInfo:

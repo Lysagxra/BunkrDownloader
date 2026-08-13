@@ -45,6 +45,10 @@ if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
 
 
+_BACKOFF_FACTOR = 1.5
+_SINGLE_CONNECTION_TIMEOUT = 15
+
+
 class MediaDownloader:
     """Manage the downloading of individual files from Bunkr URLs."""
 
@@ -88,8 +92,8 @@ class MediaDownloader:
                 if should_use_parallel_download(
                     content_length, num_connections, supports_range=supports_range,
                 ):
-                    # .partN files are preserved on failure so a re-attempt
-                    # (here or on a future run) resumes instead of restarting.
+                    # .partN files are preserved on failure so a future attempt
+                    # resumes instead of restarting.
                     chunked_failed = save_file_with_chunks(
                         self.download_info.download_link,
                         final_path,
@@ -120,7 +124,7 @@ class MediaDownloader:
                     self.download_info.download_link,
                     stream=True,
                     headers=DOWNLOAD_HEADERS,
-                    timeout=30,
+                    timeout=_SINGLE_CONNECTION_TIMEOUT,
                 )
                 response.raise_for_status()
 
@@ -262,7 +266,7 @@ class MediaDownloader:
         )
 
         if attempt < self.retry_config.retries - 1:
-            delay = 3 ** (attempt + 1) + random.uniform(1, 3)  # noqa: S311
+            delay = _BACKOFF_FACTOR ** (attempt + 1) + random.uniform(1, 2)  # noqa: S311
             time.sleep(delay)
             return True
 

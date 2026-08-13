@@ -71,7 +71,6 @@ async def run_sequential(
 ) -> list[str]:
     """Process URLs sequentially and return those that failed."""
     live_manager = build_live_manager(args)
-
     failed_urls: list[str] = []
 
     with live_manager.live:
