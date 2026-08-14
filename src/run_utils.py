@@ -6,7 +6,11 @@ from argparse import Namespace
 
 from rich.console import Console
 
-from downloader import execute_url_dry_run, initialize_managers, validate_and_download
+from downloader import (
+    execute_dry_run_for_url,
+    initialize_managers,
+    validate_and_download,
+)
 from src.config import KB
 from src.managers.live_manager import LiveManager
 from src.rate_limiter import RateLimiter
@@ -45,7 +49,7 @@ async def inspect_urls(
     """Execute a dry-run preview for a list of URLs without downloading anything."""
     console = Console()
     for url in urls:
-        await execute_url_dry_run(bunkr_status, url, args, console)
+        await execute_dry_run_for_url(bunkr_status, url, args, console)
 
     return []
 
@@ -71,7 +75,6 @@ async def run_sequential(
 ) -> list[str]:
     """Process URLs sequentially and return those that failed."""
     live_manager = build_live_manager(args)
-
     failed_urls: list[str] = []
 
     with live_manager.live:

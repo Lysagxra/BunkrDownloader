@@ -15,6 +15,7 @@ from requests.exceptions import ConnectionError as RequestConnectionError
 from requests.exceptions import RequestException, Timeout
 from rich.console import Console
 
+from src.args_utils import parse_arguments
 from src.config import (
     KB,
     AlbumInfo,
@@ -22,7 +23,8 @@ from src.config import (
     RetryConfig,
     SessionInfo,
     SkippedReason,
-    parse_arguments,
+    UrlInfo,
+    UrlType,
 )
 from src.crawlers.crawler_utils import (
     extract_all_album_item_pages,
@@ -58,48 +60,57 @@ from src.url_utils import (
 if TYPE_CHECKING:
     from argparse import Namespace
 
-    from bs4 import BeautifulSoup
-
     from src.managers.live_manager import LiveManager
 
 
+async def resolve_album_items(
+    url_info: UrlInfo,
+    download_path: str,
+    identifier: str,
+) -> tuple[list[str], dict]:
+    """Resolve album item pages, reusing cached state when available.."""
+    if url_info.is_media:
+        return [url_info.url], {}
+
+    cached_state = load_album_state(download_path)
+    if has_cached_item_pages(cached_state, identifier):
+        return cached_state["item_pages"], cached_state["items"]
+
+    host_page = get_host_page(url_info.url)
+    item_pages = await extract_all_album_item_pages(
+        url_info.soup, host_page, url_info.url,
+    )
+    return item_pages, {}
+
+
 async def get_item_pages_with_cache(
-    url: str,
+    url_info: UrlInfo,
     identifier: str,
     session_info: SessionInfo,
-    initial_soup: BeautifulSoup,
     live_manager: LiveManager,
 ) -> tuple[list[str], dict]:
-    """Return album item pages using cached state when available."""
-    if not check_url_type(url):
-        return [url], {}
+    """Resolve album item pages and persist newly discovered state."""
+    item_pages, cached_items = await resolve_album_items(
+        url_info,
+        session_info.download_path,
+        identifier,
+    )
 
-    host_page = get_host_page(url)
-    cached_state = load_album_state(session_info.download_path)
-
-    if has_cached_item_pages(cached_state, identifier):
-        # Reuse cached item pages to avoid re-crawling paginated listings.
-        item_pages = cached_state["item_pages"]
-        cached_items = cached_state["items"]
-
+    if cached_items:
+        num_pages = len(item_pages)
         live_manager.update_log(
             event="Using cached album state",
-            details=(
-                f"Reusing {len(item_pages)} previously crawled item page(s); "
-                "skipping pagination crawl."
-            ),
+            details=f"Reusing {num_pages} previously crawled item page(s)",
         )
         return item_pages, cached_items
 
-    item_pages = await extract_all_album_item_pages(initial_soup, host_page, url)
     save_album_state(session_info.download_path, identifier, item_pages, {})
     return item_pages, {}
 
 
 async def handle_download_process(
+    url_info: UrlInfo,
     session_info: SessionInfo,
-    url: str,
-    initial_soup: BeautifulSoup,
     live_manager: LiveManager,
     max_retries: int,
 ) -> bool:
@@ -109,20 +120,20 @@ async def handle_download_process(
         True if the album/item ended with a permanent failure, False otherwise.
 
     """
-    identifier = get_identifier(url, soup=initial_soup)
+    identifier = get_identifier(url_info.url, soup=url_info.soup)
 
     # Album download
-    if check_url_type(url):
+    if url_info.is_album:
         item_pages, cached_items = await get_item_pages_with_cache(
-            url,
+            url_info,
             identifier,
             session_info,
-            initial_soup,
             live_manager,
         )
+        album_info = AlbumInfo(album_id=identifier, item_pages=item_pages)
         album_downloader = AlbumDownloader(
             session_info=session_info,
-            album_info=AlbumInfo(album_id=identifier, item_pages=item_pages),
+            album_info=album_info,
             live_manager=live_manager,
             cached_items=cached_items,
         )
@@ -130,9 +141,9 @@ async def handle_download_process(
 
     # Single item download
     download_link, filename = await get_download_info(
-        url,
-        initial_soup,
-        clean_name=session_info.clean_name,
+        url_info.url,
+        url_info.soup,
+        clean_name=session_info.args.clean_name,
     )
     live_manager.add_overall_task(identifier, num_tasks=1)
     task = live_manager.add_task()
@@ -140,7 +151,7 @@ async def handle_download_process(
     media_downloader = MediaDownloader(
         session_info=session_info,
         download_info=DownloadInfo(
-            item_url=url,
+            item_url=url_info.url,
             download_link=download_link,
             filename=filename,
             task=task,
@@ -151,47 +162,23 @@ async def handle_download_process(
     return media_downloader.download()
 
 
-async def get_album_items(
-    validated_url: str,
-    soup: BeautifulSoup,
-    download_path: str,
-    identifier: str,
-) -> tuple[list[str], dict]:
-    """Return album item pages and any cached item metadata."""
-    if not check_url_type(validated_url):
-        return [validated_url], {}
-
-    host_page = get_host_page(validated_url)
-    cached_state = load_album_state(download_path)
-
-    if has_cached_item_pages(cached_state, identifier):
-        return cached_state["item_pages"], cached_state["items"]
-
-    item_pages = await extract_all_album_item_pages(soup, host_page, validated_url)
-    return item_pages, {}
-
-
-async def execute_url_dry_run(
+async def prepare_session(
     bunkr_status: dict[str, str],
     url: str,
     args: Namespace,
-    console: Console,
-) -> None:
-    """Preview an album or single-item download without downloading anything.
-
-    Mirrors the path-resolution steps of validate_and_download/handle_download_process,
-    but intentionally runs outside the Live progress UI (nothing is being downloaded,
-    so no progress bars are needed) and never constructs a MediaDownloader.
-    """
+    rate_limiter: RateLimiter | None = None,
+) -> tuple[UrlInfo, SessionInfo] | None:
+    """Fetch a URL and prepare the session required for downloading."""
     validated_url = normalize_url(url)
     soup = await fetch_page(validated_url)
 
     if soup is None:
-        console.print(f"[red]Could not fetch {url}[/red]")
-        return
+        return None
 
-    identifier = get_identifier(validated_url, soup=soup)
-    album_id = get_album_id(validated_url) if check_url_type(validated_url) else None
+    url_type = UrlType.ALBUM if check_url_type(validated_url) else UrlType.MEDIA
+    url_info = UrlInfo(url=validated_url, url_type=url_type, soup=soup)
+
+    album_id = get_album_id(validated_url) if url_info.is_album else None
     album_name = get_album_name(soup)
 
     directory_name = (
@@ -202,14 +189,37 @@ async def execute_url_dry_run(
         custom_path=args.custom_path,
         no_download_folder=args.no_download_folder,
     )
+
     session_info = SessionInfo(
         args=args,
         bunkr_status=bunkr_status,
         download_path=download_path,
-        clean_name=args.clean_name,
+        rate_limiter=rate_limiter,
     )
-    item_pages, cached_items = await get_album_items(
-        validated_url, soup, download_path, identifier,
+    return url_info, session_info
+
+
+async def execute_dry_run_for_url(
+    bunkr_status: dict[str, str],
+    url: str,
+    args: Namespace,
+    console: Console,
+) -> None:
+    """Preview an album or single-item download without downloading anything.
+
+    Mirrors the path-resolution logic of validate_and_download/handle_download_process,
+    but intentionally runs outside the Live progress UI.
+    """
+    prepared_session = await prepare_session(bunkr_status, url, args)
+    if prepared_session is None:
+        console.print(f"[red]Could not fetch {url}[/red]")
+        return
+
+    url_info, session_info = prepared_session
+    identifier = get_identifier(url_info.url, soup=url_info.soup)
+
+    item_pages, cached_items = await resolve_album_items(
+        url_info, session_info.download_path, identifier,
     )
     await execute_dry_run(identifier, item_pages, session_info, cached_items, console)
 
@@ -218,59 +228,39 @@ async def validate_and_download(
     bunkr_status: dict[str, str],
     url: str,
     live_manager: LiveManager,
-    args: Namespace | None = None,
+    args: Namespace,
     rate_limiter: RateLimiter | None = None,
 ) -> bool:
-    """Validate the provided URL, and initiate the download process.
+    """Validate a URL and initiate the download process.
 
     Returns:
-        True if the URL ended with a permanent failure (so the caller can keep it
-        around for a retry), False if it succeeded or was skipped.
+        True if the URL should be kept for a future retry.
+        False if the URL was successfully processed or intentionally skipped.
 
     """
     if not args.disable_disk_check:
         check_disk_space(live_manager, custom_path=args.custom_path)
 
-    validated_url = normalize_url(url)
-    soup = await fetch_page(validated_url)
-
-    if soup is None:
+    prepared_session = await prepare_session(bunkr_status, url, args, rate_limiter)
+    if prepared_session is None:
         write_on_session_log(
             f"Request error for {url}",
             reason=SkippedReason.SERVICE_UNAVAILABLE,
         )
-        log_unavailable_url(live_manager, validated_url)
+        log_unavailable_url(live_manager, normalize_url(url))
         return True
 
-    album_id = get_album_id(validated_url) if check_url_type(validated_url) else None
-    album_name = get_album_name(soup)
-
-    directory_name = (
-        None if args.no_album_folder else format_directory_name(album_name, album_id)
-    )
-    download_path = create_download_directory(
-        directory_name,
-        custom_path=args.custom_path,
-        no_download_folder=args.no_download_folder,
-    )
-    session_info = SessionInfo(
-        args=args,
-        bunkr_status=bunkr_status,
-        download_path=download_path,
-        clean_name=args.clean_name,
-        rate_limiter=rate_limiter,
-    )
+    url_info, session_info = prepared_session
 
     try:
         return await handle_download_process(
+            url_info,
             session_info,
-            validated_url,
-            soup,
             live_manager,
             args.max_retries,
         )
 
-    except (RequestConnectionError, Timeout, RequestException, RuntimeError) as err:
+    except (RequestConnectionError, Timeout, RequestException) as err:
         error_message = f"Error downloading from {url}: {err}"
         write_on_session_log(
             error_message, reason=SkippedReason.SERVICE_UNAVAILABLE,
@@ -284,17 +274,15 @@ async def main() -> None:
     clear_terminal()
     check_python_version()
 
-#    bunkr_status = get_bunkr_status()
-    bunkr_status = {}
+    # Placeholder for integrating the Bunkr status endpoint when available
+    bunkr_status: dict[str, str] = {}
     args = parse_arguments()
 
-    # Dry-run skips downloads and Live UI, printing a simple console table.
     if getattr(args, "dry_run", False):
-        await execute_url_dry_run(bunkr_status, args.url, args, Console())
+        await execute_dry_run_for_url(bunkr_status, args.url, args, Console())
         return
 
-    rate_limit = getattr(args, "rate_limit", None)
-    rate_limiter = RateLimiter(rate_limit * KB if rate_limit else None)
+    rate_limiter = RateLimiter(args.rate_limit * KB if args.rate_limit else None)
     live_manager = initialize_managers(disable_ui=args.disable_ui)
 
     try:

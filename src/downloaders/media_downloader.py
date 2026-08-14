@@ -45,6 +45,10 @@ if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
 
 
+_BACKOFF_FACTOR = 1.5
+_SINGLE_CONNECTION_TIMEOUT = 5
+
+
 class MediaDownloader:
     """Manage the downloading of individual files from Bunkr URLs."""
 
@@ -88,8 +92,8 @@ class MediaDownloader:
                 if should_use_parallel_download(
                     content_length, num_connections, supports_range=supports_range,
                 ):
-                    # .partN files are preserved on failure so a re-attempt
-                    # (here or on a future run) resumes instead of restarting.
+                    # .partN files are preserved on failure so a future attempt
+                    # resumes instead of restarting.
                     chunked_failed = save_file_with_chunks(
                         self.download_info.download_link,
                         final_path,
@@ -105,9 +109,7 @@ class MediaDownloader:
                     if not chunked_failed:
                         return False
 
-                    # Persistent failure after CHUNK_MAX_RETRIES internal
-                    # attempts -- consume one outer retry slot, same as a
-                    # request-level failure on the fallback path below.
+                    # Persistent failure after CHUNK_MAX_RETRIES attempts.
                     if not self._retry_with_backoff(
                         attempt, event="Retrying chunked download",
                     ):
@@ -120,7 +122,7 @@ class MediaDownloader:
                     self.download_info.download_link,
                     stream=True,
                     headers=DOWNLOAD_HEADERS,
-                    timeout=30,
+                    timeout=_SINGLE_CONNECTION_TIMEOUT,
                 )
                 response.raise_for_status()
 
@@ -153,8 +155,12 @@ class MediaDownloader:
             self.download_info.download_link,
             self.session_info.bunkr_status,
         )
-
-        if is_offline and is_final_attempt:
+        should_skip_offline = (
+            is_offline
+            and is_final_attempt
+            and not self.session_info.args.disable_server_check
+        )
+        if should_skip_offline:
             self.live_manager.update_log(
                 event="Non-operational subdomain",
                 details=f"The subdomain for {self.download_info.filename} is offline. "
@@ -163,7 +169,7 @@ class MediaDownloader:
             self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
             return False
 
-        if self.session_info.clean_name:
+        if self.session_info.args.clean_name:
             self.download_info.filename = reserve_unique_filename(
                 self.session_info.download_path,
                 self.download_info.filename,
@@ -241,8 +247,12 @@ class MediaDownloader:
             )
 
         # Check if the subdomain is marked as offline
-        if subdomain_is_offline(
-            self.download_info.download_link, self.session_info.bunkr_status,
+        if (
+            subdomain_is_offline(
+                self.download_info.download_link,
+                self.session_info.bunkr_status,
+            )
+            and not self.session_info.args.disable_server_check
         ):
             self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
             return log_and_skip_event(
@@ -262,7 +272,7 @@ class MediaDownloader:
         )
 
         if attempt < self.retry_config.retries - 1:
-            delay = 3 ** (attempt + 1) + random.uniform(1, 3)  # noqa: S311
+            delay = _BACKOFF_FACTOR ** (attempt + 1) + random.uniform(1, 2)  # noqa: S311
             time.sleep(delay)
             return True
 

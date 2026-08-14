@@ -17,7 +17,7 @@ def fetch_status_page() -> BeautifulSoup | None:
         response.raise_for_status()
 
     except requests.RequestException:
-#        logging.warning("An error occurred while fetching the status page")
+        # logging.warning("An error occurred while fetching the status page")
         return None
 
     return BeautifulSoup(response.text, "html.parser")
@@ -27,7 +27,7 @@ def get_bunkr_status() -> dict[str, str]:
     """Fetch the status of servers from the status page and return a dictionary."""
     soup = fetch_status_page()
     if soup is None:
-#        logging.warning("Unable to fetch status page; continuing without host data.")
+        # logging.warning("Unable to fetch status page; continuing without host data.")
         return {}
 
     bunkr_status: dict[str, str] = {}
@@ -41,12 +41,14 @@ def get_bunkr_status() -> dict[str, str]:
     )
 
     for server_item in server_items:
-        server_name = server_item.find("p").get_text(strip=True)
-        server_status = server_item.find("span").get_text(strip=True)
+        server_name_tag = server_item.find("p")
+        server_status_tag = server_item.find("span")
 
-        if server_name is None or server_status is None:
+        if server_name_tag is None or server_status_tag is None:
             continue
 
+        server_name = server_name_tag.get_text(strip=True)
+        server_status = server_status_tag.get_text(strip=True)
         bunkr_status[server_name] = server_status
 
     return bunkr_status
@@ -54,7 +56,6 @@ def get_bunkr_status() -> dict[str, str]:
 
 def get_offline_servers(bunkr_status: dict[str, str] | None = None) -> dict[str, str]:
     """Return a dictionary of servers that are not operational."""
-    bunkr_status = bunkr_status or get_bunkr_status()
     return {
         server_name: server_status
         for server_name, server_status in bunkr_status.items()
