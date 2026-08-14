@@ -43,7 +43,6 @@ async def process_urls(urls: list[str], args: Namespace) -> list[str]:
     # Process sequentially when concurrency is disabled or there is only one URL
     if max_concurrent <= 1 or len(urls) <= 1:
         return await run_sequential(urls, bunkr_status, args, rate_limiter)
-    input("4")
 
     # Rich progress assumes only one active album. Use plain logging in concurrent mode
     # to prevent overlapping or corrupted progress displays

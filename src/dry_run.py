@@ -102,12 +102,12 @@ async def _resolve_item(item_page: str, context: ResolveContext) -> dict:
             return {"filename": item_page, "size": None, "status": "fetch_failed"}
 
         download_link, filename = await get_download_info(
-            item_page, item_soup, clean_name=context.session_info.clean_name,
+            item_page, item_soup, clean_name=context.session_info.args.clean_name,
         )
         if not download_link:
             return {"filename": filename, "size": None, "status": "unresolved"}
 
-        if context.session_info.clean_name:
+        if context.session_info.args.clean_name:
             async with context.reservation_lock:
                 filename = reserve_unique_filename(
                     context.session_info.download_path,

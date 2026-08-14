@@ -15,6 +15,7 @@ from requests.exceptions import ConnectionError as RequestConnectionError
 from requests.exceptions import RequestException, Timeout
 from rich.console import Console
 
+from src.args_utils import parse_arguments
 from src.config import (
     KB,
     AlbumInfo,
@@ -24,7 +25,6 @@ from src.config import (
     SkippedReason,
     UrlInfo,
     UrlType,
-    parse_arguments,
 )
 from src.crawlers.crawler_utils import (
     extract_all_album_item_pages,
@@ -143,7 +143,7 @@ async def handle_download_process(
     download_link, filename = await get_download_info(
         url_info.url,
         url_info.soup,
-        clean_name=session_info.clean_name,
+        clean_name=session_info.args.clean_name,
     )
     live_manager.add_overall_task(identifier, num_tasks=1)
     task = live_manager.add_task()
@@ -192,7 +192,6 @@ async def prepare_session(
         args=args,
         bunkr_status=bunkr_status,
         download_path=download_path,
-        clean_name=args.clean_name,
         rate_limiter=rate_limiter,
     )
     return url_info, session_info

@@ -91,9 +91,9 @@ class AlbumDownloader:
             item_download_link, item_filename = await get_download_info(
                 item_page,
                 item_soup,
-                clean_name=self.session_info.clean_name,
+                clean_name=self.session_info.args.clean_name,
             )
-            if self.session_info.clean_name:
+            if self.session_info.args.clean_name:
                 item_filename = await self._reserve_filename_for_item(item_filename)
 
             # Download item

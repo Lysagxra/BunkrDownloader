@@ -109,9 +109,7 @@ class MediaDownloader:
                     if not chunked_failed:
                         return False
 
-                    # Persistent failure after CHUNK_MAX_RETRIES attempts. Consume one
-                    # outer retry slot, just like a request-level failure on the
-                    # fallback path below.
+                    # Persistent failure after CHUNK_MAX_RETRIES attempts.
                     if not self._retry_with_backoff(
                         attempt, event="Retrying chunked download",
                     ):
@@ -157,8 +155,12 @@ class MediaDownloader:
             self.download_info.download_link,
             self.session_info.bunkr_status,
         )
-
-        if is_offline and is_final_attempt:
+        should_skip_offline = (
+            is_offline
+            and is_final_attempt
+            and not self.session_info.args.disable_server_check
+        )
+        if should_skip_offline:
             self.live_manager.update_log(
                 event="Non-operational subdomain",
                 details=f"The subdomain for {self.download_info.filename} is offline. "
@@ -167,7 +169,7 @@ class MediaDownloader:
             self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
             return False
 
-        if self.session_info.clean_name:
+        if self.session_info.args.clean_name:
             self.download_info.filename = reserve_unique_filename(
                 self.session_info.download_path,
                 self.download_info.filename,
@@ -245,8 +247,12 @@ class MediaDownloader:
             )
 
         # Check if the subdomain is marked as offline
-        if subdomain_is_offline(
-            self.download_info.download_link, self.session_info.bunkr_status,
+        if (
+            subdomain_is_offline(
+                self.download_info.download_link,
+                self.session_info.bunkr_status,
+            )
+            and not self.session_info.args.disable_server_check
         ):
             self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
             return log_and_skip_event(
