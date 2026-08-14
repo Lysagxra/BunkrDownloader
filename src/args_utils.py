@@ -53,7 +53,7 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         default=None,
         help=(
             "Maximum number of retries for downloading a single media "
-            f"(default: {MAX_RETRIES}).",
+            f"(default: {MAX_RETRIES})."
         ),
     )
     parser.add_argument(
