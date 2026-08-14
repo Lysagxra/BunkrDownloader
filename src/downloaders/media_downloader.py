@@ -29,7 +29,6 @@ from src.config import (
 from src.file_utils import (
     matches_ignore_list,
     matches_include_list,
-    reserve_unique_filename,
     truncate_filename,
     write_on_session_log,
 )
@@ -168,12 +167,6 @@ class MediaDownloader:
             )
             self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
             return False
-
-        if self.session_info.args.clean_name:
-            self.download_info.filename = reserve_unique_filename(
-                self.session_info.download_path,
-                self.download_info.filename,
-            )
 
         formatted_filename = truncate_filename(self.download_info.filename)
         final_path = Path(self.session_info.download_path) / formatted_filename

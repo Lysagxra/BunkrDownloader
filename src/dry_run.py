@@ -110,7 +110,6 @@ async def _resolve_item(item_page: str, context: ResolveContext) -> dict:
         if context.session_info.args.clean_name:
             async with context.reservation_lock:
                 filename = reserve_unique_filename(
-                    context.session_info.download_path,
                     filename,
                     context.reserved_names,
                 )
