@@ -94,7 +94,9 @@ class AlbumDownloader:
                 clean_name=self.session_info.args.clean_name,
             )
             if self.session_info.args.clean_name:
-                item_filename = await self._reserve_filename_for_item(item_filename)
+                item_filename = await self._reserve_filename_for_item(
+                    item_filename, item_page,
+                )
 
             # Download item
             if item_download_link:
@@ -202,17 +204,22 @@ class AlbumDownloader:
                 self.download_state.cached_items,
             )
 
-    async def _reserve_filename_for_item(self, filename: str) -> str:
+    async def _reserve_filename_for_item(self, filename: str, item_page: str) -> str:
         """Reserve an unique filename for this album run.
 
         Prevents concurrent tasks from selecting the same '(N)' candidate when multiple
-        items share the same original filename.
+        items share the same original filename. When a previous run already assigned a
+        name to this exact item, that name is reused, so the already-downloaded check
+        keeps matching even though items are resolved in a non-deterministic order.
         """
         async with self._state_lock:
-            unique_filename = reserve_unique_filename(
-                self.session_info.download_path,
-                filename,
-                self._reserved_filenames,
+            cached_filename = (
+                self.download_state.cached_items.get(item_page) or {}
+            ).get("filename")
+            unique_filename = (
+                cached_filename
+                if cached_filename and cached_filename not in self._reserved_filenames
+                else reserve_unique_filename(filename, self._reserved_filenames)
             )
             self._reserved_filenames.add(unique_filename)
             return unique_filename

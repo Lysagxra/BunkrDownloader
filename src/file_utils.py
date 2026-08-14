@@ -180,21 +180,23 @@ def truncate_filename(filename: str) -> str:
 
 
 def reserve_unique_filename(
-    download_path: str,
     filename: str,
     reserved_names: set[str] | None = None,
 ) -> str:
-    """Pick the first available filename, using '(N)' suffixes on conflicts."""
-    directory = Path(download_path)
+    """Pick the first filename not yet claimed in this run, using '(N)' suffixes.
+
+    Only names reserved earlier in the same run are avoided; files already on disk are
+    deliberately NOT taken into account. Numbering exists to separate distinct items of
+    the same album that share an original filename, so a given item must resolve to the
+    same name on every run -- otherwise a re-run would pick a fresh '(N)' name for an
+    item that is already downloaded and fetch it all over again. Files that already
+    exist are handled later, by the regular already-downloaded skip.
+    """
     index = 0
 
     while True:
         candidate = _build_numbered_filename(filename, index)
-        if reserved_names and candidate in reserved_names:
-            index += 1
-            continue
-
-        if not (directory / candidate).exists():
+        if not reserved_names or candidate not in reserved_names:
             return candidate
 
         index += 1
