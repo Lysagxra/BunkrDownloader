@@ -168,7 +168,7 @@ def _compute_unit_ranges(
 
 def _plan_path(base_path: Path) -> Path:
     """Return the sidecar metadata path storing the chunk partition plan."""
-    return Path(f"{base_path}.bunkrparts")
+    return append_suffix(base_path, ".bunkrparts")
 
 
 def _load_or_create_plan(
