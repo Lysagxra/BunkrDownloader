@@ -35,6 +35,12 @@ if TYPE_CHECKING:
     from src.rate_limiter import RateLimiter
 
 
+def append_suffix(path: str | Path, suffix: str) -> Path:
+    """Append a suffix to the filename without replacing its extension."""
+    path = Path(path)
+    return path.with_name(path.name + suffix)
+
+
 def get_chunk_size(file_size: int) -> int:
     """Determine the optimal chunk size based on the file size."""
     for threshold, chunk_size in THRESHOLDS:
@@ -53,7 +59,7 @@ def save_file_with_progress(
 ) -> bool:
     """Save the file from the response to the specified path.
 
-    Adds a `.temp` extension while downloading. Handles network interruptions
+    Appends a `.temp` extension while downloading. Handles network interruptions
     such as IncompleteRead and ConnectionResetError (wrapped in
     ChunkedEncodingError) by marking the download as incomplete.
 
@@ -63,7 +69,7 @@ def save_file_with_progress(
     if file_size == -1:
         logging.warning("Content length not provided in response headers.")
 
-    temp_download_path = Path(download_path).with_suffix(".temp")
+    temp_download_path = append_suffix(download_path, ".temp")
     chunk_size = get_chunk_size(file_size)
     total_downloaded = 0
 
@@ -72,8 +78,10 @@ def save_file_with_progress(
             for chunk in response.iter_content(chunk_size=chunk_size):
                 if chunk is not None:
                     file.write(chunk)
+
                     if rate_limiter:
                         rate_limiter.consume(len(chunk))
+
                     total_downloaded += len(chunk)
                     completed = (total_downloaded / file_size) * 100
                     live_manager.update_task(task, completed=completed)
@@ -160,7 +168,7 @@ def _compute_unit_ranges(
 
 def _plan_path(base_path: Path) -> Path:
     """Return the sidecar metadata path storing the chunk partition plan."""
-    return Path(f"{base_path}.bunkrparts")
+    return append_suffix(base_path, ".bunkrparts")
 
 
 def _load_or_create_plan(
@@ -202,7 +210,7 @@ def _load_or_create_plan(
 
 def _chunk_path(base_path: Path, index: int) -> Path:
     """Return the .partN path for the given chunk index."""
-    return base_path.with_suffix(f".part{index}")
+    return append_suffix(base_path, f".part{index}")
 
 
 def _attempt_chunk_once(
