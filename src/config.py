@@ -298,6 +298,7 @@ TASK_REASON_MAPPING: dict[TaskResult, type[IntEnum]] = {
 _CONFIG_FIELDS: dict[str, tuple[object, object]] = {
     "custom_path": (None, lambda v: isinstance(v, str)),
     "no_download_folder": (False, lambda v: isinstance(v, bool)),
+    "no_album_folder": (False, lambda v: isinstance(v, bool)),
     "disable_ui": (False, lambda v: isinstance(v, bool)),
     "disable_disk_check": (False, lambda v: isinstance(v, bool)),
     "max_retries": (
@@ -394,6 +395,15 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         action="store_true",
         default=None,
         help="Save files without a 'Downloads' subfolder.",
+    )
+    parser.add_argument(
+        "--no-album-folder",
+        action="store_true",
+        default=None,
+        help=(
+            "Save files without an 'ALBUM_TITLE (ALBUM_ID)' subfolder, "
+            "directly into the download directory."
+        ),
     )
     parser.add_argument(
         "--disable-ui",

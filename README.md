@@ -184,6 +184,8 @@ python3 main.py
 If the `--custom-path <custom_path>` argument is used, the downloaded files will be saved in `<custom_path>/Downloads`.
 Otherwise, the files will be saved in a `Downloads` folder created within the script's directory
 
+Within that folder, each album gets its own `ALBUM_TITLE (ALBUM_ID)` subfolder. Use `--no-album-folder` to skip it and save the files directly into the download directory (`--no-download-folder` skips the `Downloads` folder itself; the two can be combined).
+
 ### Usage
 
 ```bash
