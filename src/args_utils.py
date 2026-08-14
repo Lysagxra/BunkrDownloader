@@ -21,6 +21,15 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         help="Save files without a 'Downloads' subfolder.",
     )
     parser.add_argument(
+        "--no-album-folder",
+        action="store_true",
+        default=None,
+        help=(
+            "Save files without an 'ALBUM_TITLE (ALBUM_ID)' subfolder, "
+            "directly into the download directory."
+        ),
+    )
+    parser.add_argument(
         "--disable-ui",
         action="store_true",
         default=None,

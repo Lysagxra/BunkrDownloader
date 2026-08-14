@@ -328,6 +328,7 @@ TASK_REASON_MAPPING: dict[TaskResult, type[IntEnum]] = {
 _CONFIG_FIELDS: dict[str, tuple[object, object]] = {
     "custom_path": (None, lambda v: isinstance(v, str)),
     "no_download_folder": (False, lambda v: isinstance(v, bool)),
+    "no_album_folder": (False, lambda v: isinstance(v, bool)),
     "disable_ui": (False, lambda v: isinstance(v, bool)),
     "disable_disk_check": (False, lambda v: isinstance(v, bool)),
     "max_retries": (

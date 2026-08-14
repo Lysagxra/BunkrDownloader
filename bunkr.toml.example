@@ -13,6 +13,9 @@
 # Save files without a "Downloads" subfolder.
 # no_download_folder = false
 
+# Save files without an "ALBUM_TITLE (ALBUM_ID)" subfolder.
+# no_album_folder = false
+
 # Disable the live terminal UI (plain log lines instead).
 # disable_ui = false
 

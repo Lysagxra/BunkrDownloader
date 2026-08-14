@@ -181,7 +181,9 @@ async def prepare_session(
     album_id = get_album_id(validated_url) if url_info.is_album else None
     album_name = get_album_name(soup)
 
-    directory_name = format_directory_name(album_name, album_id)
+    directory_name = (
+        None if args.no_album_folder else format_directory_name(album_name, album_id)
+    )
     download_path = create_download_directory(
         directory_name,
         custom_path=args.custom_path,
