@@ -53,7 +53,7 @@ def save_file_with_progress(
 ) -> bool:
     """Save the file from the response to the specified path.
 
-    Adds a `.temp` extension while downloading. Handles network interruptions
+    Appends a `.temp` extension while downloading. Handles network interruptions
     such as IncompleteRead and ConnectionResetError (wrapped in
     ChunkedEncodingError) by marking the download as incomplete.
 
@@ -63,7 +63,7 @@ def save_file_with_progress(
     if file_size == -1:
         logging.warning("Content length not provided in response headers.")
 
-    temp_download_path = Path(download_path).with_suffix(".temp")
+    temp_download_path = Path(f"{Path(download_path)}.temp")
     chunk_size = get_chunk_size(file_size)
     total_downloaded = 0
 
@@ -202,7 +202,7 @@ def _load_or_create_plan(
 
 def _chunk_path(base_path: Path, index: int) -> Path:
     """Return the .partN path for the given chunk index."""
-    return base_path.with_suffix(f".part{index}")
+    return Path(f"{base_path}.part{index}")
 
 
 def _attempt_chunk_once(
