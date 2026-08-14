@@ -51,16 +51,15 @@ class ProgressManager:
         # re-buffered out of order.
         self.current_overall_task_id: TaskID | None = None
 
-        # IDs of overall tasks already queued for cleanup, so a finished task is
-        # only ever enqueued into overall_buffer once, no matter how many more
-        # progress updates arrive for it afterwards.
+        # IDs of overall tasks already queued for cleanup, so a finished task is only
+        # ever enqueued into overall_buffer once, no matter how many more progress
+        # updates arrive for it afterwards.
         self._buffered_overall_task_ids: set[TaskID] = set()
 
-        # Every public update touches shared Progress state (task lists, the
-        # cleanup buffer, current_overall_task_id) from whichever thread the
-        # download happened to run on -- up to MAX_WORKERS x num_connections
-        # threads can call update_task concurrently. This lock makes each
-        # update atomic.
+        # Every public update touches shared Progress state (task lists, the cleanup
+        # buffer, current_overall_task_id) from whichever thread the download happened
+        # to run on -- up to MAX_WORKERS x num_connections threads can call update_task
+        # concurrently. This lock makes each update atomic.
         self._lock = threading.Lock()
 
     def get_panel_width(self) -> int:
@@ -108,7 +107,6 @@ class ProgressManager:
         """Create a formatted progress table for tracking the download."""
         terminal_width, _ = shutil.get_terminal_size()
         panel_width = max(min_panel_width, terminal_width // 2)
-
         progress_table = Table.grid()
         progress_table.add_row(
             Panel.fit(
@@ -132,11 +130,10 @@ class ProgressManager:
     def _update_overall_task(self, task_id: int) -> None:
         """Advance the overall progress bar and removes old tasks.
 
-        Safe to call even after the overall task for this album has already
-        been cleaned up (e.g. a late progress callback from a retry, or from
-        a slow parallel-chunk worker that finishes after the rest): in that
-        case current_overall_task_id is None and this is a no-op instead of
-        crashing.
+        Safe to call even after the overall task for this album has already been cleaned
+        up (e.g. a late progress callback from a retry, or from a slow parallel-chunk
+        worker that finishes after the rest): in that case current_overall_task_id is
+        None and this is a no-op instead of crashing.
         """
         overall_task_id = self.current_overall_task_id
         if overall_task_id is None:
@@ -181,10 +178,10 @@ class ProgressManager:
             self.overall_progress.remove_task(completed_overall_id)
             self._buffered_overall_task_ids.discard(completed_overall_id)
 
-            # If the task we just removed was the one still being tracked as
-            # "current" (e.g. lingering retries for a finished album kept it
-            # alive in the buffer), clear the reference so any further stray
-            # update becomes a safe no-op instead of touching a removed task.
+            # If the task we just removed was the one still being tracked as "current"
+            # (e.g. lingering retries for a finished album kept it alive in the buffer),
+            # clear the reference so any further stray update becomes a safe no-op
+            # instead of touching a removed task.
             if completed_overall_id == self.current_overall_task_id:
                 self.current_overall_task_id = None
 

@@ -55,12 +55,14 @@ class LoggerTable:
             log_table,
             title=f"[bold {self.title_color}]Log Messages",
             border_style=self.border_style,
-            width=2 * panel_width,  # Log panel width is double the single table width
+            width=2*panel_width,  # Log panel width is double the single table width
         )
 
     # Private methods
     def _calculate_column_widths(
-        self, min_column_widths: dict, padding: int = 10,
+        self,
+        min_column_widths: dict,
+        padding: int = 10,
     ) -> dict:
         """Calculate the column widths based on the terminal width."""
         terminal_width, _ = shutil.get_terminal_size()

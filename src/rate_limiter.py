@@ -20,7 +20,8 @@ class RateLimiter:
         # rate_bytes_per_sec: Maximum aggregate bytes/sec across all callers. None or a
         # non-positive value disables throttling entirely (consume() becomes a no-op).
         self.rate = (
-            rate_bytes_per_sec if rate_bytes_per_sec and rate_bytes_per_sec > 0
+            rate_bytes_per_sec
+            if rate_bytes_per_sec and rate_bytes_per_sec > 0
             else None
         )
         self._tokens = float(self.rate or 0)

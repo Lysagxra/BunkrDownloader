@@ -119,7 +119,7 @@ class LiveManager:
         footer = Align.left(footer_text)
         return Group(
             self.progress_table,
-            self.logger_table.render_log_panel(panel_width=2 * panel_width),
+            self.logger_table.render_log_panel(panel_width=2*panel_width),
             footer,
         )
 

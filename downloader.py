@@ -78,7 +78,9 @@ async def resolve_album_items(
 
     host_page = get_host_page(url_info.url)
     item_pages = await extract_all_album_item_pages(
-        url_info.soup, host_page, url_info.url,
+        url_info.soup,
+        host_page,
+        url_info.url,
     )
     return item_pages, {}
 
@@ -95,7 +97,6 @@ async def get_item_pages_with_cache(
         session_info.download_path,
         identifier,
     )
-
     if cached_items:
         num_pages = len(item_pages)
         live_manager.update_log(
@@ -157,7 +158,7 @@ async def handle_download_process(
             task=task,
         ),
         live_manager=live_manager,
-        retry_config = RetryConfig(),
+        retry_config=RetryConfig(),
     )
     return media_downloader.download()
 
@@ -219,7 +220,9 @@ async def execute_dry_run_for_url(
     identifier = get_identifier(url_info.url, soup=url_info.soup)
 
     item_pages, cached_items = await resolve_album_items(
-        url_info, session_info.download_path, identifier,
+        url_info,
+        session_info.download_path,
+        identifier,
     )
     await execute_dry_run(identifier, item_pages, session_info, cached_items, console)
 
@@ -263,7 +266,8 @@ async def validate_and_download(
     except (RequestConnectionError, Timeout, RequestException) as err:
         error_message = f"Error downloading from {url}: {err}"
         write_on_session_log(
-            error_message, reason=SkippedReason.SERVICE_UNAVAILABLE,
+            error_message,
+            reason=SkippedReason.SERVICE_UNAVAILABLE,
         )
         live_manager.update_log(event="Download failed", details=error_message)
         return True

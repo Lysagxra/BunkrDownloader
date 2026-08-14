@@ -44,7 +44,9 @@ async def process_one_url(
 
 
 async def inspect_urls(
-    urls: list[str], bunkr_status: dict[str, str], args: Namespace,
+    urls: list[str],
+    bunkr_status: dict[str, str],
+    args: Namespace,
 ) -> list[str]:
     """Execute a dry-run preview for a list of URLs without downloading anything."""
     console = Console()
@@ -80,7 +82,11 @@ async def run_sequential(
     with live_manager.live:
         for url in urls:
             failed = await process_one_url(
-                bunkr_status, url, live_manager, args, rate_limiter,
+                bunkr_status,
+                url,
+                live_manager,
+                args,
+                rate_limiter,
             )
             if failed:
                 failed_urls.append(url)
@@ -113,7 +119,11 @@ async def run_concurrent(
     async def _bounded(url: str) -> tuple[str, bool]:
         async with semaphore:
             failed = await process_one_url(
-                bunkr_status, url, live_manager, args, rate_limiter,
+                bunkr_status,
+                url,
+                live_manager,
+                args,
+                rate_limiter,
             )
             return url, failed
 

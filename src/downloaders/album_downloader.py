@@ -31,6 +31,8 @@ from .media_downloader import MediaDownloader
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
 
+_FETCH_BASE_DELAY = 1.5
+
 
 class AlbumDownloader:
     """Manage the downloading of entire Bunkr albums."""
@@ -61,76 +63,30 @@ class AlbumDownloader:
     ) -> None:
         """Handle the download of an individual item in the album."""
         async with semaphore:
-            # Fast path: this item was confirmed downloaded on a previous run and the
-            # file is still on disk -- skip entirely without fetching the item page or
-            # calling the signing API.
-            cached = self.download_state.cached_items.get(item_page)
-            if cached and cached.get("status") == "completed":
-                cached_filename = cached.get("filename", "")
-                expected_path = (
-                    Path(self.session_info.download_path)
-                    / truncate_filename(cached_filename)
-                )
-                if expected_path.exists():
-                    task = self.live_manager.add_task(current_task=current_task)
-                    self.live_manager.update_log(
-                        event="Skipped download",
-                        details=f"{cached_filename} has already been downloaded "
-                        "(cached from a previous run).",
-                    )
-                    self.live_manager.update_task(task, completed=100, visible=False)
-                    self.live_manager.update_summary(SkippedReason.ALREADY_DOWNLOADED)
-                    return
-                # The cached file is missing (user deleted it, or the state
-                # was stale) -- fall through and process normally below.
+            # Fast path: previously downloaded and still on disk -- skip the item page
+            # and signing API.
+            if await self._skip_cached_item(item_page, current_task):
+                return
 
+            # Cached file is missing or stale -- fall through and process normally.
             task = self.live_manager.add_task(current_task=current_task)
 
             # Process the download of an item
-            item_soup = await self._fetch_page_with_retries(item_page)
-            item_download_link, item_filename = await get_download_info(
+            item_download_link, item_filename = await self._resolve_item_download(
                 item_page,
-                item_soup,
-                clean_name=self.session_info.args.clean_name,
             )
-            if self.session_info.args.clean_name:
-                item_filename = await self._reserve_filename_for_item(
-                    item_filename, item_page,
-                )
-
-            # Download item
             if item_download_link:
-                media_downloader = MediaDownloader(
-                    session_info=self.session_info,
-                    download_info=DownloadInfo(
-                        item_url=item_page,
-                        download_link=item_download_link,
-                        filename=item_filename,
-                        task=task,
-                    ),
-                    live_manager=self.live_manager,
-                    retry_config=RetryConfig(
-                        retries=max_retries,
-                        has_external_retry=True,
-                    ),
-                )
-                failed_download = await asyncio.to_thread(media_downloader.download)
-                if failed_download:
-                    self.download_state.failed_downloads.append({
-                        "id": task,
-                        "filename": item_filename,
-                        "download_link": item_download_link,
-                        "item_url": item_page,
-                    })
-
-                await self._persist_item_state(
-                    item_page, item_filename, failed=failed_download,
+                await self._download_item(
+                    item_page,
+                    item_filename,
+                    item_download_link,
+                    task,
+                    max_retries,
                 )
 
             else:
-                # URL could not be resolved after all retries -- report as failed
-                # so the user knows which files need attention. There is no
-                # download_link to retry with, so this counts as permanent.
+                # URL could not be resolved after all retries -- report as failed.
+                # No download link remains to retry, so treat it as permanent.
                 self.live_manager.update_log(
                     event="Download failed",
                     details=f"Could not resolve a download URL for {item_filename}.",
@@ -175,6 +131,89 @@ class AlbumDownloader:
         return bool(still_failed) or self.download_state.unresolved_failures > 0
 
     # Private methods
+    async def _skip_cached_item(self, item_page: str, current_task: int) -> bool:
+        """Skip an item if its cached download is still present on disk."""
+        cached = self.download_state.cached_items.get(item_page)
+        if not cached or cached.get("status") != "completed":
+            return False
+
+        filename = cached.get("filename", "")
+        expected_path = (
+            Path(self.session_info.download_path)
+            / truncate_filename(filename)
+        )
+        if not expected_path.exists():
+            return False
+
+        task = self.live_manager.add_task(current_task=current_task)
+        self.live_manager.update_log(
+            event="Skipped download",
+            details=(
+                f"{filename} has already been downloaded (cached from a previous run)."
+            ),
+        )
+        self.live_manager.update_task(
+            task,
+            completed=100,
+            visible=False,
+        )
+        self.live_manager.update_summary(SkippedReason.ALREADY_DOWNLOADED)
+        return True
+
+    async def _resolve_item_download(self, item_page: str) -> tuple[str, str]:
+        """Resolve the download URL and filename for an item page."""
+        item_soup = await self._fetch_page_with_retries(item_page)
+        item_download_link, item_filename = await get_download_info(
+            item_page,
+            item_soup,
+            clean_name=self.session_info.args.clean_name,
+        )
+        if self.session_info.args.clean_name:
+            item_filename = await self._reserve_filename_for_item(
+                item_filename,
+                item_page,
+            )
+
+        return item_download_link, item_filename
+
+    async def _download_item(
+        self,
+        item_page: str,
+        item_filename: str,
+        item_download_link: str,
+        task: int,
+        max_retries: int,
+    ) -> None:
+        """Download an item and persist its resulting download state."""
+        download_info = DownloadInfo(
+            item_url=item_page,
+            download_link=item_download_link,
+            filename=item_filename,
+            task=task,
+        )
+        retry_confing = RetryConfig(retries=max_retries, has_external_retry=True)
+        media_downloader = MediaDownloader(
+            session_info=self.session_info,
+            download_info=download_info,
+            live_manager=self.live_manager,
+            retry_config=retry_confing,
+        )
+
+        failed_download = await asyncio.to_thread(media_downloader.download)
+        if failed_download:
+            self.download_state.failed_downloads.append({
+                "id": task,
+                "filename": item_filename,
+                "download_link": item_download_link,
+                "item_url": item_page,
+            })
+
+        await self._persist_item_state(
+            item_page,
+            item_filename,
+            failed=failed_download,
+        )
+
     async def _persist_item_state(
         self, item_page: str, filename: str, *, failed: bool,
     ) -> None:
@@ -228,7 +267,7 @@ class AlbumDownloader:
         self,
         item_page: str,
         max_retries: int = MAX_RETRIES,
-        base_delay: float = 1.5,
+        base_delay: float = _FETCH_BASE_DELAY,
     ) -> None:
         """Try to fetch a page multiple times with progressive backoff."""
         item_soup = None

@@ -43,7 +43,6 @@ from .download_utils import (
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
 
-
 _BACKOFF_FACTOR = 1.5
 _SINGLE_CONNECTION_TIMEOUT = 5
 
@@ -85,11 +84,14 @@ class MediaDownloader:
         for attempt in range(self.retry_config.retries):
             try:
                 supports_range, content_length = detect_range_support(
-                    self.download_info.download_link, DOWNLOAD_HEADERS,
+                    self.download_info.download_link,
+                    DOWNLOAD_HEADERS,
                 )
 
                 if should_use_parallel_download(
-                    content_length, num_connections, supports_range=supports_range,
+                    content_length,
+                    num_connections,
+                    supports_range=supports_range,
                 ):
                     # .partN files are preserved on failure so a future attempt
                     # resumes instead of restarting.
@@ -110,7 +112,8 @@ class MediaDownloader:
 
                     # Persistent failure after CHUNK_MAX_RETRIES attempts.
                     if not self._retry_with_backoff(
-                        attempt, event="Retrying chunked download",
+                        attempt,
+                        event="Retrying chunked download",
                     ):
                         break
 
@@ -272,15 +275,14 @@ class MediaDownloader:
         return False
 
     def _handle_request_exception(
-        self, req_err: RequestException, attempt: int,
+        self,
+        req_err: RequestException,
+        attempt: int,
     ) -> bool:
         """Handle exceptions during the request and manages retries."""
-        is_server_down = (
-            req_err.response is None
-            or req_err.response.status_code in (
-                HTTPStatus.SERVER_DOWN,
-                HTTPStatus.SERVICE_UNAVAILABLE,
-            )
+        is_server_down = req_err.response is None or req_err.response.status_code in (
+            HTTPStatus.SERVER_DOWN,
+            HTTPStatus.SERVICE_UNAVAILABLE,
         )
 
         # Mark the subdomain as offline and exit the loop

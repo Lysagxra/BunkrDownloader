@@ -1,15 +1,15 @@
 """Module for persisting per-album crawl/download state across runs.
 
-For very large albums (many paginated pages, hundreds of items), re-running
-the downloader would otherwise re-crawl every album listing page and
-re-fetch every item page plus call the signing API even for files that were
-already downloaded successfully on a previous run.
+For very large albums with many paginated pages and hundreds of items, re-running the
+downloader would otherwise re-crawl every album listing page, re-fetch every item page,
+and call the signing API even for files that were already downloaded successfully in a
+previous run.
 
-This module persists a small JSON sidecar file inside the album's download
-folder so that, on a re-run for the same album:
-- The paginated item-page crawl can be skipped entirely.
-- Items already confirmed downloaded (and still present on disk) are
-  recognized immediately, without any network round-trip.
+This module persists a small JSON sidecar file inside the album's download folder so
+that, on a re-run for the same album:
+    - The paginated item-page crawl can be skipped entirely.
+    - Items already confirmed downloaded (and still present on disk) are recognized
+    immediately, without any network round-trip.
 """
 
 from __future__ import annotations
@@ -18,22 +18,16 @@ import json
 import logging
 from pathlib import Path
 
-STATE_FILENAME = ".bunkr_state.json"
+from src.config import STATE_FILE
 
 
 def _state_path(download_path: str) -> Path:
     """Return the sidecar state-file path for the given download folder."""
-    return Path(download_path) / STATE_FILENAME
+    return Path(download_path) / STATE_FILE
 
 
 def load_album_state(download_path: str) -> dict | None:
-    """Load the persisted album state for this download folder.
-
-    Returns:
-        A dict with "album_id", "item_pages" and "items" keys, or None if
-        no valid state file is present (first run, or corrupt/foreign file).
-
-    """
+    """Load the persisted album state for this download folder."""
     path = _state_path(download_path)
     if not path.exists():
         return None
@@ -61,6 +55,7 @@ def save_album_state(
 ) -> None:
     """Persist the full album state, overwriting any previous file."""
     path = _state_path(download_path)
+
     try:
         path.write_text(
             json.dumps(

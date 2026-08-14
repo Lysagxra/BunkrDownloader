@@ -38,10 +38,7 @@ def extract_page_vars(soup: BeautifulSoup) -> dict[str, str]:
     for script in soup.find_all("script"):
         if script.string and "var jsCDN" in script.string:
             matches = JS_VARS_COMP.findall(script.string)
-            return {
-                key: unescape_js_path(value).strip("'\"")
-                for key, value in matches
-            }
+            return {key: unescape_js_path(value).strip("'\"") for key, value in matches}
 
     return {}
 
@@ -88,7 +85,8 @@ async def _request_json(
 
 
 async def get_download_response(
-    session: aiohttp.ClientSession, file_id: str,
+    session: aiohttp.ClientSession,
+    file_id: str,
 ) -> str | None:
     """Fetch unsigned download URL for non-landing page assets.
 

@@ -42,6 +42,12 @@ def write_file(filename: str, content: str = "") -> None:
         file.write(content)
 
 
+def append_suffix(path: str | Path, suffix: str) -> Path:
+    """Append a suffix to the filename without replacing its extension."""
+    path = Path(path)
+    return path.with_name(path.name + suffix)
+
+
 def log_session_start() -> None:
     """Append a session start marker to the session log."""
     session_start = datetime.now(timezone.utc).isoformat(timespec="seconds")

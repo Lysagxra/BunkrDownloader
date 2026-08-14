@@ -29,16 +29,11 @@ from src.config import (
     DownloadConfig,
     DownloadPlan,
 )
+from src.file_utils import append_suffix
 
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
     from src.rate_limiter import RateLimiter
-
-
-def append_suffix(path: str | Path, suffix: str) -> Path:
-    """Append a suffix to the filename without replacing its extension."""
-    path = Path(path)
-    return path.with_name(path.name + suffix)
 
 
 def get_chunk_size(file_size: int) -> int:
@@ -59,11 +54,13 @@ def save_file_with_progress(
 ) -> bool:
     """Save the file from the response to the specified path.
 
-    Appends a `.temp` extension while downloading. Handles network interruptions
-    such as IncompleteRead and ConnectionResetError (wrapped in
-    ChunkedEncodingError) by marking the download as incomplete.
+    Appends a `.temp` extension while downloading. Handles network interruptions such as
+    IncompleteRead and ConnectionResetError (wrapped in ChunkedEncodingError) by marking
+    the download as incomplete.
 
-    Returns True on failure (partial file kept), False on success.
+    Returns:
+        True on failure (partial file kept), False on success.
+
     """
     file_size = int(response.headers.get("Content-Length", -1))
     if file_size == -1:
@@ -94,6 +91,7 @@ def save_file_with_progress(
         return False
 
     return True
+
 
 # ==========================
 # Parallel chunked download
@@ -179,9 +177,9 @@ def _load_or_create_plan(
     """Load a previously persisted chunk plan, or compute and save a new one.
 
     Persisting the plan ensures that resuming a download after changing --connections
-    (or across separate runs) reuses the exact same byte ranges. Without this, a
-    stale .partN file could coincidentally match the expected size of a different
-    range under a new plan and be silently merged as corrupt data.
+    (or across separate runs) reuses the exact same byte ranges. Without this, a stale
+    .partN file could coincidentally match the expected size of a different range under
+    a new plan and be silently merged as corrupt data.
     """
     plan_path = _plan_path(base_path)
 
@@ -293,15 +291,7 @@ def _download_single_chunk(
         return False
 
     for attempt in range(1, CHUNK_MAX_RETRIES + 1):
-        failed = _attempt_chunk_once(
-            url,
-            (start_byte, end_byte),
-            path,
-            # headers,
-            # on_progress,
-            # rate_limiter,
-            chunk_info,
-        )
+        failed = _attempt_chunk_once(url, (start_byte, end_byte), path, chunk_info)
         if not failed:
             return False
 
@@ -422,10 +412,9 @@ def save_file_with_chunks(
 ) -> bool:
     """Download a file using parallel byte-range chunks with resume support.
 
-    Each chunk is saved to a dedicated .partN file so that an interrupted
-    download can resume from where it left off on the next run.  Once all
-    chunks are verified, they are merged into the final file and the
-    temporary .partN files are removed.
+    Each chunk is saved to a dedicated .partN file so that an interrupted download can
+    resume from where it left off on the next run. Once all chunks are verified, they
+    are merged into the final file and the temporary .partN files are removed.
 
     Returns:
         True on failure (.partN files kept for next resume), False on success.
