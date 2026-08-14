@@ -15,6 +15,7 @@ from src.config import (
     MAX_WORKERS,
     AlbumInfo,
     DownloadInfo,
+    DownloadState,
     FailedReason,
     RetryConfig,
     SessionInfo,
@@ -45,12 +46,9 @@ class AlbumDownloader:
         self.session_info = session_info
         self.album_info = album_info
         self.live_manager = live_manager
-        self.failed_downloads = []
-        self.unresolved_failures = 0
-        # Per-item state persisted from a previous run for this same album (keyed by
-        # item page URL), used to skip already-completed items without any network
-        # round-trip.
-        self.cached_items = dict(cached_items or {})
+        # State persisted from a previous run, used to skip completed items without
+        # making a network request.
+        self.download_state = DownloadState(cached_items=dict(cached_items or {}))
         self._state_lock = asyncio.Lock()
         self._reserved_filenames: set[str] = set()
 
@@ -66,7 +64,7 @@ class AlbumDownloader:
             # Fast path: this item was confirmed downloaded on a previous run and the
             # file is still on disk -- skip entirely without fetching the item page or
             # calling the signing API.
-            cached = self.cached_items.get(item_page)
+            cached = self.download_state.cached_items.get(item_page)
             if cached and cached.get("status") == "completed":
                 cached_filename = cached.get("filename", "")
                 expected_path = (
@@ -95,7 +93,6 @@ class AlbumDownloader:
                 item_soup,
                 clean_name=self.session_info.clean_name,
             )
-
             if self.session_info.clean_name:
                 item_filename = await self._reserve_filename_for_item(item_filename)
 
@@ -115,10 +112,9 @@ class AlbumDownloader:
                         has_external_retry=True,
                     ),
                 )
-
                 failed_download = await asyncio.to_thread(media_downloader.download)
                 if failed_download:
-                    self.failed_downloads.append({
+                    self.download_state.failed_downloads.append({
                         "id": task,
                         "filename": item_filename,
                         "download_link": item_download_link,
@@ -139,7 +135,7 @@ class AlbumDownloader:
                 )
                 self.live_manager.update_task(task, completed=100, visible=False)
                 self.live_manager.update_summary(FailedReason.MAX_RETRIES_REACHED)
-                self.unresolved_failures += 1
+                self.download_state.unresolved_failures += 1
                 await self._persist_item_state(item_page, item_filename, failed=True)
 
     async def download_album(
@@ -171,9 +167,10 @@ class AlbumDownloader:
 
         # If there are failed downloads, process them after all downloads are complete
         still_failed = (
-            await self._process_failed_downloads() if self.failed_downloads else []
+            await self._process_failed_downloads()
+            if self.download_state.failed_downloads else []
         )
-        return bool(still_failed) or self.unresolved_failures > 0
+        return bool(still_failed) or self.download_state.unresolved_failures > 0
 
     # Private methods
     async def _persist_item_state(
@@ -194,7 +191,7 @@ class AlbumDownloader:
             is_completed = expected_path.exists()
 
         async with self._state_lock:
-            self.cached_items[item_page] = {
+            self.download_state.cached_items[item_page] = {
                 "filename": filename,
                 "status": "completed" if is_completed else "failed",
             }
@@ -202,7 +199,7 @@ class AlbumDownloader:
                 self.session_info.download_path,
                 self.album_info.album_id,
                 self.album_info.item_pages,
-                self.cached_items,
+                self.download_state.cached_items,
             )
 
     async def _reserve_filename_for_item(self, filename: str) -> str:
@@ -270,7 +267,7 @@ class AlbumDownloader:
         """
         still_failed = []
 
-        for data in self.failed_downloads:
+        for data in self.download_state.failed_downloads:
             failed_download_info = DownloadInfo(
                 item_url=data["item_url"],
                 download_link=data["download_link"],
@@ -286,5 +283,5 @@ class AlbumDownloader:
                 data["item_url"], data["filename"], failed=failed_again,
             )
 
-        self.failed_downloads.clear()
+        self.download_state.failed_downloads.clear()
         return still_failed

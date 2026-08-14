@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 
 _BACKOFF_FACTOR = 1.5
-_SINGLE_CONNECTION_TIMEOUT = 15
+_SINGLE_CONNECTION_TIMEOUT = 5
 
 
 class MediaDownloader:
@@ -109,9 +109,9 @@ class MediaDownloader:
                     if not chunked_failed:
                         return False
 
-                    # Persistent failure after CHUNK_MAX_RETRIES internal
-                    # attempts -- consume one outer retry slot, same as a
-                    # request-level failure on the fallback path below.
+                    # Persistent failure after CHUNK_MAX_RETRIES attempts. Consume one
+                    # outer retry slot, just like a request-level failure on the
+                    # fallback path below.
                     if not self._retry_with_backoff(
                         attempt, event="Retrying chunked download",
                     ):

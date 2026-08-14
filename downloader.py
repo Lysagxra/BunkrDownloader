@@ -198,7 +198,7 @@ async def prepare_session(
     return url_info, session_info
 
 
-async def execute_url_dry_run(
+async def execute_dry_run_for_url(
     bunkr_status: dict[str, str],
     url: str,
     args: Namespace,
@@ -278,7 +278,7 @@ async def main() -> None:
     args = parse_arguments()
 
     if getattr(args, "dry_run", False):
-        await execute_url_dry_run(bunkr_status, args.url, args, Console())
+        await execute_dry_run_for_url(bunkr_status, args.url, args, Console())
         return
 
     rate_limiter = RateLimiter(args.rate_limit * KB if args.rate_limit else None)

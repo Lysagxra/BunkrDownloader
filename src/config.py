@@ -274,6 +274,14 @@ class DownloadPlan:
     chunk_paths: list[Path]
     expected_sizes: list[int]
 
+@dataclass
+class DownloadState:
+    """Track mutable state accumulated during an album download."""
+
+    failed_downloads: list = field(default_factory=list)
+    unresolved_failures: int = 0
+    cached_items: dict[str, dict] = field(default_factory=dict)
+
 # ============================
 # Results Summary
 # ============================
