@@ -69,7 +69,7 @@ def save_file_with_progress(
     if file_size == -1:
         logging.warning("Content length not provided in response headers.")
 
-    temp_download_path = apped_suffix(download_path, ".temp")
+    temp_download_path = append_suffix(download_path, ".temp")
     chunk_size = get_chunk_size(file_size)
     total_downloaded = 0
 
@@ -210,7 +210,7 @@ def _load_or_create_plan(
 
 def _chunk_path(base_path: Path, index: int) -> Path:
     """Return the .partN path for the given chunk index."""
-    return apped_suffix(base_path, f".part{index}")
+    return append_suffix(base_path, f".part{index}")
 
 
 def _attempt_chunk_once(
