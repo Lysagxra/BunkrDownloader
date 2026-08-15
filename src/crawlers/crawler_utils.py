@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 import aiohttp
@@ -58,12 +59,25 @@ def extract_item_pages(soup: BeautifulSoup, host_page: str) -> list[str] | None:
         return None
 
 
+def extract_item_dates(soup: BeautifulSoup) -> list[datetime | None]:
+    """Extract each item's date from an album listing page, in document order.
+
+    Bunkr's album grid shows a small pill per item with class "theDate"
+    containing the item's date, e.g. "04:42:44 27/09/2023" (HH:MM:SS DD/MM/YYYY).
+    This list is meant to be paired positionally (via zip) with the item hrefs
+    returned by extract_item_pages(), since both are extracted from the same
+    album listing page in the same document order.
+    """
+    date_tags = soup.find_all(class_="theDate")
+    return [_parse_date_string(tag.get_text(strip=True)) for tag in date_tags]
+
+
 async def extract_all_album_item_pages(
     initial_soup: BeautifulSoup,
     host_page: str,
     url: str,
-) -> list[str]:
-    """Collect item page links from an album, including pagination."""
+) -> tuple[list[str], dict[str, datetime | None]]:
+    """Collect item page links (and their dates) from an album, incl. pagination."""
     if initial_soup is None:
         error_message = f"Failed to parse album landing page: {url}"
         raise RuntimeError(error_message)
@@ -73,6 +87,10 @@ async def extract_all_album_item_pages(
     if item_pages is None:
         error_message = f"Unable to extract album items from {url}"
         raise RuntimeError(error_message)
+
+    item_dates: dict[str, datetime | None] = dict(
+        zip(item_pages, extract_item_dates(initial_soup), strict=False),
+    )
 
     next_album_pages = extract_next_album_pages(initial_soup, url)
     if next_album_pages is not None:
@@ -85,8 +103,11 @@ async def extract_all_album_item_pages(
 
             next_item_pages = extract_item_pages(next_page_soup, host_page)
             item_pages.extend(next_item_pages)
+            item_dates.update(
+                zip(next_item_pages, extract_item_dates(next_page_soup), strict=False),
+            )
 
-    return item_pages
+    return item_pages, item_dates
 
 
 async def get_item_download_link(
@@ -111,6 +132,74 @@ def decrypt_cf_email(cf_email_hex: str) -> str:
     key = raw_bytes[0]
     decrypted_bytes = bytes(byte ^ key for byte in raw_bytes[1:])
     return decrypted_bytes.decode("utf-8")
+
+
+_DATE_FORMATS = (
+    "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d",
+    "%d/%m/%Y",
+    "%B %d, %Y",
+    "%b %d, %Y",
+    "%H:%M:%S %d/%m/%Y",
+)
+
+
+def _parse_date_string(text: str) -> datetime | None:
+    """Best-effort parse of a date string into an aware UTC datetime."""
+    text = text.strip()
+    if not text:
+        return None
+
+    # ISO 8601, e.g. "2024-03-15T10:22:03Z" or with a numeric UTC offset.
+    try:
+        iso_text = text[:-1] + "+00:00" if text.endswith("Z") else text
+        parsed = datetime.fromisoformat(iso_text)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed
+    except ValueError:
+        pass
+
+    for fmt in _DATE_FORMATS:
+        try:
+            parsed = datetime.strptime(text, fmt)
+            return parsed.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+
+    return None
+
+
+def get_item_date(item_soup: BeautifulSoup) -> datetime | None:
+    """Extract the item's upload/creation date from the item page, if present.
+
+    NOTE: The exact markup Bunkr uses to expose an item's date has not been
+    confirmed against a live page in this environment (no network access to
+    bunkr.* domains here). This tries a few common patterns, in order of
+    reliability, and returns None (no mtime is set) if none match rather than
+    guessing wrong. Once confirmed against real HTML (see debug_item_date.py),
+    this function should be tightened to the actual selector.
+    """
+    # 1) Standard HTML5 <time datetime="..."> tag -- machine-readable, most
+    #    reliable if present.
+    time_tag = item_soup.find("time")
+    if time_tag and time_tag.get("datetime"):
+        parsed = _parse_date_string(time_tag["datetime"])
+        if parsed:
+            return parsed
+
+    # 2) A tag whose visible text looks like a relative date ("... ago") and
+    #    which carries the exact date in its `title` tooltip attribute -- a
+    #    common pattern for these Bunkr-family frontends.
+    for tag in item_soup.find_all(attrs={"title": True}):
+        text = tag.get_text(strip=True)
+        if re.search(r"\bago\b|\byesterday\b|\btoday\b", text, re.IGNORECASE):
+            parsed = _parse_date_string(tag["title"])
+            if parsed:
+                return parsed
+
+    return None
 
 
 def get_item_filename(item_soup: BeautifulSoup) -> str:
@@ -169,7 +258,7 @@ async def get_download_info(
     *,
     clean_name: bool,
 ) -> tuple:
-    """Gather download information (link and filename) for the item."""
+    """Gather download information (link, filename and date) for the item."""
     async with aiohttp.ClientSession() as session:
         item_download_link = await get_item_download_link(
             session,
@@ -177,9 +266,10 @@ async def get_download_info(
             soup=item_soup,
         )
 
+    item_date = get_item_date(item_soup)
     item_filename = get_item_filename(item_soup)
     if clean_name:
-        return item_download_link, item_filename
+        return item_download_link, item_filename, item_date
 
     url_based_filename = (
         get_url_based_filename(item_download_link) if item_download_link else None
@@ -189,4 +279,4 @@ async def get_download_info(
         if url_based_filename
         else item_filename
     )
-    return item_download_link, formatted_item_filename
+    return item_download_link, formatted_item_filename, item_date
