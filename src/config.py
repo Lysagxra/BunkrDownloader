@@ -10,6 +10,7 @@ import logging
 import re
 from collections import deque
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -174,6 +175,7 @@ class AlbumInfo:
 
     album_id: str
     item_pages: list[str]
+    item_dates: dict[str, datetime | None] = field(default_factory=dict)
 
 @dataclass
 class DownloadInfo:
@@ -183,6 +185,7 @@ class DownloadInfo:
     download_link: str
     filename: str
     task: int
+    item_date: datetime | None = None
 
 @dataclass
 class SessionInfo:
@@ -231,6 +234,7 @@ class ResolveContext:
 
     session_info: SessionInfo
     cached_items: dict[str, dict]
+    item_dates: dict[str, datetime | None]
     semaphore: asyncio.Semaphore
     reserved_names: set[str]
     reservation_lock: asyncio.Lock
