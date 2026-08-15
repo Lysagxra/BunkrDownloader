@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime
 from pathlib import Path
 
 from src.config import STATE_FILE
@@ -44,6 +45,17 @@ def load_album_state(download_path: str) -> dict | None:
 
     data.setdefault("item_pages", [])
     data.setdefault("items", {})
+
+    item_dates = {}
+    for item_url, iso_date in data.get("item_dates", {}).items():
+        if not iso_date:
+            continue
+        try:
+            item_dates[item_url] = datetime.fromisoformat(iso_date)
+        except ValueError:
+            continue
+    data["item_dates"] = item_dates
+
     return data
 
 
@@ -52,15 +64,24 @@ def save_album_state(
     album_id: str,
     item_pages: list[str],
     items: dict[str, dict],
+    item_dates: dict[str, datetime | None] | None = None,
 ) -> None:
     """Persist the full album state, overwriting any previous file."""
     path = _state_path(download_path)
+    serialized_dates = {
+        item_url: date.isoformat()
+        for item_url, date in (item_dates or {}).items()
+        if date is not None
+    }
 
     try:
         path.write_text(
-            json.dumps(
-                {"album_id": album_id, "item_pages": item_pages, "items": items},
-            ),
+            json.dumps({
+                "album_id": album_id,
+                "item_pages": item_pages,
+                "items": items,
+                "item_dates": serialized_dates,
+            }),
             encoding="utf-8",
         )
 
