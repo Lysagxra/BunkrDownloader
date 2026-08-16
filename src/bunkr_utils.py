@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from urllib.parse import urlparse
 
 import requests
@@ -17,7 +18,7 @@ def fetch_status_page() -> BeautifulSoup | None:
         response.raise_for_status()
 
     except requests.RequestException:
-        # logging.warning("An error occurred while fetching the status page")
+        logging.warning("An error occurred while fetching the status page")
         return None
 
     return BeautifulSoup(response.text, "html.parser")
@@ -27,7 +28,7 @@ def get_bunkr_status() -> dict[str, str]:
     """Fetch the status of servers from the status page and return a dictionary."""
     soup = fetch_status_page()
     if soup is None:
-        # logging.warning("Unable to fetch status page; continuing without host data.")
+        logging.warning("Unable to fetch status page; continuing without host data.")
         return {}
 
     bunkr_status: dict[str, str] = {}

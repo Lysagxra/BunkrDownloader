@@ -137,9 +137,8 @@ def create_download_directory(
     try:
         download_path.mkdir(parents=True, exist_ok=True)
 
-    except OSError as os_err:
-        log_message = f"Error creating 'Downloads' directory: {os_err}"
-        logging.exception(log_message)
+    except OSError:
+        logging.exception("Error creating 'Downloads' directory.")
         sys.exit(1)
 
     return str(download_path)
@@ -152,9 +151,8 @@ def create_urls_file_backup() -> None:
     try:
         backup_folder.mkdir(parents=True, exist_ok=True)
 
-    except OSError as os_err:
-        log_message = f"Error creating 'Backups' directory: {os_err}"
-        logging.exception(log_message)
+    except OSError:
+        logging.exception("Error creating 'Backups' directory.")
         sys.exit(1)
 
     timestamp = datetime.now(timezone.utc).strftime("%d%m%Y_%H%M%S")

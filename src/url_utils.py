@@ -69,14 +69,15 @@ def check_url_type(url: str) -> bool:
         url_type = url.rstrip("/").split("/")[-2]
 
     except IndexError:
-        log_message = f"Invalid URL format for: {url}"
-        logging.exception(log_message)
+        logging.exception("Invalid URL format for: %s", url)
 
     if url_type in URL_TYPE_MAPPING:
         return URL_TYPE_MAPPING[url_type]
 
-    log_message = f"Invalid URL format for: {url}. Unexpected URL type '{url_type}'."
-    logging.warning(log_message)
+    logging.warning(
+        "Invalid URL format for: %s. Unexpected URL type '%s'",
+        url, url_type,
+    )
     sys.exit(1)
 
 
@@ -108,8 +109,7 @@ def get_identifier(url: str, soup: BeautifulSoup | None = None) -> str:
         )
 
     except IndexError:
-        log_message = f"Error extracting the identifier from: {url}"
-        logging.exception(log_message)
+        logging.exception("Error extracting the identifier from: %s", url)
 
     return url
 
@@ -120,8 +120,7 @@ def get_album_id(url: str) -> str:
         return url.rstrip("/").split("/")[-1]
 
     except IndexError:
-        log_message = f"Invalid URL format for: {url}"
-        logging.exception(log_message)
+        logging.exception("Invalid URL format for: %s", url)
         sys.exit(1)
 
 
@@ -183,8 +182,7 @@ def get_item_type(item_page: str) -> str | None:
         return item_page.rstrip("/").split("/")[-2]
 
     except AttributeError:
-        log_message = f"Error extracting the item type from {item_page}"
-        logging.exception(log_message)
+        logging.exception("Error extracting the item type from %s", item_page)
 
     return None
 

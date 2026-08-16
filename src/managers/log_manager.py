@@ -45,8 +45,7 @@ class LoggerTable:
             self.row_buffer.append((timestamp, event, details))
 
         else:
-            log_message = f"[{timestamp}] Event: {event} | Details: {details}"
-            logging.info(log_message)
+            logging.info("[%s] Event: %s | Details: %s", timestamp, event, details)
 
     def render_log_panel(self, panel_width: int = 40) -> Panel:
         """Render the log panel containing the log table."""

@@ -98,15 +98,17 @@ def clear_terminal() -> None:
         os.system(command)  # noqa: S605
 
 
-def check_python_version(min_version: tuple[int, int] = (3, 10)) -> None:
+def check_python_version(min_version: tuple[int, int] = (3, 11)) -> None:
     """Check if the current Python version meets the minimum requirement."""
     current_version = sys.version_info
     if current_version < min_version:
-        log_message = (
-            f"Python {current_version.major}.{current_version.minor} is not supported. "
-            f" Python {min_version[0]}.{min_version[1]} or higher is required.",
+        logging.warning(
+            "Python %s.%s is not supported. Python %s.%s or higher is required.",
+            current_version.major,
+            current_version.minor,
+            min_version[0],
+            min_version[1],
         )
-        logging.warning(log_message)
         sys.exit(1)
 
 

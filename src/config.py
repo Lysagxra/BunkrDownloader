@@ -384,8 +384,7 @@ def _load_toml_config(path: Path) -> dict:
             return tomllib.load(file)
 
     except (OSError, tomllib.TOMLDecodeError) as exc:
-        log_message = f"Warning: could not read config file '{path}': {exc}"
-        logging.warning(log_message)
+        logging.warning("Warning: could not read config file '%s': %s", path, exc)
         return {}
 
 
@@ -414,11 +413,12 @@ def apply_config_file_defaults(args: Namespace) -> Namespace:
                 setattr(args, key, value)
                 continue
 
-            log_message = (
-                f"Warning: bunkr.toml '{key}' has an invalid value ({value!r}); "
+            logging.warning(
+                "Warning: bunkr.toml '%s' has an invalid value (%r); "
                 "using the default instead.",
+                key,
+                value,
             )
-            logging.warning(log_message)
 
         setattr(args, key, builtin_default)
 
