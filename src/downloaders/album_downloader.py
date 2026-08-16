@@ -29,6 +29,8 @@ from src.managers.state_manager import save_album_state
 from .media_downloader import MediaDownloader
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from src.managers.live_manager import LiveManager
 
 _FETCH_BASE_DELAY = 1.5
@@ -72,8 +74,8 @@ class AlbumDownloader:
             task = self.live_manager.add_task(current_task=current_task)
 
             # Process the download of an item
-            item_download_link, item_filename = await self._resolve_item_download(
-                item_page,
+            item_download_link, item_filename, item_date = (
+                await self._resolve_item_download(item_page)
             )
             if item_download_link:
                 await self._download_item(
@@ -82,6 +84,7 @@ class AlbumDownloader:
                     item_download_link,
                     task,
                     max_retries,
+                    item_date,
                 )
 
             else:
@@ -160,10 +163,12 @@ class AlbumDownloader:
         self.live_manager.update_summary(SkippedReason.ALREADY_DOWNLOADED)
         return True
 
-    async def _resolve_item_download(self, item_page: str) -> tuple[str, str]:
-        """Resolve the download URL and filename for an item page."""
+    async def _resolve_item_download(
+        self, item_page: str,
+    ) -> tuple[str, str, datetime | None]:
+        """Resolve the download URL, filename and date for an item page."""
         item_soup = await self._fetch_page_with_retries(item_page)
-        item_download_link, item_filename = await get_download_info(
+        item_download_link, item_filename, page_item_date = await get_download_info(
             item_page,
             item_soup,
             clean_name=self.session_info.args.clean_name,
@@ -174,7 +179,11 @@ class AlbumDownloader:
                 item_page,
             )
 
-        return item_download_link, item_filename
+        # Prefer the date read from the album listing page (confirmed reliable);
+        # fall back to whatever get_download_info found on the item's own page.
+        item_date = self.album_info.item_dates.get(item_page) or page_item_date
+
+        return item_download_link, item_filename, item_date
 
     async def _download_item(
         self,
@@ -183,6 +192,7 @@ class AlbumDownloader:
         item_download_link: str,
         task: int,
         max_retries: int,
+        item_date: datetime | None = None,
     ) -> None:
         """Download an item and persist its resulting download state."""
         download_info = DownloadInfo(
@@ -190,6 +200,7 @@ class AlbumDownloader:
             download_link=item_download_link,
             filename=item_filename,
             task=task,
+            item_date=item_date,
         )
         retry_confing = RetryConfig(retries=max_retries, has_external_retry=True)
         media_downloader = MediaDownloader(
@@ -206,6 +217,7 @@ class AlbumDownloader:
                 "filename": item_filename,
                 "download_link": item_download_link,
                 "item_url": item_page,
+                "item_date": item_date,
             })
 
         await self._persist_item_state(
@@ -241,6 +253,7 @@ class AlbumDownloader:
                 self.album_info.album_id,
                 self.album_info.item_pages,
                 self.download_state.cached_items,
+                self.album_info.item_dates,
             )
 
     async def _reserve_filename_for_item(self, filename: str, item_page: str) -> str:
@@ -319,6 +332,7 @@ class AlbumDownloader:
                 download_link=data["download_link"],
                 filename=data["filename"],
                 task=data["id"],
+                item_date=data.get("item_date"),
             )
             failed_again = await self._retry_failed_download(failed_download_info)
             if failed_again:

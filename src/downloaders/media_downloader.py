@@ -6,6 +6,8 @@ download experience.
 
 from __future__ import annotations
 
+import logging
+import os
 import random
 import time
 from pathlib import Path
@@ -193,6 +195,7 @@ class MediaDownloader:
         if failed_download:
             return self._handle_failed_download(is_final_attempt=is_final_attempt)
 
+        self._apply_item_mtime(final_path)
         self.live_manager.update_summary(CompletedReason.DOWNLOAD_SUCCESS)
         return False
 
@@ -343,6 +346,27 @@ class MediaDownloader:
         )
         self._finalize_download(FailedReason.MAX_RETRIES_REACHED)
         return True
+
+    def _apply_item_mtime(self, final_path: Path) -> None:
+        """Set the downloaded file's modified time to the item's source date.
+
+        Best-effort only: if no date could be extracted from the item page
+        (self.download_info.item_date is None) or the OS call fails, the file
+        simply keeps its normal (download-time) mtime -- this never affects
+        whether the download counts as successful.
+        """
+        item_date = self.download_info.item_date
+        if item_date is None:
+            return
+
+        try:
+            timestamp = item_date.timestamp()
+            os.utime(final_path, (timestamp, timestamp))
+
+        except (OSError, OverflowError, ValueError):
+            logging.warning(
+                "Could not set modified date for %s", self.download_info.filename,
+            )
 
     def _finalize_download(
         self,

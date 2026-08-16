@@ -101,7 +101,7 @@ async def _resolve_item(item_page: str, context: ResolveContext) -> dict:
         if item_soup is None:
             return {"filename": item_page, "size": None, "status": "fetch_failed"}
 
-        download_link, filename = await get_download_info(
+        download_link, filename, _item_date = await get_download_info(
             item_page, item_soup, clean_name=context.session_info.args.clean_name,
         )
         if not download_link:
@@ -165,6 +165,7 @@ async def execute_dry_run(
     item_pages: list[str],
     session_info: SessionInfo,
     cached_items: dict[str, dict],
+    item_dates: dict[str, object],
     console: Console,
 ) -> None:
     """Print a preview table of what a download would do, without downloading."""
@@ -174,6 +175,7 @@ async def execute_dry_run(
     context = ResolveContext(
         session_info=session_info,
         cached_items=cached_items,
+        item_dates=item_dates,
         semaphore=semaphore,
         reserved_names=reserved_names,
         reservation_lock=reservation_lock,

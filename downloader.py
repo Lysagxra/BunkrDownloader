@@ -67,22 +67,26 @@ async def resolve_album_items(
     url_info: UrlInfo,
     download_path: str,
     identifier: str,
-) -> tuple[list[str], dict]:
+) -> tuple[list[str], dict, dict]:
     """Resolve album item pages, reusing cached state when available.."""
     if url_info.is_media:
-        return [url_info.url], {}
+        return [url_info.url], {}, {}
 
     cached_state = load_album_state(download_path)
     if has_cached_item_pages(cached_state, identifier):
-        return cached_state["item_pages"], cached_state["items"]
+        return (
+            cached_state["item_pages"],
+            cached_state["items"],
+            cached_state.get("item_dates", {}),
+        )
 
     host_page = get_host_page(url_info.url)
-    item_pages = await extract_all_album_item_pages(
+    item_pages, item_dates = await extract_all_album_item_pages(
         url_info.soup,
         host_page,
         url_info.url,
     )
-    return item_pages, {}
+    return item_pages, {}, item_dates
 
 
 async def get_item_pages_with_cache(
@@ -90,9 +94,9 @@ async def get_item_pages_with_cache(
     identifier: str,
     session_info: SessionInfo,
     live_manager: LiveManager,
-) -> tuple[list[str], dict]:
+) -> tuple[list[str], dict, dict]:
     """Resolve album item pages and persist newly discovered state."""
-    item_pages, cached_items = await resolve_album_items(
+    item_pages, cached_items, item_dates = await resolve_album_items(
         url_info,
         session_info.download_path,
         identifier,
@@ -103,10 +107,10 @@ async def get_item_pages_with_cache(
             event="Using cached album state",
             details=f"Reusing {num_pages} previously crawled item page(s)",
         )
-        return item_pages, cached_items
+        return item_pages, cached_items, item_dates
 
-    save_album_state(session_info.download_path, identifier, item_pages, {})
-    return item_pages, {}
+    save_album_state(session_info.download_path, identifier, item_pages, {}, item_dates)
+    return item_pages, {}, item_dates
 
 
 async def handle_download_process(
@@ -125,13 +129,15 @@ async def handle_download_process(
 
     # Album download
     if url_info.is_album:
-        item_pages, cached_items = await get_item_pages_with_cache(
+        item_pages, cached_items, item_dates = await get_item_pages_with_cache(
             url_info,
             identifier,
             session_info,
             live_manager,
         )
-        album_info = AlbumInfo(album_id=identifier, item_pages=item_pages)
+        album_info = AlbumInfo(
+            album_id=identifier, item_pages=item_pages, item_dates=item_dates,
+        )
         album_downloader = AlbumDownloader(
             session_info=session_info,
             album_info=album_info,
@@ -141,7 +147,7 @@ async def handle_download_process(
         return await album_downloader.download_album(max_retries=max_retries)
 
     # Single item download
-    download_link, filename = await get_download_info(
+    download_link, filename, item_date = await get_download_info(
         url_info.url,
         url_info.soup,
         clean_name=session_info.args.clean_name,
@@ -156,6 +162,7 @@ async def handle_download_process(
             download_link=download_link,
             filename=filename,
             task=task,
+            item_date=item_date,
         ),
         live_manager=live_manager,
         retry_config=RetryConfig(),
@@ -219,12 +226,14 @@ async def execute_dry_run_for_url(
     url_info, session_info = prepared_session
     identifier = get_identifier(url_info.url, soup=url_info.soup)
 
-    item_pages, cached_items = await resolve_album_items(
+    item_pages, cached_items, item_dates = await resolve_album_items(
         url_info,
         session_info.download_path,
         identifier,
     )
-    await execute_dry_run(identifier, item_pages, session_info, cached_items, console)
+    await execute_dry_run(
+        identifier, item_pages, session_info, cached_items, item_dates, console,
+    )
 
 
 async def validate_and_download(
