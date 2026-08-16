@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from rich.table import Table
 
-from src.config import DOWNLOAD_HEADERS, KB, MAX_WORKERS, ResolveContext
+from src.config import DOWNLOAD_HEADERS, KB, MAX_WORKERS, AlbumInfo, ResolveContext
 from src.crawlers.crawler_utils import get_download_info
 from src.downloaders.download_utils import detect_range_support
 from src.file_utils import (
@@ -101,7 +101,7 @@ async def _resolve_item(item_page: str, context: ResolveContext) -> dict:
         if item_soup is None:
             return {"filename": item_page, "size": None, "status": "fetch_failed"}
 
-        download_link, filename, _item_date = await get_download_info(
+        download_link, filename, _ = await get_download_info(
             item_page, item_soup, clean_name=context.session_info.args.clean_name,
         )
         if not download_link:
@@ -161,11 +161,8 @@ def process_results_rows(results: list[dict], table: Table) -> tuple[int, dict]:
 
 
 async def execute_dry_run(
-    album_id: str,
-    item_pages: list[str],
+    album_info: AlbumInfo,
     session_info: SessionInfo,
-    cached_items: dict[str, dict],
-    item_dates: dict[str, object],
     console: Console,
 ) -> None:
     """Print a preview table of what a download would do, without downloading."""
@@ -174,35 +171,48 @@ async def execute_dry_run(
     reservation_lock = asyncio.Lock()
     context = ResolveContext(
         session_info=session_info,
-        cached_items=cached_items,
-        item_dates=item_dates,
+        cached_items=album_info.cached_items,
+        item_dates=album_info.item_dates,
         semaphore=semaphore,
         reserved_names=reserved_names,
         reservation_lock=reservation_lock,
     )
     results = await asyncio.gather(
-        *(_resolve_item(item_page, context) for item_page in item_pages),
+        *(_resolve_item(item_page, context) for item_page in album_info.item_pages),
     )
 
-    table = Table(title=f"Dry run — {album_id} ({len(item_pages)} item(s))")
+    num_item_pages = len(album_info.item_pages)
+    table = Table(title=f"Dry run for {album_info.album_id} ({num_item_pages} page(s))")
     table.add_column("Filename", overflow="fold")
     table.add_column("Size", justify="right")
     table.add_column("Status")
     total_download_bytes, counts = process_results_rows(results, table)
 
     console.print(table)
+    _print_dry_run_summary(console, total_download_bytes, counts)
+
+
+def _print_dry_run_summary(
+    console: Console,
+    total_download_bytes: int,
+    counts: dict[str, int],
+) -> None:
+    """Print the summary of a dry-run operation."""
+    would_download = counts.get("would_download", 0)
+    already_downloaded = counts.get("already_downloaded", 0)
+    filtered = counts.get("filtered_ignore", 0) + counts.get("filtered_include", 0)
+    unresolved = counts.get("unresolved", 0) + counts.get("fetch_failed", 0)
+
     console.print(
-        f"\nWould download: {counts.get('would_download', 0)} file(s), "
-        f"{_format_size(total_download_bytes)} total",
+        f"\nWould download: {would_download} file(s), "
+        f"{_format_size(total_download_bytes)} total\n",
     )
 
-    if counts.get("already_downloaded"):
-        console.print(f"Already downloaded: {counts['already_downloaded']} file(s)")
+    if already_downloaded:
+        console.print(f"Already downloaded: {already_downloaded} file(s)")
 
-    filtered = counts.get("filtered_ignore", 0) + counts.get("filtered_include", 0)
     if filtered:
         console.print(f"Filtered out: {filtered} file(s)")
 
-    unresolved = counts.get("unresolved", 0) + counts.get("fetch_failed", 0)
     if unresolved:
         console.print(f"[red]Could not resolve: {unresolved} file(s)[/red]")

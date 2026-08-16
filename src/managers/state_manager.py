@@ -50,12 +50,14 @@ def load_album_state(download_path: str) -> dict | None:
     for item_url, iso_date in data.get("item_dates", {}).items():
         if not iso_date:
             continue
+
         try:
             item_dates[item_url] = datetime.fromisoformat(iso_date)
+
         except ValueError:
             continue
-    data["item_dates"] = item_dates
 
+    data["item_dates"] = item_dates
     return data
 
 

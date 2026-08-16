@@ -231,9 +231,13 @@ async def execute_dry_run_for_url(
         session_info.download_path,
         identifier,
     )
-    await execute_dry_run(
-        identifier, item_pages, session_info, cached_items, item_dates, console,
+    album_info = AlbumInfo(
+        album_id=identifier,
+        item_pages=item_pages,
+        item_dates=item_dates,
+        cached_items=cached_items,
     )
+    await execute_dry_run(album_info, session_info, console)
 
 
 async def validate_and_download(

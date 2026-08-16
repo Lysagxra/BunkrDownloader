@@ -10,7 +10,6 @@ import logging
 import re
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -20,6 +19,7 @@ import tomllib
 if TYPE_CHECKING:
     import asyncio
     from argparse import Namespace
+    from datetime import datetime
 
     from bs4 import BeautifulSoup
 
@@ -176,6 +176,7 @@ class AlbumInfo:
     album_id: str
     item_pages: list[str]
     item_dates: dict[str, datetime | None] = field(default_factory=dict)
+    cached_items: dict[str, dict] = field(default_factory=dict)
 
 @dataclass
 class DownloadInfo:
@@ -227,6 +228,15 @@ class ChunkInfo:
     headers: dict[str, str]
     on_progress: callable
     rate_limiter: RateLimiter | None = None
+
+@dataclass(frozen=True)
+class ItemInfo:
+    """Information required to download an item."""
+
+    page: str
+    filename: str
+    download_link: str
+    date: datetime | None = None
 
 @dataclass
 class ResolveContext:

@@ -6,7 +6,6 @@ download experience.
 
 from __future__ import annotations
 
-import logging
 import os
 import random
 import time
@@ -352,8 +351,7 @@ class MediaDownloader:
 
         Best-effort only: if no date could be extracted from the item page
         (self.download_info.item_date is None) or the OS call fails, the file
-        simply keeps its normal (download-time) mtime -- this never affects
-        whether the download counts as successful.
+        simply keeps its normal (download-time) mtime.
         """
         item_date = self.download_info.item_date
         if item_date is None:
@@ -364,9 +362,7 @@ class MediaDownloader:
             os.utime(final_path, (timestamp, timestamp))
 
         except (OSError, OverflowError, ValueError):
-            logging.warning(
-                "Could not set modified date for %s", self.download_info.filename,
-            )
+            pass
 
     def _finalize_download(
         self,
