@@ -182,8 +182,7 @@ async def execute_dry_run(
         *(_resolve_item(item_page, context) for item_page in album_info.item_pages),
     )
 
-    num_item_pages = len(album_info.item_pages)
-    table = Table(title=f"Dry run for {album_info.album_id} ({num_item_pages} page(s))")
+    table = Table(title=f"Dry run for ID: {album_info.album_id}")
     table.add_column("Filename", overflow="fold")
     table.add_column("Size", justify="right")
     table.add_column("Status")
