@@ -1,12 +1,14 @@
 """Utility modules and functions to support the main application.
 
 Modules:
-    - args_utils: Utilities for arguments parsing.
-    - bunkr_utils: Functions for checking Bunkr status and URL validation.
+    - args_utils: Utilities for parsing command-line arguments.
+    - bunkr_utils: Utilities for checking Bunkr status and validating URLs.
     - config: Constants and settings used across the project.
-    - dry_run: Preview mode: Resolve filenames and sizes without downloading.
+    - dry_run: Preview mode for resolving filenames and sizes without downloading.
+    - enums: Enumerations defining application-wide types and status values.
     - file_utils: Utilities for managing file operations.
     - general_utils: Miscellaneous utility functions.
+    - models: Data models and runtime state containers used throughout the application.
     - run_utils: Utilities for processing URL batches.
     - url_utils: Utilities to analyze and extract details from URLs.
 
@@ -26,8 +28,10 @@ __all__ = [
     "bunkr_utils",
     "config",
     "dry_run",
+    "enums",
     "file_utils",
     "general_utils",
+    "models",
     "run_utils",
     "url_utils",
     "version_info",

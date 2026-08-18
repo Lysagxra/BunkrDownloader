@@ -17,7 +17,8 @@ from rich.console import Group
 from rich.live import Live
 from rich.text import Text
 
-from src.config import REFRESH_PER_SECOND, TASK_REASON_MAPPING, TaskResult
+from src.config import REFRESH_PER_SECOND
+from src.enums import TASK_REASON_MAPPING, TaskResult
 from src.version import get_version_string
 
 from .log_manager import LoggerTable

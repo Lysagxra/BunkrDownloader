@@ -132,9 +132,9 @@ async def get_api_response(
         3. Build media path from available source
         4. Request signed URL token from signing API
 
-    Retries the signing API call with exponential backoff on network failures.
-    Returns None if the media URL cannot be resolved or all signing attempts
-    fail, allowing the caller to skip the file without crashing the session.
+    Retries the signing API call with exponential backoff on network failures. Returns
+    None if the media URL cannot be resolved or all signing attempts fail, allowing the
+    caller to skip the file without crashing the session.
     """
     page_vars = extract_page_vars(soup) if soup else {}
     cdn_url = page_vars.get("jsCDN")

@@ -16,16 +16,7 @@ from requests.exceptions import RequestException, Timeout
 from rich.console import Console
 
 from src.args_utils import parse_arguments
-from src.config import (
-    KB,
-    AlbumInfo,
-    DownloadInfo,
-    RetryConfig,
-    SessionInfo,
-    SkippedReason,
-    UrlInfo,
-    UrlType,
-)
+from src.config import KB
 from src.crawlers.crawler_utils import (
     extract_all_album_item_pages,
     get_download_info,
@@ -33,6 +24,7 @@ from src.crawlers.crawler_utils import (
 )
 from src.downloaders.album_downloader import AlbumDownloader, MediaDownloader
 from src.dry_run import execute_dry_run
+from src.enums import SkippedReason
 from src.file_utils import (
     create_download_directory,
     format_directory_name,
@@ -47,14 +39,15 @@ from src.general_utils import (
 from src.managers.live_manager import initialize_managers
 from src.managers.rate_limiter import RateLimiter
 from src.managers.state_manager import load_album_state, save_album_state
+from src.models import AlbumInfo, DownloadInfo, RetryConfig, SessionInfo, UrlInfo
 from src.url_utils import (
-    check_url_type,
     get_album_id,
     get_album_name,
     get_host_page,
     get_identifier,
     log_unavailable_url,
     normalize_url,
+    resolve_url_type,
 )
 
 if TYPE_CHECKING:
@@ -183,7 +176,7 @@ async def prepare_session(
     if soup is None:
         return None
 
-    url_type = UrlType.ALBUM if check_url_type(validated_url) else UrlType.MEDIA
+    url_type = resolve_url_type(validated_url)
     url_info = UrlInfo(url=validated_url, url_type=url_type, soup=soup)
 
     album_id = get_album_id(validated_url) if url_info.is_album else None

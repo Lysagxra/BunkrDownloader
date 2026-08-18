@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from rich.table import Table
 
-from src.config import DOWNLOAD_HEADERS, KB, MAX_WORKERS, AlbumInfo, ResolveContext
+from src.config import DOWNLOAD_HEADERS, KB, MAX_WORKERS
 from src.crawlers.crawler_utils import get_download_info
 from src.downloaders.download_utils import detect_range_support
 from src.file_utils import (
@@ -23,6 +23,7 @@ from src.file_utils import (
     truncate_filename,
 )
 from src.general_utils import fetch_page
+from src.models import AlbumInfo, ResolveContext
 
 if TYPE_CHECKING:
     from argparse import Namespace

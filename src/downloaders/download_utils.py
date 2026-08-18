@@ -19,17 +19,15 @@ from requests.exceptions import ChunkedEncodingError, RequestException
 from src.config import (
     CHUNK_BASE_DELAY,
     CHUNK_MAX_RETRIES,
-    LARGE_FILE_CHUNK_SIZE,
+    CHUNK_SIZE_THRESHOLDS,
+    DEFAULT_CHUNK_SIZE,
     MAX_WORK_UNIT_SIZE,
     MIN_PARALLEL_SIZE,
     MIN_WORK_UNIT_SIZE,
-    THRESHOLDS,
     UNITS_PER_CONNECTION,
-    ChunkInfo,
-    DownloadConfig,
-    DownloadPlan,
 )
 from src.file_utils import append_suffix
+from src.models import ChunkInfo, DownloadConfig, DownloadPlan
 
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
@@ -38,11 +36,11 @@ if TYPE_CHECKING:
 
 def get_chunk_size(file_size: int) -> int:
     """Determine the optimal chunk size based on the file size."""
-    for threshold, chunk_size in THRESHOLDS:
+    for threshold, chunk_size in CHUNK_SIZE_THRESHOLDS:
         if file_size < threshold:
             return chunk_size
 
-    return LARGE_FILE_CHUNK_SIZE
+    return DEFAULT_CHUNK_SIZE
 
 
 def save_file_with_progress(
@@ -243,7 +241,7 @@ def _attempt_chunk_once(
         ) as response:
             response.raise_for_status()
             with path.open("wb") as file:
-                for data in response.iter_content(chunk_size=LARGE_FILE_CHUNK_SIZE):
+                for data in response.iter_content(chunk_size=DEFAULT_CHUNK_SIZE):
                     if data:
                         file.write(data)
                         num_bytes = len(data)

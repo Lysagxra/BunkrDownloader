@@ -16,23 +16,15 @@ import requests
 from requests import RequestException
 
 from src.bunkr_utils import mark_subdomain_as_offline, subdomain_is_offline
-from src.config import (
-    DOWNLOAD_HEADERS,
-    CompletedReason,
-    DownloadConfig,
-    DownloadInfo,
-    FailedReason,
-    HTTPStatus,
-    RetryConfig,
-    SessionInfo,
-    SkippedReason,
-)
+from src.config import DOWNLOAD_HEADERS
+from src.enums import CompletedReason, FailedReason, HTTPStatus, SkippedReason
 from src.file_utils import (
     matches_ignore_list,
     matches_include_list,
     truncate_filename,
     write_on_session_log,
 )
+from src.models import DownloadConfig, DownloadInfo, RetryConfig, SessionInfo
 
 from .download_utils import (
     detect_range_support,

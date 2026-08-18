@@ -9,7 +9,7 @@ This module persists a small JSON sidecar file inside the album's download folde
 that, on a re-run for the same album:
     - The paginated item-page crawl can be skipped entirely.
     - Items already confirmed downloaded (and still present on disk) are recognized
-    immediately, without any network round-trip.
+      immediately, without any network round-trip.
 """
 
 from __future__ import annotations

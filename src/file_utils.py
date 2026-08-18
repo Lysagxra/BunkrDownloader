@@ -13,6 +13,7 @@ import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .config import (
     BACKUP_FOLDER,
@@ -21,10 +22,11 @@ from .config import (
     SESSION_LOG,
     URLS_FILE,
     VALID_CHARACTERS_REGEX,
-    DownloadInfo,
-    FailedReason,
-    SkippedReason,
 )
+from .models import DownloadInfo
+
+if TYPE_CHECKING:
+    from .enums import FailedReason, SkippedReason
 
 
 def read_file(filename: str) -> list[str]:
@@ -138,7 +140,7 @@ def create_download_directory(
         download_path.mkdir(parents=True, exist_ok=True)
 
     except OSError:
-        logging.exception("Error creating 'Downloads' directory.")
+        logging.warning("Error creating 'Downloads' directory.")
         sys.exit(1)
 
     return str(download_path)
@@ -152,7 +154,7 @@ def create_urls_file_backup() -> None:
         backup_folder.mkdir(parents=True, exist_ok=True)
 
     except OSError:
-        logging.exception("Error creating 'Backups' directory.")
+        logging.warning("Error creating 'Backups' directory.")
         sys.exit(1)
 
     timestamp = datetime.now(timezone.utc).strftime("%d%m%Y_%H%M%S")

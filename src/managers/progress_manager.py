@@ -20,11 +20,8 @@ from rich.progress import (
 )
 from rich.table import Column, Table
 
-from src.config import (
-    PROGRESS_COLUMNS_SEPARATOR,
-    PROGRESS_MANAGER_COLORS,
-    ProgressConfig,
-)
+from src.config import PROGRESS_COLUMNS_SEPARATOR, PROGRESS_MANAGER_COLORS
+from src.models import ProgressConfig
 
 
 class ProgressManager:
@@ -33,11 +30,7 @@ class ProgressManager:
     Displays individual progress bars for each task alongside an overall progress bar.
     """
 
-    def __init__(
-        self,
-        task_name: str,
-        item_description: str,
-    ) -> None:
+    def __init__(self, task_name: str, item_description: str) -> None:
         """Initialize a progress tracking system for a specific task."""
         # Grouping progress-related configurations into a single object
         self.config = ProgressConfig(task_name, item_description)

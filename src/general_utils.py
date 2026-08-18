@@ -23,13 +23,8 @@ import requests
 from bs4 import BeautifulSoup
 from requests import Response
 
-from .config import (
-    DOWNLOAD_HEADERS,
-    FETCH_ERROR_MESSAGES,
-    GB,
-    MIN_DISK_SPACE_GB,
-    HTTPStatus,
-)
+from .config import DOWNLOAD_HEADERS, FETCH_ERROR_MESSAGES, MIN_DISK_SPACE
+from .enums import HTTPStatus
 from .url_utils import replace_domain_with_fallback
 
 if TYPE_CHECKING:
@@ -67,7 +62,7 @@ async def fetch_page(url: str, retries: int = 5) -> BeautifulSoup | None:
             if response.status_code == HTTPStatus.FORBIDDEN and not tried_fallback:
                 tried_fallback = True
                 url = replace_domain_with_fallback(url)
-                continue  # Retry immediately with .cr
+                continue  # Retry immediately with the fallback domain
 
             response.raise_for_status()
             return handle_response(response)
@@ -124,15 +119,14 @@ def get_root_path() -> str:
 
 
 def check_disk_space(live_manager: LiveManager, custom_path: str | None = None) -> None:
-    """Check if the available disk space is greater than or equal to `min_space` GB."""
+    """Check if the available disk space is greater than 'MIN_DISK_SPACE'."""
     root_path = get_root_path() if custom_path is None else custom_path
     _, _, free_space = shutil.disk_usage(root_path)
-    free_space_gb = free_space / GB
 
-    if free_space_gb < MIN_DISK_SPACE_GB:
+    if free_space < MIN_DISK_SPACE:
         live_manager.update_log(
             event="Insufficient disk space",
-            details=f"Only {free_space_gb:.2f} GB available on {root_path}. "
+            details=f"Only {free_space:.2f} GB available on {root_path}. "
             "The program has been stopped to prevent data loss.",
         )
         sys.exit(1)

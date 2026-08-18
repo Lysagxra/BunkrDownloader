@@ -10,22 +10,20 @@ from asyncio import Semaphore
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from src.config import (
-    MAX_RETRIES,
-    MAX_WORKERS,
-    AlbumInfo,
-    DownloadInfo,
-    DownloadState,
-    FailedReason,
-    ItemInfo,
-    RetryConfig,
-    SessionInfo,
-    SkippedReason,
-)
+from src.config import MAX_RETRIES, MAX_WORKERS
 from src.crawlers.crawler_utils import get_download_info
+from src.enums import FailedReason, SkippedReason
 from src.file_utils import reserve_unique_filename, truncate_filename
 from src.general_utils import fetch_page
 from src.managers.state_manager import save_album_state
+from src.models import (
+    AlbumInfo,
+    DownloadInfo,
+    DownloadState,
+    ItemInfo,
+    RetryConfig,
+    SessionInfo,
+)
 
 from .media_downloader import MediaDownloader
 
@@ -212,7 +210,10 @@ class AlbumDownloader:
         )
 
     async def _persist_item_state(
-        self, item_page: str, filename: str, *, failed: bool,
+        self, item_page: str,
+        filename: str,
+        *,
+        failed: bool,
     ) -> None:
         """Record this item's outcome and persist the album state to disk.
 

@@ -71,8 +71,7 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         default=None,
         help=(
             "Number of parallel connections used for chunked downloads "
-            f"(default: {DEFAULT_CONNECTIONS}). Set to 1 to disable chunked "
-            "downloading."
+            f"(default: {DEFAULT_CONNECTIONS}). Set to 1 to disable. "
         ),
     )
     parser.add_argument(
@@ -100,10 +99,9 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         default=None,
         metavar="N",
         help=(
-            "Number of URLs from URLs.txt to process concurrently "
-            "(default: 1 — sequential, same as before). Values above 1 disable the "
-            "live progress UI (falls back to plain log lines) since the progress "
-            "display only supports tracking one album at a time."
+            "Number of URLs from URLs.txt to process concurrently (default: 1). "
+            "Values above 1 disable the live progress UI since the progress display "
+            "only supports tracking one album at a time."
         ),
     )
     parser.add_argument(
@@ -112,8 +110,8 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         default=None,
         metavar="PATH",
         help=(
-            "Path to a TOML config file providing default values for any "
-            "of the above flags (default: looks for ./bunkr.toml). "
+            "Path to a TOML config file providing default values for any of the above "
+            "flags (default: looks for ./bunkr.toml). "
             "Explicit CLI flags always take precedence over the config file."
         ),
     )

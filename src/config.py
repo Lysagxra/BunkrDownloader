@@ -8,22 +8,15 @@ from __future__ import annotations
 
 import logging
 import re
-from collections import deque
-from dataclasses import dataclass, field
-from enum import IntEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import tomllib
 
+from .enums import HTTPStatus
+
 if TYPE_CHECKING:
-    import asyncio
     from argparse import Namespace
-    from datetime import datetime
-
-    from bs4 import BeautifulSoup
-
-    from src.managers.rate_limiter import RateLimiter
 
 
 # ============================
@@ -33,7 +26,6 @@ BACKUP_FOLDER = "Backups"      # The folder where backup files will be stored.
 DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be stored.
 URLS_FILE = "URLs.txt"         # The file containing the list of URLs to process.
 SESSION_LOG = "session.log"    # The file used to log errors.
-MIN_DISK_SPACE_GB = 3          # Minimum free disk space (in GB) required.
 STATE_FILE = ".bunkr_state.json"
 
 # ============================
@@ -96,16 +88,13 @@ DEFAULT_CONNECTIONS = 4  # Default number of parallel connections for chunked do
 CHUNK_MAX_RETRIES = 4    # Max retry attempts for a single failed chunk.
 CHUNK_BASE_DELAY = 1.5   # Base delay (seconds) for chunk retry exponential backoff.
 
-# Mapping of URL identifiers to a boolean for album (True) vs single file (False).
-URL_TYPE_MAPPING = {"a": True, "f": False, "i": False, "v": False}
-
 # Constants for file sizes, expressed in bytes.
 KB = 1024
 MB = 1024 * KB
 GB = 1024 * MB
 
 # Thresholds for file sizes and corresponding chunk sizes used during download.
-THRESHOLDS = [
+CHUNK_SIZE_THRESHOLDS = [
     (1 * MB, 32 * KB),    # Less than 1 MB
     (10 * MB, 128 * KB),  # 1 MB to 10 MB
     (50 * MB, 512 * KB),  # 10 MB to 50 MB
@@ -116,10 +105,13 @@ THRESHOLDS = [
 ]
 
 # Default chunk size for files larger than the largest threshold.
-LARGE_FILE_CHUNK_SIZE = 16 * MB
+DEFAULT_CHUNK_SIZE = 16 * MB
 
 # Minimum file size required to trigger a parallel chunked download.
 MIN_PARALLEL_SIZE = 64 * MB
+
+# Minimum free disk space required.
+MIN_DISK_SPACE = 4 * GB
 
 # ============================
 # Work-stealing unit sizing
@@ -134,17 +126,6 @@ MAX_WORK_UNIT_SIZE = 64 * MB    # Ceiling: keeps granularity meaningful.
 # ============================
 # HTTP / Network
 # ============================
-class HTTPStatus(IntEnum):
-    """Enumeration of common HTTP status codes used in the project."""
-
-    OK = 200
-    FORBIDDEN = 403
-    TOO_MANY_REQUESTS = 429
-    INTERNAL_ERROR = 500
-    BAD_GATEWAY = 502
-    SERVICE_UNAVAILABLE = 503
-    SERVER_DOWN = 521
-
 # Mapping of HTTP error codes to human-readable fetch error messages.
 FETCH_ERROR_MESSAGES: dict[HTTPStatus, str] = {
     HTTPStatus.FORBIDDEN: "DDoSGuard blocked the request to {url}",
@@ -153,7 +134,7 @@ FETCH_ERROR_MESSAGES: dict[HTTPStatus, str] = {
 }
 
 # Headers used for general HTTP requests.
-HEADERS : dict[str, str] = {
+DEFAULT_HEADERS: dict[str, str] = {
     "User-Agent": (
         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:136.0) Gecko/20100101 Firefox/136.0"
     ),
@@ -161,176 +142,9 @@ HEADERS : dict[str, str] = {
 
 # Headers specifically tailored for download requests.
 DOWNLOAD_HEADERS: dict[str, str] = {
-    **HEADERS,
+    **DEFAULT_HEADERS,
     "Connection": "keep-alive",
     "Referer": DOWNLOAD_REFERER,
-}
-
-# ============================
-# Data Classes
-# ============================
-@dataclass
-class AlbumInfo:
-    """Store the information about an album and its associated item pages."""
-
-    album_id: str
-    item_pages: list[str]
-    item_dates: dict[str, datetime | None] = field(default_factory=dict)
-    cached_items: dict[str, dict] = field(default_factory=dict)
-
-@dataclass
-class DownloadInfo:
-    """Represent the information related to a download task."""
-
-    item_url: str
-    download_link: str
-    filename: str
-    task: int
-    item_date: datetime | None = None
-
-@dataclass
-class SessionInfo:
-    """Hold the session-related information."""
-
-    args: Namespace | None
-    bunkr_status: dict[str, str]
-    download_path: str
-    rate_limiter: RateLimiter | None = None
-
-class UrlType(IntEnum):
-    """Supported Bunkr URL types."""
-
-    ALBUM = 1
-    MEDIA = 2
-
-@dataclass(frozen=True, slots=True)
-class UrlInfo:
-    """Information about a resolved Bunkr URL."""
-
-    url: str
-    url_type: UrlType
-    soup: BeautifulSoup
-
-    @property
-    def is_album(self) -> bool:
-        """Return whether the URL points to an album."""
-        return self.url_type is UrlType.ALBUM
-
-    @property
-    def is_media(self) -> bool:
-        """Return whether the URL points to a single media."""
-        return self.url_type is UrlType.MEDIA
-
-@dataclass(slots=True)
-class ChunkInfo:
-    """Configuration and callbacks required to download file chunks."""
-
-    headers: dict[str, str]
-    on_progress: callable
-    rate_limiter: RateLimiter | None = None
-
-@dataclass(frozen=True)
-class ItemInfo:
-    """Information required to download an item."""
-
-    page: str
-    filename: str
-    download_link: str
-    date: datetime | None = None
-
-@dataclass
-class ResolveContext:
-    """Context shared while resolving items."""
-
-    session_info: SessionInfo
-    cached_items: dict[str, dict]
-    item_dates: dict[str, datetime | None]
-    semaphore: asyncio.Semaphore
-    reserved_names: set[str]
-    reservation_lock: asyncio.Lock
-
-@dataclass(slots=True)
-class DownloadConfig:
-    """Configuration required to download a file."""
-
-    content_length: int
-    num_connections: int
-    headers: dict[str, str]
-    rate_limiter: RateLimiter | None = None
-
-@dataclass(slots=True)
-class RetryConfig:
-    """Retry behavior configuration."""
-
-    retries: int = MAX_RETRIES
-    # True when an external caller retries failures; False for standalone downloads.
-    has_external_retry: bool = False
-
-@dataclass
-class ProgressConfig:
-    """Configuration for progress bar settings."""
-
-    task_name: str
-    item_description: str
-    color: str = PROGRESS_MANAGER_COLORS["title_color"]
-    panel_width = 40
-    overall_buffer: deque = field(default_factory=lambda: deque(maxlen=BUFFER_SIZE))
-
-@dataclass(frozen=True)
-class DownloadPlan:
-    """Describe how a file should be downloaded in chunks."""
-
-    ranges: list[tuple[int, int]]
-    num_ranges: int
-    chunk_paths: list[Path]
-    expected_sizes: list[int]
-
-@dataclass
-class DownloadState:
-    """Track mutable state accumulated during an album download."""
-
-    failed_downloads: list = field(default_factory=list)
-    unresolved_failures: int = 0
-    cached_items: dict[str, dict] = field(default_factory=dict)
-
-# ============================
-# Results Summary
-# ============================
-class TaskResult(IntEnum):
-    """Enumerate the possible outcomes for a processed task."""
-
-    COMPLETED = 1  # The task completed successfully.
-    FAILED = 2     # The task failed due to an error.
-    SKIPPED = 3    # The task was intentionally skipped.
-
-class TaskReason(IntEnum):
-    """Enumerate the possible reasons per each task result."""
-
-    REASON_ALL = -1  # The total count of tasks per any group.
-
-class CompletedReason(IntEnum):
-    """Enumerate the possible reasons for a completed task."""
-
-    DOWNLOAD_SUCCESS = 1
-
-class FailedReason(IntEnum):
-    """Enumerate the possible reasons for a failed task."""
-
-    MAX_RETRIES_REACHED = 1
-
-class SkippedReason(IntEnum):
-    """Enumerate the possible reasons for a skipped task."""
-
-    ALREADY_DOWNLOADED = 1
-    IGNORE_LIST = 2
-    INCLUDE_LIST = 3
-    DOMAIN_OFFLINE = 4
-    SERVICE_UNAVAILABLE = 5
-
-TASK_REASON_MAPPING: dict[TaskResult, type[IntEnum]] = {
-    TaskResult.COMPLETED: CompletedReason,
-    TaskResult.FAILED: FailedReason,
-    TaskResult.SKIPPED: SkippedReason,
 }
 
 # ============================

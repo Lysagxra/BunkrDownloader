@@ -8,13 +8,13 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from .config import HEADERS, STATUS_PAGE
+from .config import DEFAULT_HEADERS, STATUS_PAGE
 
 
 def fetch_status_page() -> BeautifulSoup | None:
     """Fetch the HTML content of the status page."""
     try:
-        response = requests.get(STATUS_PAGE, headers=HEADERS, timeout=5)
+        response = requests.get(STATUS_PAGE, headers=DEFAULT_HEADERS, timeout=5)
         response.raise_for_status()
 
     except requests.RequestException:
