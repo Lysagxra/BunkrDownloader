@@ -26,7 +26,7 @@ from src.config import (
     MIN_WORK_UNIT_SIZE,
     UNITS_PER_CONNECTION,
 )
-from src.file_utils import append_suffix
+from src.misc.file_utils import append_suffix
 from src.models import ChunkInfo, DownloadConfig, DownloadPlan
 
 if TYPE_CHECKING:

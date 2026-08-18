@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING
 from src.config import MAX_RETRIES, MAX_WORKERS
 from src.crawlers.crawler_utils import get_download_info
 from src.enums import FailedReason, SkippedReason
-from src.file_utils import reserve_unique_filename, truncate_filename
-from src.general_utils import fetch_page
 from src.managers.state_manager import save_album_state
+from src.misc.file_utils import reserve_unique_filename, truncate_filename
+from src.misc.general_utils import fetch_page
 from src.models import (
     AlbumInfo,
     DownloadInfo,

@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING
 import requests
 from requests import RequestException
 
-from src.bunkr_utils import mark_subdomain_as_offline, subdomain_is_offline
 from src.config import DOWNLOAD_HEADERS
 from src.enums import CompletedReason, FailedReason, HTTPStatus, SkippedReason
-from src.file_utils import (
+from src.misc.bunkr_utils import mark_subdomain_as_offline, subdomain_is_offline
+from src.misc.file_utils import (
     matches_ignore_list,
     matches_include_list,
     truncate_filename,

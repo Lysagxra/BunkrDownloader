@@ -1,0 +1,86 @@
+"""Utilities to fetch the operational status of servers from the Bunkr status page."""
+
+from __future__ import annotations
+
+import logging
+from urllib.parse import urlparse
+
+import requests
+from bs4 import BeautifulSoup
+
+from src.config import DEFAULT_HEADERS, STATUS_PAGE
+
+
+def fetch_status_page() -> BeautifulSoup | None:
+    """Fetch the HTML content of the status page."""
+    try:
+        response = requests.get(STATUS_PAGE, headers=DEFAULT_HEADERS, timeout=5)
+        response.raise_for_status()
+
+    except requests.RequestException:
+        logging.warning("An error occurred while fetching the status page")
+        return None
+
+    return BeautifulSoup(response.text, "html.parser")
+
+
+def get_bunkr_status() -> dict[str, str]:
+    """Fetch the status of servers from the status page and return a dictionary."""
+    soup = fetch_status_page()
+    if soup is None:
+        logging.warning("Unable to fetch status page; continuing without host data.")
+        return {}
+
+    bunkr_status: dict[str, str] = {}
+    server_items = soup.find_all(
+        "div",
+        {
+            "class": (
+                "flex items-center gap-4 py-4 border-b border-soft last:border-b-0"
+            ),
+        },
+    )
+
+    for server_item in server_items:
+        server_name_tag = server_item.find("p")
+        server_status_tag = server_item.find("span")
+
+        if server_name_tag is None or server_status_tag is None:
+            continue
+
+        server_name = server_name_tag.get_text(strip=True)
+        server_status = server_status_tag.get_text(strip=True)
+        bunkr_status[server_name] = server_status
+
+    return bunkr_status
+
+
+def get_offline_servers(bunkr_status: dict[str, str] | None = None) -> dict[str, str]:
+    """Return a dictionary of servers that are not operational."""
+    return {
+        server_name: server_status
+        for server_name, server_status in bunkr_status.items()
+        if server_status != "Operational"
+    }
+
+
+def get_subdomain(download_link: str) -> str:
+    """Extract the subdomain from a given URL."""
+    netloc = urlparse(download_link).netloc
+    return netloc.split(".")[0]
+
+
+def subdomain_is_offline(
+    download_link: str, bunkr_status: dict[str, str] | None = None,
+) -> bool:
+    """Check if the subdomain from the given download link is marked as offline."""
+    offline_servers = get_offline_servers(bunkr_status)
+    subdomain = get_subdomain(download_link)
+    return subdomain in offline_servers
+
+
+def mark_subdomain_as_offline(bunkr_status: dict[str, str], download_link: str) -> str:
+    """Mark the subdomain of a given download link as offline in the Bunkr status."""
+    subdomain = get_subdomain(download_link)
+    bunkr_status[subdomain] = "Non-operational"
+    return subdomain

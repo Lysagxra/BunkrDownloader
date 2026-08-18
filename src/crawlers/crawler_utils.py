@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING
 import aiohttp
 from bs4 import BeautifulSoup
 
-from src.file_utils import remove_invalid_characters
-from src.general_utils import fetch_page
-from src.url_utils import get_url_based_filename
+from src.misc.file_utils import remove_invalid_characters
+from src.misc.general_utils import fetch_page
+from src.misc.url_utils import get_url_based_filename
 
 from .api_utils import get_api_response
 from .date_utils import extract_item_dates, get_item_date

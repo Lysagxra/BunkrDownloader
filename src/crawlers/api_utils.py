@@ -1,11 +1,11 @@
 """Utilities for resolving and signing downloadable media URLs from the Bunkr platform.
 
 This module provides:
-- Extraction of runtime variables from HTML/inline scripts
-- Fallback resolution of direct download endpoints for non-landing assets
-- Construction of CDN media paths
-- Retrieval of signed URLs via Bunkr signing API
-- Robust retry logic with exponential backoff for network resilience
+    - Extraction of runtime variables from HTML/inline scripts
+    - Fallback resolution of direct download endpoints for non-landing assets
+    - Construction of CDN media paths
+    - Retrieval of signed URLs via Bunkr signing API
+    - Robust retry logic with exponential backoff for network resilience
 """
 
 from __future__ import annotations

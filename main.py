@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING
 
 from downloader import parse_arguments
 from src.config import URLS_FILE
-from src.file_utils import create_urls_file_backup, log_session_start, read_file
-from src.general_utils import check_python_version, clear_terminal
-from src.run_utils import (
+from src.misc.file_utils import create_urls_file_backup, log_session_start, read_file
+from src.misc.general_utils import check_python_version, clear_terminal
+from src.services.run_utils import (
     build_rate_limiter,
     inspect_urls,
     log_failed_urls,
