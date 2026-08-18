@@ -13,6 +13,7 @@ import os
 import platform
 import random
 import shutil
+import subprocess
 import sys
 from http.client import RemoteDisconnected
 from pathlib import Path
@@ -95,7 +96,7 @@ def clear_terminal() -> None:
 
     command = commands.get(os.name)
     if command:
-        os.system(command)  # noqa: S605
+        subprocess.run([command], check=True)  # noqa: S603
 
 
 def check_python_version(min_version: tuple[int, int] = (3, 11)) -> None:

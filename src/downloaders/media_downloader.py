@@ -65,19 +65,17 @@ class MediaDownloader:
         self.retry_config = retry_config
 
     def attempt_download(self, final_path: str) -> bool:
-        """Attempt to download the file, using parallel chunks when possible.
+        """Attempt to download the file, using parallel chunks when supported.
 
-        If the server supports byte-range requests and the file is large enough, the
-        download is split into num_connections parallel chunks (each saved as a .partN
-        file to allow resuming). Falls back to the original single-connection stream
-        when chunking is not applicable.
+        For sufficiently large files, uses parallel byte-range requests when the server
+        supports them. Each chunk is saved to a separate ``.partN`` file to support
+        resuming. Falls back to a single-connection download when chunking is not
+        applicable. Both download strategies use the same outer retry budget and
+        exponential backoff.
 
-        The chunked path honors the same outer retry budget (--max-retries) as the
-        single-connection fallback: a persistent failure (all internal per-chunk retries
-        exhausted) triggers the same exponential back-off and re-attempt cycle via
-        _retry_with_backoff, instead of giving up after a single call.
+        Returns:
+            True if the download failed, False if it succeeded.
 
-        Returns True if the download failed, False on success.
         """
         num_connections = getattr(self.session_info.args, "connections", 1)
         rate_limiter = self.session_info.rate_limiter
@@ -148,9 +146,8 @@ class MediaDownloader:
         """Handle the download process.
 
         Returns:
-            True if the item ultimately failed (and no one else will retry it),
-            False if it succeeded, was skipped, or will be retried later by an external
-            caller (has_external_retry=True).
+            True if the item ultimately failed (and no one else will retry it), False if
+            it succeeded, was skipped, or will be retried later by an external caller.
 
         """
         is_final_attempt = not self.retry_config.has_external_retry
@@ -172,10 +169,9 @@ class MediaDownloader:
             self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
             return False
 
+        # Skip download if the file exists or is blacklisted
         formatted_filename = truncate_filename(self.download_info.filename)
         final_path = Path(self.session_info.download_path) / formatted_filename
-
-        # Skip download if the file exists or is blacklisted
         if self._skip_file_download(final_path):
             return False
 
@@ -202,17 +198,11 @@ class MediaDownloader:
     def _skip_file_download(self, final_path: str) -> bool:
         """Determine whether a file should be skipped during download.
 
-        This method checks the following conditions:
-        - If the file already exists at the specified path.
-        - If the file's name matches any pattern in the ignore list.
-        - If the file's name does not match any pattern in the include list.
-
-        If any of these conditions are met, the download is skipped, and appropriate
-        logs are updated.
+        If any of these conditions are met, the download is skipped:
+            - The file already exists at the specified path.
+            - The file's name matches any pattern in the ignore list.
+            - The file's name does not match any pattern in the include list.
         """
-        ignore_list = getattr(self.session_info.args, "ignore", [])
-        include_list = getattr(self.session_info.args, "include", [])
-
         def log_and_skip_event(reason: str) -> bool:
             """Log the skip reason and updates the task before."""
             self.live_manager.update_log(event="Skipped download", details=reason)
@@ -222,6 +212,9 @@ class MediaDownloader:
                 visible=False,
             )
             return True
+
+        ignore_list = getattr(self.session_info.args, "ignore", [])
+        include_list = getattr(self.session_info.args, "include", [])
 
         # Check if the file already exists
         if Path(final_path).exists():
@@ -350,8 +343,8 @@ class MediaDownloader:
         """Set the downloaded file's modified time to the item's source date.
 
         Best-effort only: if no date could be extracted from the item page
-        (self.download_info.item_date is None) or the OS call fails, the file
-        simply keeps its normal (download-time) mtime.
+        (self.download_info.item_date is None) or the OS call fails, the file simply
+        keeps its normal (download-time) mtime.
         """
         item_date = self.download_info.item_date
         if item_date is None:
@@ -371,12 +364,7 @@ class MediaDownloader:
         completed: int | None = 100,
     ) -> None:
         outcome = reason.__class__.__name__.replace("Reason", "")
-
-        write_on_session_log(
-            self.download_info,
-            reason=reason,
-            outcome=outcome,
-        )
+        write_on_session_log(self.download_info, reason=reason, outcome=outcome)
         self.live_manager.update_task(
             self.download_info.task,
             completed=completed,

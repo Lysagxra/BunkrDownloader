@@ -21,19 +21,18 @@ _DATE_FORMATS = (
 
 
 def extract_item_dates(soup: BeautifulSoup) -> list[datetime | None]:
-    """Extract each item's date from an album listing page, in document order.
+    """Extract item dates from an album listing page in document order.
 
-    Bunkr's album grid shows a small pill per item with class "theDate" containing the
-    item's date in the format (HH:MM:SS DD/MM/YYYY). This list is meant to be paired
-    positionally (via zip) with the item hrefs returned by extract_item_pages(), since
-    both are extracted from the same album listing page in the same document order.
+    Each date is read from an element with the 'theDate' class and parsed from the
+    'HH:MM:SS DD/MM/YYYY' format. The returned list preserves the document order so it
+    can be paired positionally with the item URLs returned by extract_item_pages.
     """
     date_tags = soup.find_all(class_="theDate")
     return [_parse_date_string(tag.get_text(strip=True)) for tag in date_tags]
 
 
 def get_item_date(item_soup: BeautifulSoup) -> datetime | None:
-    """Extract the item's upload/creation date from the item page, if present.
+    """Extract the item's upload date from the page, if available.
 
     NOTE: The exact markup Bunkr uses to expose an item's date has not been confirmed
     against a live page in this environment (no network access to bunkr.* domains here).
@@ -71,7 +70,6 @@ def _parse_date_string(text: str) -> datetime | None:
     try:
         iso_text = text[:-1] + "+00:00" if text.endswith("Z") else text
         parsed = datetime.fromisoformat(iso_text)
-
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
 

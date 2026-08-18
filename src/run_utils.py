@@ -13,7 +13,7 @@ from downloader import (
 )
 from src.config import KB
 from src.managers.live_manager import LiveManager
-from src.rate_limiter import RateLimiter
+from src.managers.rate_limiter import RateLimiter
 
 
 async def process_one_url(

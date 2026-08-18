@@ -45,8 +45,8 @@ from src.general_utils import (
     fetch_page,
 )
 from src.managers.live_manager import initialize_managers
+from src.managers.rate_limiter import RateLimiter
 from src.managers.state_manager import load_album_state, save_album_state
-from src.rate_limiter import RateLimiter
 from src.url_utils import (
     check_url_type,
     get_album_id,

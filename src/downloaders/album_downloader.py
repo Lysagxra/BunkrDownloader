@@ -98,9 +98,8 @@ class AlbumDownloader:
         """Handle the album download.
 
         Returns:
-            True if the album ended with at least one permanently failed item
-            (after the extra retry pass), False if every item either succeeded
-            or was intentionally skipped.
+            True if at least one item permanently failed after the extra retry pass;
+            False if every item either succeeded or was intentionally skipped.
 
         """
         num_tasks = len(self.album_info.item_pages)
@@ -164,8 +163,8 @@ class AlbumDownloader:
                 item_page,
             )
 
-        # Prefer the date read from the album listing page (confirmed reliable);
-        # fall back to whatever get_download_info found on the item's own page.
+        # Prefer the date read from the album listing page (confirmed reliable); fall
+        # back to whatever get_download_info found on the item's own page.
         item_date = self.album_info.item_dates.get(item_page) or page_item_date
         return ItemInfo(
             page=item_page,

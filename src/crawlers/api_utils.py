@@ -62,7 +62,8 @@ async def _request_json(
 ) -> dict[str, object] | None:
     # Force gzip/deflate for non-landing page assets to avoid Brotli (br) responses
     # from the download API.
-    headers = {"Accept-Encoding": "gzip, deflate"} if method == "POST" else None
+    headers = {"Accept-Encoding": "gzip, deflate"} if method.upper() == "POST" else None
+    timeout = aiohttp.ClientTimeout(total=_DEFAULT_TIMEOUT)
 
     for attempt in range(1, _DEFAULT_MAX_RETRIES + 1):
         try:
@@ -72,14 +73,15 @@ async def _request_json(
                 json=json,
                 params=params,
                 headers=headers,
-                timeout=aiohttp.ClientTimeout(total=_DEFAULT_TIMEOUT),
+                timeout=timeout,
             ) as response:
                 response.raise_for_status()
                 return await response.json()
 
         except (aiohttp.ClientError, asyncio.TimeoutError):
             if attempt < _DEFAULT_MAX_RETRIES:
-                await asyncio.sleep(_DEFAULT_BASE_DELAY * (2 ** (attempt - 1)))
+                delay = _DEFAULT_BASE_DELAY * (2 ** (attempt - 1))
+                await asyncio.sleep(delay)
 
     return None
 
@@ -102,7 +104,6 @@ async def get_download_response(
         DOWNLOAD_API,
         json={"id": file_id},
     )
-
     if not data:
         return None
 
@@ -155,7 +156,6 @@ async def get_api_response(
         BUNKR_API,
         params={"path": media_path},
     )
-
     if not data:
         return None
 

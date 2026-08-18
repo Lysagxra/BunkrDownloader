@@ -33,7 +33,7 @@ from src.file_utils import append_suffix
 
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
-    from src.rate_limiter import RateLimiter
+    from src.managers.rate_limiter import RateLimiter
 
 
 def get_chunk_size(file_size: int) -> int:
@@ -122,9 +122,9 @@ def should_use_parallel_download(
     """Return True when conditions are met for a parallel chunked download.
 
     Parallel download requires:
-    - Server supports byte-range requests.
-    - File size is known and exceeds MIN_PARALLEL_SIZE.
-    - More than one connection is requested.
+        - Server supports byte-range requests.
+        - File size is known and exceeds MIN_PARALLEL_SIZE.
+        - More than one connection is requested.
     """
     return (
         supports_range and content_length >= MIN_PARALLEL_SIZE and num_connections > 1
@@ -135,12 +135,12 @@ def _compute_unit_ranges(
     content_length: int,
     num_connections: int,
 ) -> list[tuple[int, int]]:
-    """Split the file into many small work units for work-stealing download.
+    """Split the file into many small work units for work-stealing downloads.
 
-    The file is divided into roughly UNITS_PER_CONNECTION times more units than
-    worker threads, each sized between MIN_WORK_UNIT_SIZE and MAX_WORK_UNIT_SIZE.
-    Worker threads pull units from a shared queue as they finish, so a slow connection
-    only delays its own next unit instead of blocking threads that finished early.
+    The file is divided into roughly UNITS_PER_CONNECTION times more units than worker
+    threads, each sized between MIN_WORK_UNIT_SIZE and MAX_WORK_UNIT_SIZE. Worker
+    threads pull units from a shared queue as they finish, so a slow connection only
+    delays its own next unit instead of blocking threads that finished early.
 
     The last unit absorbs any remainder so the entire file is always covered.
     """
@@ -152,8 +152,8 @@ def _compute_unit_ranges(
         1,
     )
     num_units = (content_length + unit_size - 1) // unit_size  # ceil division
-    ranges = []
 
+    ranges = []
     for indx in range(num_units):
         start_byte = indx * unit_size
         end_byte = (
@@ -229,8 +229,8 @@ def _attempt_chunk_once(
     """
     start_byte = byte_range[0]
     end_byte = byte_range[1]
-
     expected = end_byte - start_byte + 1
+
     chunk_headers = {**chunk_info.headers, "Range": f"bytes={start_byte}-{end_byte}"}
     written = 0
 
@@ -273,9 +273,9 @@ def _download_single_chunk(
 ) -> bool:
     """Download one byte-range chunk to disk, retrying with backoff on failure.
 
-    Skips the download entirely when the .partN file already has the correct
-    size, enabling seamless resume across sessions. Each retry re-downloads
-    the chunk from scratch (the previous, incomplete attempt is overwritten).
+    Skips the download entirely when the .partN file already has the correct size,
+    enabling seamless resume across sessions. Each retry re-downloads the chunk from
+    scratch (the previous, incomplete attempt is overwritten).
 
     Returns:
         True on failure (all retries exhausted), False on success.

@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
     from bs4 import BeautifulSoup
 
-    from .rate_limiter import RateLimiter
+    from src.managers.rate_limiter import RateLimiter
 
 
 # ============================

@@ -181,9 +181,9 @@ async def get_download_info(
 def _format_item_filename(original_filename: str, url_based_filename: str) -> str:
     """Combine two filenames while preserving the extension of the first.
 
-    If the filenames are identical, returns the first filename.
-    If the base of the first filename is found within the second, returns the second
-    filename. Otherwise, combines both bases with a hyphen.
+    If the filenames are identical, returns the first filename. If the base of the first
+    filename is found within the second, returns the second filename. Otherwise,
+    combines both bases with a hyphen.
     """
     if original_filename == url_based_filename:
         return original_filename

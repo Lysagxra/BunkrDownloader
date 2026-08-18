@@ -132,7 +132,6 @@ class LiveManager:
         hours = time_delta.seconds // 3600
         minutes = (time_delta.seconds % 3600) // 60
         seconds = time_delta.seconds % 60
-
         return f"{hours:02} hrs {minutes:02} mins {seconds:02} secs"
 
     def _log_results_summary(self) -> None:
