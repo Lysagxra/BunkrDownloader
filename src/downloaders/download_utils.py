@@ -384,11 +384,19 @@ def verify_chunks(chunk_paths: list[Path], expected_sizes: list[int]) -> bool:
 
 
 def merge_chunks(chunk_paths: list[Path], final_path: Path) -> None:
-    """Concatenate ordered .partN files into the final destination file."""
-    with final_path.open("wb") as destination_file:
+    """Concatenate ordered .partN files into the final destination file.
+
+    The chunks are merged into a `.temp` file that is renamed into place only once
+    complete. Otherwise an interrupted merge would leave a truncated file at the final
+    path, which later runs would skip as already downloaded.
+    """
+    temp_path = append_suffix(final_path, ".temp")
+    with temp_path.open("wb") as destination_file:
         for chunk_path in chunk_paths:
             with chunk_path.open("rb") as chunk_file:
                 shutil.copyfileobj(chunk_file, destination_file)
+
+    temp_path.replace(final_path)
 
 
 def cleanup(chunk_paths: list[Path], base_path: Path) -> None:
