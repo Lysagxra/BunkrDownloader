@@ -11,6 +11,7 @@ This module provides:
 from __future__ import annotations
 
 import asyncio
+import re
 from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
@@ -30,6 +31,7 @@ _DEFAULT_TIMEOUT = 10
 
 def unescape_js_path(value: str) -> str:
     """Normalize JavaScript-escaped URL fragments."""
+    value = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), value)
     return value.replace(r"\/", "/").replace(r"\\", "\\")
 
 
