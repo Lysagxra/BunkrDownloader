@@ -28,10 +28,16 @@ _DEFAULT_MAX_RETRIES = 3
 _DEFAULT_BASE_DELAY = 2.0
 _DEFAULT_TIMEOUT = 10
 
+_HEXADECIMAL_BASE = 16
+_UNICODE_ESCAPE_RE = re.compile(r"\\u([0-9a-fA-F]{4})")
+
 
 def unescape_js_path(value: str) -> str:
     """Normalize JavaScript-escaped URL fragments."""
-    value = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), value)
+    value = _UNICODE_ESCAPE_RE.sub(
+        lambda match: chr(int(match.group(1), _HEXADECIMAL_BASE)),
+        value,
+    )
     return value.replace(r"\/", "/").replace(r"\\", "\\")
 
 
