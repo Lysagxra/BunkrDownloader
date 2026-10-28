@@ -101,7 +101,7 @@ def get_identifier(url: str, soup: BeautifulSoup | None = None) -> str:
     try:
         url_type = resolve_url_type(decoded_url)
         return (
-            get_album_id(decoded_url) if url_type.ALBUM
+            get_album_id(decoded_url) if url_type is UrlType.ALBUM
             else get_media_slug(decoded_url, soup)
         )
 
@@ -134,7 +134,7 @@ def get_media_slug(url: str, soup: BeautifulSoup) -> str:
         return media_slug
 
     # Fallback: try to find slug in script tags
-    for item in soup.find_all("script"):
+    for item in soup.find_all("script") if soup else ():
         script_text = item.get_text()
         match = re.search(MEDIA_SLUG_REGEX, script_text)
         if match:
@@ -157,7 +157,11 @@ def get_album_name(soup: BeautifulSoup) -> str | None:
     if not name_container:
         return None
 
-    raw_album_name = name_container.find("h1").get_text(strip=True)
+    heading = name_container.find("h1")
+    if not heading:
+        return None
+
+    raw_album_name = heading.get_text(strip=True)
     unescaped_album_name = html.unescape(raw_album_name)
     fixed_album_name = unescaped_album_name  # Prevent UnboundLocalError
 
