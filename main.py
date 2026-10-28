@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING
 
 from downloader import parse_arguments
 from src.config import URLS_FILE
-from src.misc.bunkr_utils import get_bunkr_status
 from src.misc.file_utils import create_urls_file_backup, log_session_start, read_file
 from src.misc.general_utils import check_python_version, clear_terminal
 from src.services.run_utils import (
