@@ -23,7 +23,13 @@ import requests
 from bs4 import BeautifulSoup
 from requests import Response
 
-from src.config import DOWNLOAD_HEADERS, FETCH_ERROR_MESSAGES, MIN_DISK_SPACE
+from src.config import (
+    DEFAULT_HEADERS,
+    DOWNLOAD_HEADERS,
+    FETCH_ERROR_MESSAGES,
+    GB,
+    MIN_DISK_SPACE,
+)
 from src.enums import HTTPStatus
 
 from .url_utils import replace_domain_with_fallback
@@ -59,7 +65,12 @@ async def fetch_page(url: str, retries: int = 5) -> BeautifulSoup | None:
 
     for attempt in range(retries):
         try:
-            response = requests.Session().get(url, timeout=30)
+            response = await asyncio.to_thread(
+                requests.get,
+                url,
+                headers=DEFAULT_HEADERS,
+                timeout=30,
+            )
             if response.status_code == HTTPStatus.FORBIDDEN and not tried_fallback:
                 tried_fallback = True
                 url = replace_domain_with_fallback(url)
@@ -127,7 +138,7 @@ def check_disk_space(live_manager: LiveManager, custom_path: str | None = None) 
     if free_space < MIN_DISK_SPACE:
         live_manager.update_log(
             event="Insufficient disk space",
-            details=f"Only {free_space:.2f} GB available on {root_path}. "
+            details=f"Only {free_space / GB:.2f} GB available on {root_path}. "
             "The program has been stopped to prevent data loss.",
         )
         sys.exit(1)

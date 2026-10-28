@@ -83,7 +83,14 @@ class AlbumDownloader:
             task = self.live_manager.add_task(current_task=current_task)
 
             # Process the download of an item
-            item_info = await self._resolve_item_download(item_page)
+            try:
+                item_info = await self._resolve_item_download(item_page)
+            except RuntimeError:
+                self.live_manager.update_task(task, completed=100, visible=False)
+                self.live_manager.update_summary(FailedReason.MAX_RETRIES_REACHED)
+                self.download_state.unresolved_failures += 1
+                await self._persist_item_state(item_page, "", failed=True)
+                return
             if item_info.download_link:
                 await self._download_item(item_info, task, max_retries)
 
