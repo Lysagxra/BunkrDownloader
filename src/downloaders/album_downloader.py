@@ -14,7 +14,6 @@ from src.config import MAX_RETRIES, MAX_WORKERS
 from src.crawlers.crawler_utils import get_download_info
 from src.enums import FailedReason, SkippedReason
 from src.managers.state_manager import save_album_state
-from src.misc.bunkr_utils import get_bunkr_status
 from src.misc.file_utils import reserve_unique_filename, truncate_filename
 from src.misc.general_utils import fetch_page
 from src.models import (
@@ -345,12 +344,8 @@ class AlbumDownloader:
             The subset of failed_downloads that permanently failed again on this retry.
 
         """
-        # Refresh offline server status to clear any transient in-memory flags
-        # before sequential retries.
-        if not getattr(self.session_info.args, "disable_server_check", False):
-            self.session_info.bunkr_status = await asyncio.to_thread(get_bunkr_status)
-        else:
-            self.session_info.bunkr_status = {}
+        # Clear any transient in-memory offline flags before sequential retries.
+        self.session_info.bunkr_status.clear()
 
         still_failed = []
         retry_attempts = max_retries if max_retries and max_retries > 1 else 3
