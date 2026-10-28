@@ -328,7 +328,7 @@ class AlbumDownloader:
         failed_download_info: DownloadInfo,
         retries: int = 3,
     ) -> bool:
-        """Retry a single failed download sequentially. Returns True if it failed again."""
+        """Retry a single failed download sequentially."""
         media_downloader = MediaDownloader(
             session_info=self.session_info,
             download_info=failed_download_info,
