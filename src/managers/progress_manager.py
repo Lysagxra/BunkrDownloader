@@ -48,6 +48,8 @@ class ProgressManager:
         # ever enqueued into overall_buffer once, no matter how many more progress
         # updates arrive for it afterwards.
         self._buffered_overall_task_ids: set[TaskID] = set()
+        self._completed_task_ids: set[int] = set()
+        self._current_album_tasks: dict[int, float] = {}
 
         # Every public update touches shared Progress state (task lists, the cleanup
         # buffer, current_overall_task_id) from whichever thread the download happened
@@ -63,6 +65,7 @@ class ProgressManager:
         """Add an overall progress task with a given description and total tasks."""
         with self._lock:
             self.num_tasks = num_tasks
+            self._current_album_tasks = {}
             overall_description = self._adjust_description(description)
             self.current_overall_task_id = self.overall_progress.add_task(
                 f"[{self.config.color}]{overall_description}",
@@ -76,7 +79,10 @@ class ProgressManager:
             f"[{self.config.color}]{self.config.item_description} "
             f"{current_task + 1}/{self.num_tasks}"
         )
-        return self.task_progress.add_task(task_description, total=total)
+        with self._lock:
+            task_id = self.task_progress.add_task(task_description, total=total)
+            self._current_album_tasks[task_id] = 0.0
+            return task_id
 
     def update_task(
         self,
@@ -139,10 +145,19 @@ class ProgressManager:
             return
 
         # If the individual task is finished, advance the overall progress once.
-        if self.task_progress.tasks[task_id].finished:
-            self.overall_progress.advance(overall_task_id)
+        individual_task = self.task_progress.tasks[task_id]
+        if individual_task.finished and task_id not in self._completed_task_ids:
+            self._completed_task_ids.add(task_id)
+            self._current_album_tasks[task_id] = 1.0
             self.task_progress.update(task_id, visible=False)
-            current_overall_task = self._get_overall_task(overall_task_id)
+        elif task_id not in self._completed_task_ids:
+            task_total = individual_task.total or 100
+            fraction = max(0.0, min(individual_task.completed / task_total, 0.99))
+            self._current_album_tasks[task_id] = fraction
+
+        overall_completed = sum(self._current_album_tasks.values())
+        self.overall_progress.update(overall_task_id, completed=overall_completed)
+        current_overall_task = self._get_overall_task(overall_task_id)
 
         # Queue completed overall tasks for cleanup exactly once, no matter how
         # many further updates arrive for an already-finished overall task.

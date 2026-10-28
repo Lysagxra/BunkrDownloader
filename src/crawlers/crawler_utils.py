@@ -40,6 +40,9 @@ def extract_next_album_pages(initial_soup: BeautifulSoup, url: str) -> list[str]
 
     pagination_text = pagination_nav.get_text()
     page_ids = re.findall(r"\d+", pagination_text)
+    if not page_ids:
+        return None
+
     num_pages = max(int(page_id) for page_id in page_ids)
 
     # Discard the first ID since it has already been processed in the main code
@@ -133,6 +136,9 @@ def get_item_filename(item_soup: BeautifulSoup) -> str:
     )
 
     # Decrypt Cloudflare email protection if present
+    if item_filename_container is None:
+        return "unknown_file"
+
     cf_email_tag = item_filename_container.find(class_="__cf_email__")
     if cf_email_tag:
         cf_email_hex = cf_email_tag.get("data-cfemail")
