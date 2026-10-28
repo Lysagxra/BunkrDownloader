@@ -310,7 +310,7 @@ class MediaDownloader:
             # albums. Rows reappear automatically when retries make progress.
             self.live_manager.update_task(
                 self.download_info.task,
-                completed=None,
+                completed=0,
                 visible=False,
             )
             return True
