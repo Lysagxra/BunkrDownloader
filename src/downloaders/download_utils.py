@@ -78,13 +78,16 @@ def save_file_with_progress(
                         rate_limiter.consume(len(chunk))
 
                     total_downloaded += len(chunk)
-                    completed = (total_downloaded / file_size) * 100
-                    live_manager.update_task(task, completed=completed)
+                    if file_size > 0:
+                        completed = (total_downloaded / file_size) * 100
+                        live_manager.update_task(task, completed=completed)
 
     except (ChunkedEncodingError, RequestException):
         return True
 
-    if total_downloaded == file_size:
+    if total_downloaded == file_size or (file_size == -1 and total_downloaded > 0):
+        if file_size <= 0:
+            live_manager.update_task(task, completed=100)
         shutil.move(temp_download_path, download_path)
         return False
 
