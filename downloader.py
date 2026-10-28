@@ -292,9 +292,9 @@ async def main() -> None:
     clear_terminal()
     check_python_version()
 
-    args = parse_arguments()
     # Placeholder for integrating the Bunkr status endpoint when available
     bunkr_status: dict[str, str] = {}
+    args = parse_arguments()
 
     if getattr(args, "dry_run", False):
         await execute_dry_run_for_url(bunkr_status, args.url, args, Console())

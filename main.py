@@ -32,7 +32,6 @@ async def process_urls(urls: list[str], args: Namespace) -> list[str]:
     # Placeholder for integrating the Bunkr status endpoint when available
     bunkr_status: dict[str, str] = {}
 
-    # Dry-run skips downloads and bypasses Live UI, printing a preview per URL
     if getattr(args, "dry_run", False):
         return await inspect_urls(urls, bunkr_status, args)
 
@@ -40,7 +39,6 @@ async def process_urls(urls: list[str], args: Namespace) -> list[str]:
     rate_limiter = build_rate_limiter(args)
     max_concurrent = getattr(args, "max_concurrent_urls", 1) or 1
 
-    # Process sequentially when concurrency is disabled or there is only one URL
     if max_concurrent <= 1 or len(urls) <= 1:
         return await run_sequential(urls, bunkr_status, args, rate_limiter)
 
@@ -51,22 +49,16 @@ async def process_urls(urls: list[str], args: Namespace) -> list[str]:
 
 async def main() -> None:
     """Run the script and process URLs."""
-    # Start with a clean terminal while preserving the existing logs
     clear_terminal()
     log_session_start()
 
-    # Check the Python version and parse arguments
     check_python_version()
     args = parse_arguments(common_only=True)
-
-    # Backup the URLs file
     create_urls_file_backup()
 
-    # Read and process URLs, ignoring empty lines
     urls = [url.strip() for url in read_file(URLS_FILE) if url.strip()]
     failed_urls = await process_urls(urls, args)
 
-    # Keep URLs.txt unchanged so completed items can be skipped and report failures
     if failed_urls:
         log_failed_urls(failed_urls)
 

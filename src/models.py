@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections import deque
 from dataclasses import dataclass, field
+from threading import Lock
 from typing import TYPE_CHECKING
 
-from .config import BUFFER_SIZE, MAX_RETRIES, PROGRESS_MANAGER_COLORS
+from .config import BUFFER_SIZE, MAX_RETRIES, MAX_WORKERS, PROGRESS_MANAGER_COLORS
 from .enums import UrlType
 
 if TYPE_CHECKING:
-    import asyncio
     from argparse import Namespace
     from datetime import datetime
     from pathlib import Path
 
     from bs4 import BeautifulSoup
+    from rich.progress import TaskID
 
     from src.managers.rate_limiter import RateLimiter
 
@@ -148,3 +150,49 @@ class DownloadState:
     failed_downloads: list = field(default_factory=list)
     unresolved_failures: int = 0
     cached_items: dict[str, dict] = field(default_factory=dict)
+
+@dataclass
+class ProgressState:
+    """Store shared task-tracking state and synchronization primitives."""
+
+    num_tasks: int = 0
+
+    # Explicit reference to the overall task currently being tracked, set by
+    # add_overall_task(). This replaces guessing "the current task" from list
+    # ordering (e.g. tasks[-1]), which breaks once a task can be removed or
+    # re-buffered out of order.
+    current_overall_task_id: TaskID | None = None
+
+    # Prevent completed tasks from being queued for cleanup more than once.
+    buffered_overall_task_ids: set[TaskID] = field(default_factory=set)
+    completed_task_ids: set[int] = field(default_factory=set)
+    current_album_tasks: dict[int, float] = field(default_factory=dict)
+
+    # Synchronize access to shared progress state across concurrent download threads.
+    lock: Lock = field(default_factory=Lock)
+
+@dataclass
+class DownloadSynch:
+    """Manage synchronization and filename reservations."""
+
+    state_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    pacing_lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    reserved_filenames: set[str] = field(default_factory=set)
+
+@dataclass
+class RateControl:
+    """Manage request pacing and throttling state."""
+
+    last_start: float = 0.0
+    throttled: bool = False
+    throttle_tasks: list[asyncio.Task] = field(default_factory=list)
+
+@dataclass
+class DownloadRuntime:
+    """Manage runtime resources for concurrent downloads."""
+
+    synch: DownloadSynch = field(default_factory=DownloadSynch)
+    rate_control: RateControl = field(default_factory=RateControl)
+    semaphore: asyncio.Semaphore | None = None
+    max_workers: int = MAX_WORKERS
+    loop: asyncio.AbstractEventLoop | None = None

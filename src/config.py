@@ -22,11 +22,11 @@ if TYPE_CHECKING:
 # ============================
 # Paths and Files
 # ============================
-BACKUP_FOLDER = "Backups"      # The folder where backup files will be stored.
-DOWNLOAD_FOLDER = "Downloads"  # The folder where downloaded files will be stored.
-URLS_FILE = "URLs.txt"         # The file containing the list of URLs to process.
-SESSION_LOG = "session.log"    # The file used to log errors.
-STATE_FILE = ".bunkr_state.json"
+BACKUP_FOLDER = "Backups"         # The folder where backup files will be stored.
+DOWNLOAD_FOLDER = "Downloads"     # The folder where downloaded files will be stored.
+URLS_FILE = "URLs.txt"            # The file containing the list of URLs to process.
+SESSION_LOG = "session.log"       # The file used to log errors.
+STATE_FILE = ".bunkr_state.json"  # The file used to store the download state.
 
 # ============================
 # API / Status Endpoints

@@ -3,6 +3,7 @@
 This module provides features for managing progress, handling failed downloads, and
 integrating with live task displays.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -19,6 +20,7 @@ from src.misc.general_utils import fetch_page
 from src.models import (
     AlbumInfo,
     DownloadInfo,
+    DownloadRuntime,
     DownloadState,
     ItemInfo,
     RetryConfig,
@@ -49,18 +51,11 @@ class AlbumDownloader:
         self.session_info = session_info
         self.album_info = album_info
         self.live_manager = live_manager
-        # State persisted from a previous run, used to skip completed items without
-        # making a network request.
+
+        # Restore cached download state from the previous run.
         self.download_state = DownloadState(cached_items=dict(cached_items or {}))
-        self._state_lock = asyncio.Lock()
-        self._pacing_lock = asyncio.Lock()
-        self._last_start_time: float = 0.0
-        self._reserved_filenames: set[str] = set()
-        self._semaphore: Semaphore | None = None
-        self._max_workers: int = MAX_WORKERS
-        self._throttled: bool = False
-        self._loop: asyncio.AbstractEventLoop | None = None
-        self._throttle_tasks: list[asyncio.Task] = []
+
+        self.runtime = DownloadRuntime()
 
     async def execute_item_download(
         self,
@@ -84,12 +79,14 @@ class AlbumDownloader:
             # Process the download of an item
             try:
                 item_info = await self._resolve_item_download(item_page)
+
             except RuntimeError:
                 self.live_manager.update_task(task, completed=100, visible=False)
                 self.live_manager.update_summary(FailedReason.MAX_RETRIES_REACHED)
                 self.download_state.unresolved_failures += 1
                 await self._persist_item_state(item_page, "", failed=True)
                 return
+
             if item_info.download_link:
                 await self._download_item(item_info, task, max_retries)
 
@@ -125,27 +122,28 @@ class AlbumDownloader:
         )
 
         # Create tasks for downloading each item in the album
-        self._loop = asyncio.get_running_loop()
-        self._max_workers = max_workers
-        self._semaphore = asyncio.Semaphore(max_workers)
+        self.runtime.loop = asyncio.get_running_loop()
+        self.runtime.max_workers = max_workers
+        self.runtime.semaphore = asyncio.Semaphore(max_workers)
         tasks = [
             self.execute_item_download(
                 item_page,
                 current_task,
-                self._semaphore,
+                self.runtime.semaphore,
                 max_retries,
             )
             for current_task, item_page in enumerate(self.album_info.item_pages)
         ]
         await asyncio.gather(*tasks)
 
-        for throttle_task in self._throttle_tasks:
+        for throttle_task in self.runtime.rate_control.throttle_tasks:
             throttle_task.cancel()
 
         # If there are failed downloads, process them after all downloads are complete
         still_failed = (
             await self._process_failed_downloads(max_retries=max_retries)
-            if self.download_state.failed_downloads else []
+            if self.download_state.failed_downloads
+            else []
         )
         return bool(still_failed) or self.download_state.unresolved_failures > 0
 
@@ -158,8 +156,7 @@ class AlbumDownloader:
 
         filename = cached.get("filename", "")
         expected_path = (
-            Path(self.session_info.download_path)
-            / truncate_filename(filename)
+            Path(self.session_info.download_path) / truncate_filename(filename)
         )
         if not expected_path.exists():
             return False
@@ -242,7 +239,8 @@ class AlbumDownloader:
         )
 
     async def _persist_item_state(
-        self, item_page: str,
+        self,
+        item_page: str,
         filename: str,
         *,
         failed: bool,
@@ -261,7 +259,7 @@ class AlbumDownloader:
             )
             is_completed = expected_path.exists()
 
-        async with self._state_lock:
+        async with self.runtime.synch.state_lock:
             self.download_state.cached_items[item_page] = {
                 "filename": filename,
                 "status": "completed" if is_completed else "failed",
@@ -282,16 +280,20 @@ class AlbumDownloader:
         name to this exact item, that name is reused, so the already-downloaded check
         keeps matching even though items are resolved in a non-deterministic order.
         """
-        async with self._state_lock:
+        async with self.runtime.synch.state_lock:
             cached_filename = (
                 self.download_state.cached_items.get(item_page) or {}
             ).get("filename")
             unique_filename = (
                 cached_filename
-                if cached_filename and cached_filename not in self._reserved_filenames
-                else reserve_unique_filename(filename, self._reserved_filenames)
+                if cached_filename
+                and cached_filename not in self.runtime.synch.reserved_filenames
+                else reserve_unique_filename(
+                    filename,
+                    self.runtime.synch.reserved_filenames,
+                )
             )
-            self._reserved_filenames.add(unique_filename)
+            self.runtime.synch.reserved_filenames.add(unique_filename)
             return unique_filename
 
     async def _fetch_page_with_retries(
@@ -367,7 +369,9 @@ class AlbumDownloader:
 
             # Update the persisted state with the outcome of this final pass.
             await self._persist_item_state(
-                data["item_url"], data["filename"], failed=failed_again,
+                data["item_url"],
+                data["filename"],
+                failed=failed_again,
             )
 
         self.download_state.failed_downloads.clear()
@@ -375,38 +379,38 @@ class AlbumDownloader:
 
     async def _pace_worker_start(self) -> None:
         """Space concurrent worker starts at least _WORKER_START_DELAY seconds apart."""
-        async with self._pacing_lock:
+        async with self.runtime.synch.pacing_lock:
             now = asyncio.get_running_loop().time()
-            elapsed = now - self._last_start_time
+            elapsed = now - self.runtime.rate_control.last_start
             if elapsed < _WORKER_START_DELAY:
                 await asyncio.sleep(_WORKER_START_DELAY - elapsed)
 
-            self._last_start_time = asyncio.get_running_loop().time()
+            self.runtime.rate_control.last_start = asyncio.get_running_loop().time()
 
     def _on_throttle(self) -> None:
         """Signal from a worker thread that CDN throttling or errors occurred."""
-        if not self._throttled and self._loop is not None:
-            self._loop.call_soon_threadsafe(self._activate_throttle_backoff)
+        if not self.runtime.rate_control.throttled and self.runtime.loop is not None:
+            self.runtime.loop.call_soon_threadsafe(self._activate_throttle_backoff)
 
     def _activate_throttle_backoff(self) -> None:
         """Reduce active worker concurrency to _THROTTLED_WORKERS once throttled."""
         if (
-            self._throttled
-            or self._semaphore is None
-            or self._max_workers <= _THROTTLED_WORKERS
+            self.runtime.rate_control.throttled
+            or self.runtime.semaphore is None
+            or self.runtime.max_workers <= _THROTTLED_WORKERS
         ):
             return
 
-        self._throttled = True
-        reduction = self._max_workers - _THROTTLED_WORKERS
+        self.runtime.rate_control.throttled = True
+        reduction = self.runtime.max_workers - _THROTTLED_WORKERS
         self.live_manager.update_log(
             event="Throttling detected",
             details=(
-                f"Backing off concurrent workers from {self._max_workers} "
+                f"Backing off concurrent workers from {self.runtime.max_workers} "
                 f"to {_THROTTLED_WORKERS}."
             ),
         )
         for _ in range(reduction):
-            self._throttle_tasks.append(
-                asyncio.create_task(self._semaphore.acquire()),
+            self.runtime.rate_control.throttle_tasks.append(
+                asyncio.create_task(self.runtime.semaphore.acquire()),
             )

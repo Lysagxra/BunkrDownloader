@@ -103,7 +103,7 @@ def clear_terminal() -> None:
 
     command = commands.get(os.name)
     if command:
-        subprocess.run(command, shell=True, check=True)  # noqa: S603
+        subprocess.run(command, shell=True, check=True)  # noqa: S602
 
 
 def check_python_version(min_version: tuple[int, int] = (3, 11)) -> None:

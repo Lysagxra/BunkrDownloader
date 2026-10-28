@@ -46,6 +46,7 @@ def _format_size(num_bytes: int | None) -> str:
     """Format a byte count as a human-readable size string."""
     if num_bytes is None:
         return "unknown"
+
     value = float(num_bytes)
     for unit in ("B", "KB", "MB", "GB"):
         if value < KB:

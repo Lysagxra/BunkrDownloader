@@ -7,7 +7,6 @@ monitoring task completion.
 from __future__ import annotations
 
 import shutil
-import threading
 
 from rich.panel import Panel
 from rich.progress import (
@@ -21,7 +20,7 @@ from rich.progress import (
 from rich.table import Column, Table
 
 from src.config import PROGRESS_COLUMNS_SEPARATOR, PROGRESS_MANAGER_COLORS
-from src.models import ProgressConfig
+from src.models import ProgressConfig, ProgressState
 
 
 class ProgressManager:
@@ -36,26 +35,7 @@ class ProgressManager:
         self.config = ProgressConfig(task_name, item_description)
         self.overall_progress = self._create_progress_bar()
         self.task_progress = self._create_progress_bar(show_time=True)
-        self.num_tasks = 0
-
-        # Explicit reference to the overall task currently being tracked, set by
-        # add_overall_task(). This replaces guessing "the current task" from list
-        # ordering (e.g. tasks[-1]), which breaks once a task can be removed or
-        # re-buffered out of order.
-        self.current_overall_task_id: TaskID | None = None
-
-        # IDs of overall tasks already queued for cleanup, so a finished task is only
-        # ever enqueued into overall_buffer once, no matter how many more progress
-        # updates arrive for it afterwards.
-        self._buffered_overall_task_ids: set[TaskID] = set()
-        self._completed_task_ids: set[int] = set()
-        self._current_album_tasks: dict[int, float] = {}
-
-        # Every public update touches shared Progress state (task lists, the cleanup
-        # buffer, current_overall_task_id) from whichever thread the download happened
-        # to run on -- up to MAX_WORKERS x num_connections threads can call update_task
-        # concurrently. This lock makes each update atomic.
-        self._lock = threading.Lock()
+        self.state = ProgressState()
 
     def get_panel_width(self) -> int:
         """Return the width of the panel."""
@@ -63,11 +43,11 @@ class ProgressManager:
 
     def add_overall_task(self, description: str, num_tasks: int) -> None:
         """Add an overall progress task with a given description and total tasks."""
-        with self._lock:
-            self.num_tasks = num_tasks
-            self._current_album_tasks = {}
+        with self.state.lock:
+            self.state.num_tasks = num_tasks
+            self.state.current_album_tasks = {}
             overall_description = self._adjust_description(description)
-            self.current_overall_task_id = self.overall_progress.add_task(
+            self.state.current_overall_task_id = self.overall_progress.add_task(
                 f"[{self.config.color}]{overall_description}",
                 total=num_tasks,
                 completed=0,
@@ -77,11 +57,11 @@ class ProgressManager:
         """Add an individual task to the task progress bar."""
         task_description = (
             f"[{self.config.color}]{self.config.item_description} "
-            f"{current_task + 1}/{self.num_tasks}"
+            f"{current_task + 1}/{self.state.num_tasks}"
         )
-        with self._lock:
+        with self.state.lock:
             task_id = self.task_progress.add_task(task_description, total=total)
-            self._current_album_tasks[task_id] = 0.0
+            self.state.current_album_tasks[task_id] = 0.0
             return task_id
 
     def update_task(
@@ -93,7 +73,7 @@ class ProgressManager:
         visible: bool = True,
     ) -> None:
         """Update the progress of an individual task and the overall progress."""
-        with self._lock:
+        with self.state.lock:
             self.task_progress.update(
                 task_id,
                 completed=completed if completed is not None else None,
@@ -134,28 +114,29 @@ class ProgressManager:
         worker that finishes after the rest): in that case current_overall_task_id is
         None and this is a no-op instead of crashing.
         """
-        overall_task_id = self.current_overall_task_id
+        overall_task_id = self.state.current_overall_task_id
         if overall_task_id is None:
             return
 
         current_overall_task = self._get_overall_task(overall_task_id)
         if current_overall_task is None:
             # The task was removed from under us; forget the stale id.
-            self.current_overall_task_id = None
+            self.state.current_overall_task_id = None
             return
 
         # If the individual task is finished, advance the overall progress once.
         individual_task = self.task_progress.tasks[task_id]
-        if individual_task.finished and task_id not in self._completed_task_ids:
-            self._completed_task_ids.add(task_id)
-            self._current_album_tasks[task_id] = 1.0
+        if individual_task.finished and task_id not in self.state.completed_task_ids:
+            self.state.completed_task_ids.add(task_id)
+            self.state.current_album_tasks[task_id] = 1.0
             self.task_progress.update(task_id, visible=False)
-        elif task_id not in self._completed_task_ids:
+
+        elif task_id not in self.state.completed_task_ids:
             task_total = individual_task.total or 100
             fraction = max(0.0, min(individual_task.completed / task_total, 0.99))
-            self._current_album_tasks[task_id] = fraction
+            self.state.current_album_tasks[task_id] = fraction
 
-        overall_completed = sum(self._current_album_tasks.values())
+        overall_completed = sum(self.state.current_album_tasks.values())
         self.overall_progress.update(overall_task_id, completed=overall_completed)
         current_overall_task = self._get_overall_task(overall_task_id)
 
@@ -164,9 +145,9 @@ class ProgressManager:
         if (
             current_overall_task is not None
             and current_overall_task.finished
-            and overall_task_id not in self._buffered_overall_task_ids
+            and overall_task_id not in self.state.buffered_overall_task_ids
         ):
-            self._buffered_overall_task_ids.add(overall_task_id)
+            self.state.buffered_overall_task_ids.add(overall_task_id)
             self.config.overall_buffer.append(current_overall_task)
 
         # Cleanup completed overall tasks
@@ -184,14 +165,14 @@ class ProgressManager:
         if len(self.config.overall_buffer) == self.config.overall_buffer.maxlen:
             completed_overall_id = self.config.overall_buffer.popleft().id
             self.overall_progress.remove_task(completed_overall_id)
-            self._buffered_overall_task_ids.discard(completed_overall_id)
+            self.state.buffered_overall_task_ids.discard(completed_overall_id)
 
             # If the task we just removed was the one still being tracked as "current"
             # (e.g. lingering retries for a finished album kept it alive in the buffer),
             # clear the reference so any further stray update becomes a safe no-op
             # instead of touching a removed task.
-            if completed_overall_id == self.current_overall_task_id:
-                self.current_overall_task_id = None
+            if completed_overall_id == self.state.current_overall_task_id:
+                self.state.current_overall_task_id = None
 
     # Static methods
     @staticmethod
