@@ -48,6 +48,7 @@ class ProgressManager:
         # ever enqueued into overall_buffer once, no matter how many more progress
         # updates arrive for it afterwards.
         self._buffered_overall_task_ids: set[TaskID] = set()
+        self._completed_task_ids: set[int] = set()
 
         # Every public update touches shared Progress state (task lists, the cleanup
         # buffer, current_overall_task_id) from whichever thread the download happened
@@ -76,7 +77,8 @@ class ProgressManager:
             f"[{self.config.color}]{self.config.item_description} "
             f"{current_task + 1}/{self.num_tasks}"
         )
-        return self.task_progress.add_task(task_description, total=total)
+        with self._lock:
+            return self.task_progress.add_task(task_description, total=total)
 
     def update_task(
         self,
@@ -139,7 +141,11 @@ class ProgressManager:
             return
 
         # If the individual task is finished, advance the overall progress once.
-        if self.task_progress.tasks[task_id].finished:
+        if (
+            self.task_progress.tasks[task_id].finished
+            and task_id not in self._completed_task_ids
+        ):
+            self._completed_task_ids.add(task_id)
             self.overall_progress.advance(overall_task_id)
             self.task_progress.update(task_id, visible=False)
             current_overall_task = self._get_overall_task(overall_task_id)
