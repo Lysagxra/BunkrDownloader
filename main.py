@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from downloader import parse_arguments
 from src.config import URLS_FILE
+from src.misc.bunkr_utils import get_bunkr_status
 from src.misc.file_utils import create_urls_file_backup, log_session_start, read_file
 from src.misc.general_utils import check_python_version, clear_terminal
 from src.services.run_utils import (
@@ -29,8 +30,9 @@ if TYPE_CHECKING:
 
 async def process_urls(urls: list[str], args: Namespace) -> list[str]:
     """Validate and download items for a list of URLs."""
-    # Placeholder for integrating the Bunkr status endpoint when available
-    bunkr_status: dict[str, str] = {}
+    bunkr_status: dict[str, str] = (
+        {} if getattr(args, "disable_server_check", False) else get_bunkr_status()
+    )
 
     # Dry-run skips downloads and bypasses Live UI, printing a preview per URL
     if getattr(args, "dry_run", False):

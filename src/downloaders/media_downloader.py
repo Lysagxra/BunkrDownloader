@@ -17,7 +17,7 @@ from requests import RequestException
 
 from src.config import DOWNLOAD_HEADERS
 from src.enums import CompletedReason, FailedReason, HTTPStatus, SkippedReason
-from src.misc.bunkr_utils import mark_subdomain_as_offline, subdomain_is_offline
+from src.misc.bunkr_utils import subdomain_is_offline
 from src.misc.file_utils import (
     matches_ignore_list,
     matches_include_list,
@@ -111,26 +111,34 @@ class MediaDownloader:
                     continue
 
                 # Fallback: single-connection streaming download
-                response = requests.get(
+                with requests.get(
                     self.download_info.download_link,
                     stream=True,
                     headers=DOWNLOAD_HEADERS,
                     timeout=_SINGLE_CONNECTION_TIMEOUT,
-                )
-                response.raise_for_status()
+                ) as response:
+                    response.raise_for_status()
+                    streaming_failed = save_file_with_progress(
+                        response,
+                        final_path,
+                        self.download_info.task,
+                        self.live_manager,
+                        rate_limiter=rate_limiter,
+                    )
 
             except RequestException as req_err:
                 if not self._handle_request_exception(req_err, attempt):
                     break
 
             else:
-                return save_file_with_progress(
-                    response,
-                    final_path,
-                    self.download_info.task,
-                    self.live_manager,
-                    rate_limiter=rate_limiter,
-                )
+                if not streaming_failed:
+                    return False
+
+                if not self._retry_with_backoff(
+                    attempt,
+                    event="Retrying streaming download",
+                ):
+                    break
 
         return True
 
@@ -143,23 +151,6 @@ class MediaDownloader:
 
         """
         is_final_attempt = not self.retry_config.has_external_retry
-        is_offline = subdomain_is_offline(
-            self.download_info.download_link,
-            self.session_info.bunkr_status,
-        )
-        should_skip_offline = (
-            is_offline
-            and is_final_attempt
-            and not self.session_info.args.disable_server_check
-        )
-        if should_skip_offline:
-            self.live_manager.update_log(
-                event="Non-operational subdomain",
-                details=f"The subdomain for {self.download_info.filename} is offline. "
-                "Check the log file.",
-            )
-            self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
-            return False
 
         # Skip download if the file exists or is blacklisted
         formatted_filename = truncate_filename(self.download_info.filename)
@@ -237,17 +228,22 @@ class MediaDownloader:
             )
             and not self.session_info.args.disable_server_check
         ):
-            self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
-            return log_and_skip_event(
-                f"The subdomain for {self.download_info.download_link} has been "
-                "previously marked as offline.",
+            self.live_manager.update_log(
+                event="Non-operational subdomain",
+                details=f"The subdomain for {self.download_info.filename} is offline. "
+                "Check the log file.",
             )
+            self._finalize_download(SkippedReason.DOMAIN_OFFLINE)
+            return True
 
         # If none of the skip conditions are met, do not skip
         return False
 
     def _retry_with_backoff(self, attempt: int, *, event: str) -> bool:
         """Log error, apply backoff, and return True if should retry."""
+        if self.retry_config.on_throttle is not None:
+            self.retry_config.on_throttle()
+
         self.live_manager.update_log(
             event=event,
             details=f"{event} for {self.download_info.filename} "
@@ -266,37 +262,33 @@ class MediaDownloader:
         req_err: RequestException,
         attempt: int,
     ) -> bool:
-        """Handle exceptions during the request and manages retries."""
-        is_server_down = req_err.response is None or req_err.response.status_code in (
-            HTTPStatus.SERVER_DOWN,
-            HTTPStatus.SERVICE_UNAVAILABLE,
+        """Handle exceptions during the request and manage retries with backoff."""
+        status_code = (
+            req_err.response.status_code if req_err.response is not None else None
         )
 
-        # Mark the subdomain as offline and exit the loop
-        if is_server_down:
-            marked_subdomain = mark_subdomain_as_offline(
-                self.session_info.bunkr_status,
-                self.download_info.download_link,
-            )
-            self.live_manager.update_log(
-                event="No response",
-                details=f"Subdomain '{marked_subdomain}' has been marked as offline.",
-            )
-            return False
+        if status_code == HTTPStatus.TOO_MANY_REQUESTS:
+            return self._retry_with_backoff(attempt, event="Rate limited")
 
-        if req_err.response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
-            return self._retry_with_backoff(attempt, event="Retrying download")
-
-        if req_err.response.status_code == HTTPStatus.BAD_GATEWAY:
-            self.live_manager.update_log(
-                event="Server error",
-                details=f"Bad gateway for {self.download_info.filename}.",
+        if status_code in (
+            HTTPStatus.BAD_GATEWAY,
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            HTTPStatus.SERVER_DOWN,
+        ):
+            return self._retry_with_backoff(
+                attempt,
+                event=f"Server error (HTTP {status_code})",
             )
-            # Setting retries to 1 forces an immediate failure on the next check.
-            self.retry_config.retries = 1
-            return False
 
-        # Do not retry, exit the loop
+        if req_err.response is None:
+            event_name = (
+                "Timeout"
+                if isinstance(req_err, requests.exceptions.Timeout)
+                else "Connection error"
+            )
+            return self._retry_with_backoff(attempt, event=event_name)
+
+        # Do not retry client errors (403, 404, etc.)
         self.live_manager.update_log(event="Request error", details=str(req_err))
         return False
 

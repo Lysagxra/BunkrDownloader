@@ -57,9 +57,11 @@ def get_bunkr_status() -> dict[str, str]:
 
 def get_offline_servers(bunkr_status: dict[str, str] | None = None) -> dict[str, str]:
     """Return a dictionary of servers that are not operational."""
+    if bunkr_status is None:
+        bunkr_status = get_bunkr_status()
     return {
         server_name: server_status
-        for server_name, server_status in bunkr_status.items()
+        for server_name, server_status in (bunkr_status or {}).items()
         if server_status != "Operational"
     }
 
@@ -74,6 +76,8 @@ def subdomain_is_offline(
     download_link: str, bunkr_status: dict[str, str] | None = None,
 ) -> bool:
     """Check if the subdomain from the given download link is marked as offline."""
+    if not bunkr_status:
+        return False
     offline_servers = get_offline_servers(bunkr_status)
     subdomain = get_subdomain(download_link)
     return subdomain in offline_servers

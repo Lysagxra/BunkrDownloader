@@ -14,6 +14,7 @@ from src.config import MAX_RETRIES, MAX_WORKERS
 from src.crawlers.crawler_utils import get_download_info
 from src.enums import FailedReason, SkippedReason
 from src.managers.state_manager import save_album_state
+from src.misc.bunkr_utils import get_bunkr_status
 from src.misc.file_utils import reserve_unique_filename, truncate_filename
 from src.misc.general_utils import fetch_page
 from src.models import (
@@ -31,6 +32,8 @@ if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
 
 _FETCH_BASE_DELAY = 1.5
+_WORKER_START_DELAY = 1.0
+_THROTTLED_WORKERS = 2
 
 
 class AlbumDownloader:
@@ -51,7 +54,14 @@ class AlbumDownloader:
         # making a network request.
         self.download_state = DownloadState(cached_items=dict(cached_items or {}))
         self._state_lock = asyncio.Lock()
+        self._pacing_lock = asyncio.Lock()
+        self._last_start_time: float = 0.0
         self._reserved_filenames: set[str] = set()
+        self._semaphore: Semaphore | None = None
+        self._max_workers: int = MAX_WORKERS
+        self._throttled: bool = False
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._throttle_tasks: list[asyncio.Task] = []
 
     async def execute_item_download(
         self,
@@ -66,6 +76,8 @@ class AlbumDownloader:
             # and signing API.
             if await self._skip_cached_item(item_page, current_task):
                 return
+
+            await self._pace_worker_start()
 
             # Cached file is missing or stale -- fall through and process normally.
             task = self.live_manager.add_task(current_task=current_task)
@@ -107,16 +119,26 @@ class AlbumDownloader:
         )
 
         # Create tasks for downloading each item in the album
-        semaphore = asyncio.Semaphore(max_workers)
+        self._loop = asyncio.get_running_loop()
+        self._max_workers = max_workers
+        self._semaphore = asyncio.Semaphore(max_workers)
         tasks = [
-            self.execute_item_download(item_page, current_task, semaphore, max_retries)
+            self.execute_item_download(
+                item_page,
+                current_task,
+                self._semaphore,
+                max_retries,
+            )
             for current_task, item_page in enumerate(self.album_info.item_pages)
         ]
         await asyncio.gather(*tasks)
 
+        for throttle_task in self._throttle_tasks:
+            throttle_task.cancel()
+
         # If there are failed downloads, process them after all downloads are complete
         still_failed = (
-            await self._process_failed_downloads()
+            await self._process_failed_downloads(max_retries=max_retries)
             if self.download_state.failed_downloads else []
         )
         return bool(still_failed) or self.download_state.unresolved_failures > 0
@@ -185,12 +207,16 @@ class AlbumDownloader:
             task=task,
             item_date=item_info.date,
         )
-        retry_confing = RetryConfig(retries=max_retries, has_external_retry=True)
+        retry_config = RetryConfig(
+            retries=max_retries,
+            has_external_retry=True,
+            on_throttle=self._on_throttle,
+        )
         media_downloader = MediaDownloader(
             session_info=self.session_info,
             download_info=download_info,
             live_manager=self.live_manager,
-            retry_config=retry_confing,
+            retry_config=retry_config,
         )
 
         failed_download = await asyncio.to_thread(media_downloader.download)
@@ -290,29 +316,39 @@ class AlbumDownloader:
         error_message = f"Failed to load page: {item_page}"
         raise RuntimeError(error_message)
 
-    async def _retry_failed_download(self, failed_download_info: DownloadInfo) -> bool:
-        """Retry a single failed download once. Returns True if it failed again."""
+    async def _retry_failed_download(
+        self,
+        failed_download_info: DownloadInfo,
+        retries: int = 3,
+    ) -> bool:
+        """Retry a single failed download sequentially. Returns True if it failed again."""
         media_downloader = MediaDownloader(
             session_info=self.session_info,
             download_info=failed_download_info,
             live_manager=self.live_manager,
-            # Retry once for failed downloads. No external retries are available after
-            # this attempt.
-            retry_config=RetryConfig(retries=1, has_external_retry=False),
+            retry_config=RetryConfig(retries=retries, has_external_retry=False),
         )
         # Run the synchronous download function in a separate thread
         return await asyncio.to_thread(media_downloader.download)
 
-    async def _process_failed_downloads(self) -> list[dict]:
-        """Retry every failed download once more.
+    async def _process_failed_downloads(self, max_retries: int = 3) -> list[dict]:
+        """Retry every failed download once more sequentially.
 
         Returns:
             The subset of failed_downloads that permanently failed again on this retry.
 
         """
-        still_failed = []
+        # Refresh offline server status to clear any transient in-memory flags
+        # before sequential retries.
+        if not getattr(self.session_info.args, "disable_server_check", False):
+            self.session_info.bunkr_status = await asyncio.to_thread(get_bunkr_status)
+        else:
+            self.session_info.bunkr_status = {}
 
-        for data in self.download_state.failed_downloads:
+        still_failed = []
+        retry_attempts = max_retries if max_retries and max_retries > 1 else 3
+
+        for data in list(self.download_state.failed_downloads):
             failed_download_info = DownloadInfo(
                 item_url=data["item_url"],
                 download_link=data["download_link"],
@@ -320,7 +356,10 @@ class AlbumDownloader:
                 task=data["id"],
                 item_date=data.get("item_date"),
             )
-            failed_again = await self._retry_failed_download(failed_download_info)
+            failed_again = await self._retry_failed_download(
+                failed_download_info,
+                retries=retry_attempts,
+            )
             if failed_again:
                 still_failed.append(data)
 
@@ -331,3 +370,41 @@ class AlbumDownloader:
 
         self.download_state.failed_downloads.clear()
         return still_failed
+
+    async def _pace_worker_start(self) -> None:
+        """Space concurrent worker starts at least _WORKER_START_DELAY seconds apart."""
+        async with self._pacing_lock:
+            now = asyncio.get_running_loop().time()
+            elapsed = now - self._last_start_time
+            if elapsed < _WORKER_START_DELAY:
+                await asyncio.sleep(_WORKER_START_DELAY - elapsed)
+
+            self._last_start_time = asyncio.get_running_loop().time()
+
+    def _on_throttle(self) -> None:
+        """Signal from a worker thread that CDN throttling or errors occurred."""
+        if not self._throttled and self._loop is not None:
+            self._loop.call_soon_threadsafe(self._activate_throttle_backoff)
+
+    def _activate_throttle_backoff(self) -> None:
+        """Reduce active worker concurrency to _THROTTLED_WORKERS once throttled."""
+        if (
+            self._throttled
+            or self._semaphore is None
+            or self._max_workers <= _THROTTLED_WORKERS
+        ):
+            return
+
+        self._throttled = True
+        reduction = self._max_workers - _THROTTLED_WORKERS
+        self.live_manager.update_log(
+            event="Throttling detected",
+            details=(
+                f"Backing off concurrent workers from {self._max_workers} "
+                f"to {_THROTTLED_WORKERS}."
+            ),
+        )
+        for _ in range(reduction):
+            self._throttle_tasks.append(
+                asyncio.create_task(self._semaphore.acquire()),
+            )

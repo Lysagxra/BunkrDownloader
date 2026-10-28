@@ -118,6 +118,7 @@ class RetryConfig:
     retries: int = MAX_RETRIES
     # True when an external caller retries failures; False for standalone downloads.
     has_external_retry: bool = False
+    on_throttle: callable | None = None
 
 @dataclass
 class ProgressConfig:

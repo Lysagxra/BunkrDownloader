@@ -27,6 +27,7 @@ from src.managers.live_manager import initialize_managers
 from src.managers.rate_limiter import RateLimiter
 from src.managers.state_manager import load_album_state, save_album_state
 from src.misc.args_utils import parse_arguments
+from src.misc.bunkr_utils import get_bunkr_status
 from src.misc.file_utils import (
     create_download_directory,
     format_directory_name,
@@ -284,9 +285,10 @@ async def main() -> None:
     clear_terminal()
     check_python_version()
 
-    # Placeholder for integrating the Bunkr status endpoint when available
-    bunkr_status: dict[str, str] = {}
     args = parse_arguments()
+    bunkr_status: dict[str, str] = (
+        {} if args.disable_server_check else get_bunkr_status()
+    )
 
     if getattr(args, "dry_run", False):
         await execute_dry_run_for_url(bunkr_status, args.url, args, Console())

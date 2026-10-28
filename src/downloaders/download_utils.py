@@ -81,7 +81,7 @@ def save_file_with_progress(
                     completed = (total_downloaded / file_size) * 100
                     live_manager.update_task(task, completed=completed)
 
-    except ChunkedEncodingError:
+    except (ChunkedEncodingError, RequestException):
         return True
 
     if total_downloaded == file_size:
