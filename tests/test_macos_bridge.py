@@ -32,6 +32,8 @@ class BridgeTests(unittest.TestCase):
     def test_real_single_file_pipeline_with_fixture_response(self):
         class Response:
             headers = {"Content-Length": "12"}
+            def __enter__(self): return self
+            def __exit__(self, *_): return False
             def raise_for_status(self): pass
             def iter_content(self, chunk_size): yield b"hello bunkr!"
         with tempfile.TemporaryDirectory() as directory:
