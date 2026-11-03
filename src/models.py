@@ -83,6 +83,8 @@ class ChunkInfo:
     headers: dict[str, str]
     on_progress: callable
     rate_limiter: RateLimiter | None = None
+    validator: str | None = None
+    content_length: int = -1
 
 @dataclass(frozen=True)
 class ItemInfo:
@@ -112,6 +114,7 @@ class DownloadConfig:
     num_connections: int
     headers: dict[str, str]
     rate_limiter: RateLimiter | None = None
+    validator: str | None = None
 
 @dataclass(slots=True)
 class RetryConfig:

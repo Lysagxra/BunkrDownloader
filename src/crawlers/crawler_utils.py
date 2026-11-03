@@ -101,7 +101,7 @@ async def extract_all_album_item_pages(
                 zip(next_item_pages, extract_item_dates(next_page_soup), strict=False),
             )
 
-    return item_pages, item_dates
+    return list(dict.fromkeys(item_pages)), item_dates
 
 
 async def get_item_download_link(

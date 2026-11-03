@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 import requests
 from requests import Response
-from requests.exceptions import ChunkedEncodingError, RequestException
+from requests.exceptions import RequestException
 
 from src.config import (
     CHUNK_BASE_DELAY,
@@ -32,6 +32,13 @@ from src.models import ChunkInfo, DownloadConfig, DownloadPlan
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
     from src.managers.rate_limiter import RateLimiter
+
+
+def report_bytes(manager, task, received, expected):
+    """Report absolute counters so retries replace earlier attempts."""
+    callback = getattr(manager, "update_bytes", None)
+    if callback:
+        callback(task, received, expected)
 
 
 def get_chunk_size(file_size: int) -> int:
@@ -78,11 +85,12 @@ def save_file_with_progress(
                         rate_limiter.consume(len(chunk))
 
                     total_downloaded += len(chunk)
+                    report_bytes(live_manager, task, total_downloaded, file_size)
                     if file_size > 0:
                         completed = min((total_downloaded / file_size) * 100, 99.0)
                         live_manager.update_task(task, completed=completed)
 
-    except (ChunkedEncodingError, RequestException):
+    except (RequestException, OSError):
         return True
 
     if total_downloaded == file_size or (file_size == -1 and total_downloaded > 0):
@@ -173,6 +181,7 @@ def _load_or_create_plan(
     base_path: Path,
     content_length: int,
     num_connections: int,
+    validator: str | None = None,
 ) -> list[tuple[int, int]]:
     """Load a previously persisted chunk plan, or compute and save a new one.
 
@@ -186,17 +195,35 @@ def _load_or_create_plan(
     if plan_path.exists():
         try:
             data = json.loads(plan_path.read_text(encoding="utf-8"))
-            if data.get("content_length") == content_length:
-                return [tuple(pair) for pair in data["ranges"]]
+            ranges = data.get("ranges", [])
+            cursor = 0
+            for pair in ranges:
+                if not isinstance(pair, list) or len(pair) != 2:
+                    break
+                if any(not isinstance(value, int) or isinstance(value, bool) for value in pair):
+                    break
+                if pair[0] != cursor or pair[1] < cursor or pair[1] >= content_length:
+                    break
+                cursor = pair[1] + 1
+            else:
+                if (cursor == content_length and validator
+                        and data.get("validator") == validator
+                        and data.get("content_length") == content_length):
+                    return [tuple(pair) for pair in ranges]
 
-        except (json.JSONDecodeError, KeyError, OSError):
+        except (json.JSONDecodeError, KeyError, OSError, TypeError, AttributeError):
             pass  # Corrupt or unreadable -- recompute below.
 
+    for part in base_path.parent.glob(base_path.name + ".part*"):
+        if part.name[len(base_path.name + ".part"):].isdigit():
+            part.unlink(missing_ok=True)
     ranges = _compute_unit_ranges(content_length, num_connections)
 
     try:
         plan_path.write_text(
-            json.dumps({"content_length": content_length, "ranges": ranges}),
+            json.dumps({
+                "content_length": content_length, "ranges": ranges, "validator": validator,
+            }),
             encoding="utf-8",
         )
 
@@ -231,7 +258,12 @@ def _attempt_chunk_once(
     end_byte = byte_range[1]
     expected = end_byte - start_byte + 1
 
-    chunk_headers = {**chunk_info.headers, "Range": f"bytes={start_byte}-{end_byte}"}
+    chunk_headers = {
+        **chunk_info.headers, "Range": f"bytes={start_byte}-{end_byte}",
+        "Accept-Encoding": "identity",
+    }
+    if chunk_info.validator:
+        chunk_headers["If-Match"] = chunk_info.validator
     written = 0
 
     try:
@@ -242,6 +274,11 @@ def _attempt_chunk_once(
             timeout=30,
         ) as response:
             response.raise_for_status()
+            content_range = f"bytes {start_byte}-{end_byte}/{chunk_info.content_length}"
+            if (response.status_code != 206
+                    or response.headers.get("Content-Range") != content_range
+                    or response.headers.get("ETag") != chunk_info.validator):
+                return True
             with path.open("wb") as file:
                 for data in response.iter_content(chunk_size=DEFAULT_CHUNK_SIZE):
                     if data:
@@ -306,8 +343,9 @@ def _build_download_plan(
     base_path: Path,
     content_length: int,
     num_connections: int,
+    validator: str | None = None,
 ) -> DownloadPlan:
-    ranges = _load_or_create_plan(base_path, content_length, num_connections)
+    ranges = _load_or_create_plan(base_path, content_length, num_connections, validator)
     num_ranges = len(ranges)
     return DownloadPlan(
         ranges=ranges,
@@ -342,12 +380,14 @@ def download_chunks(
                 99.0,
             )
             live_manager.update_task(task, completed=completed)
+            report_bytes(live_manager, task, total_downloaded[0], download_config.content_length)
 
     any_failed = False
     download_plan = _build_download_plan(
         base_path,
         download_config.content_length,
         download_config.num_connections,
+        download_config.validator,
     )
     max_workers = min(download_config.num_connections, download_plan.num_ranges)
 
@@ -360,6 +400,8 @@ def download_chunks(
                 path,
                 ChunkInfo(
                     headers=download_config.headers,
+                    validator=download_config.validator,
+                    content_length=download_config.content_length,
                     on_progress=on_progress,
                     rate_limiter=download_config.rate_limiter,
                 ),
@@ -428,6 +470,19 @@ def save_file_with_chunks(
         True on failure (.partN files kept for next resume), False on success.
 
     """
+    headers = {**download_config.headers, "Accept-Encoding": "identity"}
+    with requests.head(url, headers=headers, timeout=10) as response:
+        response.raise_for_status()
+        validator = response.headers.get("ETag")
+        if not validator or validator.startswith("W/"):
+            with requests.get(url, headers=headers, stream=True, timeout=30) as stream:
+                stream.raise_for_status()
+                return save_file_with_progress(
+                    stream, download_path, task, live_manager, download_config.rate_limiter,
+                )
+        if int(response.headers.get("Content-Length", -1)) != download_config.content_length:
+            return True
+        download_config.validator = validator
     base_path = Path(download_path)
     chunk_paths, expected_sizes, any_failed = download_chunks(
         url,

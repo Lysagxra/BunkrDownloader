@@ -162,11 +162,10 @@ def process_results_rows(results: list[dict], table: Table) -> tuple[int, dict]:
     return total_download_bytes, counts
 
 
-async def execute_dry_run(
+async def resolve_preview(
     album_info: AlbumInfo,
     session_info: SessionInfo,
-    console: Console,
-) -> None:
+) -> list[dict]:
     """Print a preview table of what a download would do, without downloading."""
     semaphore = asyncio.Semaphore(MAX_WORKERS)
     reserved_names: set[str] = set()
@@ -183,6 +182,14 @@ async def execute_dry_run(
         *(_resolve_item(item_page, context) for item_page in album_info.item_pages),
     )
 
+    return results
+
+
+async def execute_dry_run(
+    album_info: AlbumInfo, session_info: SessionInfo, console: Console,
+) -> None:
+    """Print the same structured preview exposed by the native app."""
+    results = await resolve_preview(album_info, session_info)
     table = Table(title=f"Dry run for ID: {album_info.album_id}")
     table.add_column("Filename", overflow="fold")
     table.add_column("Size", justify="right")
