@@ -1,0 +1,35 @@
+{
+  "album": "https://bunkr.cr/a/corpus",
+  "items": [
+    "https://bunkr.cr/i/corpus-one",
+    "https://bunkr.cr/f/corpus-two.bin"
+  ],
+  "pages": {
+    "https://bunkr.cr/a/corpus": "<a class=\"after:absolute after:z-10 after:inset-0\" href=\"/i/corpus-one\"></a><nav class=\"pagination\"><a href=\"?page=2\">2</a></nav>",
+    "https://bunkr.cr/a/corpus?page=2": "<a class=\"after:absolute after:z-10 after:inset-0\" href=\"/i/corpus-one\"></a><a class=\"after:absolute after:z-10 after:inset-0\" href=\"/f/corpus-two.bin\"></a>",
+    "https://bunkr.cr/i/corpus-one": "<h1 class=\"text-subs font-semibold text-base sm:text-lg truncate\">one.bin</h1><script>var jsCDN = \"https:\\/\\/fixtures.test\\u002Fone.bin\";</script>",
+    "https://bunkr.cr/f/corpus-two.bin": "<h1 class=\"text-subs font-semibold text-base sm:text-lg truncate\">two.bin</h1><script data-file-id=\"corpus-two\"></script>",
+    "https://bunkr.cr/f/missing": "<h1>Unavailable</h1>",
+    "https://bunkr.cr/f/challenge": "<html><title>Verify you are human</title></html>"
+  },
+  "expected": [
+    {
+      "name": "one.bin",
+      "path": "/one.bin",
+      "base": "https://fixtures.test/one.bin"
+    },
+    {
+      "name": "two.bin",
+      "path": "/storage/media/two.bin",
+      "base": "https://fixtures.test/two.bin"
+    }
+  ],
+  "lookup": {
+    "mediafiles": "https://fixtures.test",
+    "path": "/two.bin"
+  },
+  "sign": {
+    "token": "signed",
+    "ex": 1234
+  }
+}

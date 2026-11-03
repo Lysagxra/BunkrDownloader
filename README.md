@@ -4,6 +4,26 @@
 
 ![Demo](https://github.com/Lysagxra/BunkrDownloader/blob/8d07aaa4fe4e5b438e9ccc75bf0b71c845df942d/assets/demo.gif)
 
+## Native macOS app
+
+A SwiftUI desktop app is available in [`macos/`](macos/README.md), with a persistent queue, live progress, stop/retry controls, filename filters, speed limits, and a bundled Python engine.
+
+```sh
+.venv/bin/python -m pip install -r macos/requirements-build.txt
+./scripts/build-macos.sh
+open dist/Bunkr.app
+```
+
+See the [macOS guide](macos/README.md) for setup, system requirements, and validation.
+
+## Native iPhone and iPad app
+
+Open [BunkrMobile.xcodeproj](ios/BunkrMobile.xcodeproj) in Xcode 27, choose the **BunkrMobile** scheme, and run on iOS or iPadOS 27. For a physical device, select your development team in Signing & Capabilities. The project is generated from [ios/project.yml](ios/project.yml).
+
+Tap **+**, enter one Bunkr album or file link per line, then tap **Start queue**. Media downloads use a background session. Album discovery and signing run while the app is active. Completed files are available in **Files → On My iPhone/iPad → Bunkr**, and each job offers a share action for its files. Retry keeps completed album items and retries failed files. Wi-Fi-only applies to new jobs. Share Bunkr links from Safari to add them to the queue when the app next opens. Both targets need the shared App Group capability when signing. Removing a queue entry leaves its files on disk.
+
+The **TransferTests** scheme runs the mobile transfer and persistence fixtures on macOS 27. See the [improvement roadmap](improvements.md) for the open work on both platforms.
+
 ## Features
 
 - Downloads multiple files from an album concurrently.

@@ -1,6 +1,7 @@
 """Python-based downloader for Bunkr albums and files.
 
 Usage:
+
     Run the script from the command line with a valid album or media URL:
         python3 downloader.py <album_or_media_url>
 """

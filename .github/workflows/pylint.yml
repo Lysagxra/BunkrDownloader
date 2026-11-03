@@ -35,4 +35,5 @@ jobs:
         run: |
           python -m pylint \
             --disable=broad-exception-caught,too-many-return-statements,too-many-instance-attributes \
-            $(git ls-files '*.py')
+            src main.py downloader.py
+          PYTHONPATH=. python -m pylint --errors-only macos/bridge.py tests

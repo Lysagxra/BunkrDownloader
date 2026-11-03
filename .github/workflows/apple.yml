@@ -1,0 +1,34 @@
+name: Apple 27
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install -r requirements.txt
+          command -v xcodegen || brew install xcodegen
+      - name: Require Apple 27
+        run: |
+          test "$(sw_vers -productVersion | cut -d. -f1)" -ge 27
+          xcodebuild -showsdks
+      - name: Bridge and native queue tests
+        run: ./scripts/test-macos.sh
+      - name: Generate mobile project
+        run: xcodegen generate -s ios/project.yml
+      - name: Mobile transfer fixtures
+        run: xcodebuild -project ios/BunkrMobile.xcodeproj -scheme TransferTests -destination 'platform=macOS' -derivedDataPath build/transfer-tests test
+      - name: iOS and share extension
+        run: xcodebuild -project ios/BunkrMobile.xcodeproj -scheme BunkrMobile -destination 'generic/platform=iOS Simulator' -derivedDataPath build/ios-simulator CODE_SIGNING_ALLOWED=NO build
+      - name: Desktop frontend
+        run: xcrun swiftc -swift-version 5 -parse-as-library -target arm64-apple-macosx27.0 macos/Sources/*.swift -o build/Bunkr
