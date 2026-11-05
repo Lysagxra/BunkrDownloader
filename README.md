@@ -14,49 +14,17 @@
 - Provides progress indication during downloads.
 - Automatically creates a directory structure for organized storage.
 - Logs URLs that encounter errors for troubleshooting.
-- Supports HTTP resume for interrupted downloads (uses a `.temp` partial file and Range requests).
-- Per-session retry lists and timestamped verbose logs for debugging.
 
 ## Dependencies
 
-- Python 3
+- Python 3.11+
 - `BeautifulSoup` (bs4) - for HTML parsing
 - `requests` - for HTTP requests
 - `rich` - for progress display in the terminal
 
-<details>
-
-<summary>Show directory structure</summary>
-
-```
-project-root/
-├── helpers/
-│ ├── crawlers/
-| | ├── api_utils.py         # Utilities for handling API requests and responses
-│ │ └── crawler_utils.py     # Utilities for extracting media download links
-│ ├── downloaders/
-│ │ ├── album_downloader.py  # Manages the downloading of entire albums
-│ │ ├── download_utils.py    # Utilities for managing the download process
-│ │ └── media_downloader.py  # Manages the downloading of individual media files
-│ ├── managers/
-│ │ ├── live_manager.py      # Manages a real-time live display
-│ │ ├── log_manager.py       # Manages real-time log updates
-│ │ └── progress_manager.py  # Manages progress bars
-│ ├── bunkr_utils.py         # Utilities for checking Bunkr status
-│ ├── config.py              # Manages constants and settings used across the project
-│ ├── file_utils.py          # Utilities for managing file operations
-│ ├── general_utils.py       # Miscellaneous utility functions
-│ └── url_utils.py           # Utilities for Bunkr URLs
-├── logs/                    # Timestamped verbose run logs (created when --verbose used)
-├── session/                 # Per-session retry lists (stable when --session-id is provided)
-├── downloader.py            # Module for initiating downloads from specified Bunkr URLs
-├── main.py                  # Main script to run the downloader
-└── URLs.txt                 # Text file listing album URLs to be downloaded
-```
-
-</details>
-
 ## Installation
+
+Open a terminal in the folder where you want to install the tool, then follow the steps below.
 
 1. Clone the repository:
 
@@ -83,16 +51,32 @@ To download a single media from an URL, you can use `downloader.py`, running the
 ### Usage
 
 ```bash
-python3 downloader.py <bunkr_url> [--verbose] [--retries N] [--session-id ID]
+python3 downloader.py <bunkr_url>
 ```
 
 ### Examples
 
 You can either download an entire album or a specific file:
 
-```
+```bash
 python3 downloader.py https://bunkr.si/a/PUK068QE       # Download album
 python3 downloader.py https://bunkr.fi/f/gBrv5f8tAGlGW  # Download single media
+```
+
+## Preserve original filenames
+
+By default the downloader may generate filenames based on the URL. Use the `--clean-name` flag to preserve the original filename found on the item page.
+
+### Usage
+
+```bash
+python3 downloader.py <bunkr_url> --clean-name
+```
+
+### Dry-run example
+
+```bash
+python3 downloader.py --dry-run --clean-name <bunkr_url>
 ```
 
 ## Selective Download
@@ -160,7 +144,7 @@ https://bunkr.fi/a/kVYLh49Q
 2. Run the batch download script:
 
 ```
-python3 main.py [--verbose] [--session-id ID]
+python3 main.py
 ```
 
 ## File Download Location
@@ -168,16 +152,12 @@ python3 main.py [--verbose] [--session-id ID]
 If the `--custom-path <custom_path>` argument is used, the downloaded files will be saved in `<custom_path>/Downloads`.
 Otherwise, the files will be saved in a `Downloads` folder created within the script's directory
 
+Within that folder, each album gets its own `<album_title> (<album_id>)` subfolder. Use `--no-album-folder` to skip it and save the files directly into the download directory (`--no-download-folder` skips the `Downloads` folder itself; the two can be combined).
+
 ### Usage
 
 ```bash
 python3 main.py --custom-path <custom_path>
-```
-
-### Example
-
-```bash
-python3 main.py --custom-path /path/to/external/drive
 ```
 
 ## Disable UI for Notebooks
@@ -194,17 +174,10 @@ To disable the UI, use the following command:
 python3 main.py --disable-ui
 ```
 
-To download a single file or album without the UI, you can use this command:
-
-```bash
-python3 downloader.py <bunkr_url> --disable-ui
-```
-
 ## Maximum Number of Retries
 
-When the download fails, by default there is 5 retry attempts to download each media file again.
-You can control the number of maximum attempts with the `--max-retries` argument.
-It may be useful when you would like to skip broken media faster for the very large media collection.
+If a download fails, the downloader will retry up to 5 times by default.
+You can change the maximum number of retry attempts with the `--max-retries` argument.
 
 ### Usage
 
@@ -214,108 +187,47 @@ Allowed values: 0 (don't re-download) and larger.
 python3 downloader.py <bunkr_url> --max-retries 3
 ```
 
-### Example:
-
-```bash
-python3 downloader.py https://bunkr.si/a/PUK068QE --max-retries 3
-```
-
 ## Logging
-
-The downloader separates session retry lists from verbose run logs and provides the following CLI flags:
-
-- `--session-id ID`: when provided the session retry list is created as `session/ID.txt`. This file is stable across runs so you can re-run the downloader and pick up the same retry list for the album or item.
-- `--verbose`: duplicates UI log lines to a verbose log file under `logs/` and also outputs the session/verbose paths in the Log Messages header.
-- `--retries N`: controls how many times the downloader will retry a failed file before writing it to the session retry list.
-
-- Behavior details:
-- Session retry lists live in `session/`.
-	- If you don't provide `--session-id` a timestamped session file like `session/session_YYYYMMDD_HHMMSS.txt` is created.
-	- When `--session-id ID` is used, the session file is `session/ID.txt` (no timestamp) so the file can be re-used across runs.
-- Verbose logs live in `logs/` and are timestamped per run:
-	- When `--session-id ID` is provided the verbose log is `logs/ID_YYYYMMDD_HHMMSS.log` (identifier + timestamp).
-	- When no ID is provided the verbose log is `logs/verbose_YYYYMMDD_HHMMSS.log`.
-- Failed download links are appended to the session file (duplicate URLs are deduplicated).
-- Partial downloads are saved alongside the final filename with a `.temp` suffix and are resumed using HTTP Range where supported. If the server ignores Range, the partial is removed and the download restarts.
-
-Example
-
-```
-python3 downloader.py https://bunkr.si/a/kVYLh49Q --session-id kVYLh49Q --verbose
-```
-
-This will create `session/kVYLh49Q.txt` and a verbose log such as `logs/kVYLh49Q_YYYYMMDD_HHMMSS.log`.
-
-## Verbose logging (current behavior)
-
-Note: the downloader now writes verbose/debug information only to a verbose log file and does not print debug traces to the console. This keeps the terminal output clean during large runs or automated executions.
-
-- `--verbose` enables detailed run logging and tracebacks; those are written to the verbose log file under `logs/` (timestamped by default or derived from `--session-id`).
-- Console output is intentionally minimal: the progress UI will show run progress, while detailed debug messages and exception tracebacks are recorded only in the verbose log.
-- Log writes are flushed and fsynced immediately to reduce reordering and ensure visibility of entries when multiple threads write concurrently.
-
-How to view verbose logs:
-
-```bash
-# tail the most recent verbose log (works when logs are timestamped)
-tail -f logs/verbose_*.log
-
-# or, if you provided --session-id, tail the specific file
-tail -f logs/<your_session_id>_*.log
-```
-
-If you prefer the old behavior where `--verbose` prints debug output to the console, we can add an additional flag to re-enable console logging alongside the verbose file.
-
-## Retry behavior (session file)
-
-The downloader collects failed URLs into a per-session retry list so you can retry them automatically after the main download pass. Here's how it works:
-
-- When a file reaches its configured retry limit (controlled with `--retries`), the URL is appended to the session file (under `session/`). Duplicate URLs are skipped.
-- The session file path is resolved as `session/<name>.txt`. Use `--session-id ID` to create a stable file (`session/ID.txt`) you can re-run across multiple sessions; otherwise a timestamped file is created for each run.
-- After the main download tasks complete, the script performs a single post-run retry pass over the session file while the live UI is still active. The retry pass:
-	- Reads the session file and treats it as the authoritative list of deferred URLs.
-	- Sets the UI to show `1/N, 2/N, ...` for the retry attempts so you can see progress within the retry list.
-	- Attempts each URL once (regardless of previous per-file retry count). Successful retries are removed immediately from the session file so it always reflects remaining work.
-	- Failed retries remain in the session file (they will be written back at the end of the pass). If all retries succeed, the session file is removed.
-
-Notes:
-
-- The retry pass runs only once per run. If you need more passes, you can re-run the script or we can make the number of retry passes configurable.
-- Session-file updates are flushed and fsynced to disk to reduce the chance of lost entries during unexpected termination.
-- The verbose log (use `--verbose`) contains detailed entries for the retry pass, including the resolved session path, counts read, and a completion summary.
-
-## Session log path resolution
-
-The downloader now standardizes how the session log path is resolved:
-
-- If `SESSION_LOG` (internal config value) is an absolute path, that path is used directly.
-- If `SESSION_LOG` is just a filename (default: `session.log`), it is placed under the default session directory: `session/<filename>`.
-- Supplying `--session-id ID` assigns a filename (`ID.txt` or a timestamped variant when omitted) which is then resolved using the same rule above.
-- Internally a helper resolves the effective path; other components no longer recompute `session/<name>` manually, reducing inconsistencies.
-
-Implications:
-
-- You can override the session log destination by setting `SESSION_LOG` to an absolute path before running (advanced usage).
-- Tools and retry logic always operate on the resolved path; duplicate entries are avoided regardless of where the file lives.
-- The default directory (`session/`) can be changed centrally in code (currently `"session"`) without modifying multiple call sites.
-
-Example (default behavior):
-
-```
-python3 downloader.py https://bunkr.si/a/EXAMPLE --session-id EXAMPLE --verbose
-# Effective session log: session/EXAMPLE.txt
-# Effective verbose log: logs/EXAMPLE_YYYYMMDD_HHMMSS.log
-```
-
-Example (absolute override – advanced):
-
-```python
-import src.config as cfg
-cfg.SESSION_LOG = "/tmp/custom_session_retry_list.txt"
-# Then invoke the downloader script; session entries will append to /tmp/custom_session_retry_list.txt
-```
-
-If you do not need advanced overrides, continue using `--session-id` or omit it for timestamped files; the helper will handle placement automatically.
 
 The application logs any issues encountered during the download process in a file named `session.log`.
 Check this file for any URLs that may have been blocked or had errors.
+
+### Resuming interrupted downloads
+
+Single-connection downloads keep unfinished data in `<filename>.temp`, preserving
+its extension (for example, `video.mp4.temp`). Run the same command again to request
+the remaining bytes. A valid HTTP `206` response is appended only when its
+`Content-Range` starts at the saved offset and describes the remaining tail.
+Malformed or inconsistent range responses leave the partial file intact. If the
+server returns a full `200` response instead, the partial is overwritten with that
+full response. Short or interrupted responses are never renamed as completed files.
+
+This complements the existing parallel `.partN` / `.bunkrparts` resume support.
+Keep partial files and album state in the same download directory between runs.
+Resume assumes the remote file has not changed; remove its partial files to start
+over if the source was replaced or the server rejects the saved byte range.
+Older partial files named by replacing the original extension are not reused.
+
+### Session and diagnostic logs
+
+Both entry points accept `--session-id <id>` to write structured session entries
+to `session/<id>.log`, and `--verbose` to mirror UI events to a timestamped file in
+`logs/`. Existing logs are retained. Without `--session-id`, the normal upstream
+session log is used. These options also support `session_id` and `verbose` defaults
+in `bunkr.toml`; explicit command-line values take precedence.
+
+```bash
+python downloader.py https://bunkr.cr/a/example --session-id example --verbose
+python main.py --session-id batch --verbose
+```
+
+Session logs contain diagnostic records, rather than a list of direct URLs to
+replay. Failed album items use upstream's final retry pass and persisted album
+state. Re-run the original album command to retry remaining work in its original
+directory. `--retries` remains an alias for upstream's `--max-retries` option.
+
+Run the resume and session regression tests with:
+
+```bash
+python -m unittest discover -s tests -v
+```

@@ -8,7 +8,7 @@ reasons using counters.
 from collections import Counter
 from enum import IntEnum
 
-from src.config import (
+from src.enums import (
     TASK_REASON_MAPPING,
     CompletedReason,
     FailedReason,
@@ -32,7 +32,7 @@ class SummaryManager:
     def get_result_count(
         self,
         task_result: TaskResult,
-        reason: IntEnum = TaskReason.REASON_ALL,
+        reason: IntEnum = TaskReason.ALL,
     ) -> int:
         """Return the count of tasks with the specified result and a reason."""
         return self._result_counts[task_result][reason]
@@ -51,10 +51,10 @@ class SummaryManager:
             raise TypeError(log_message)
 
         self._result_counts[task_result][task_reason] += 1
-        self._result_counts[task_result][TaskReason.REASON_ALL] += 1
+        self._result_counts[task_result][TaskReason.ALL] += 1
 
     def _get_task_result(self, task_reason: IntEnum) -> TaskResult:
-        """Determina a quale TaskResult appartiene il task_reason."""
+        """Determine the appropriate TaskResult for the task reason."""
         if isinstance(task_reason, CompletedReason):
             return TaskResult.COMPLETED
 

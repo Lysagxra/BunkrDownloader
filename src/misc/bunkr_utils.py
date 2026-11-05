@@ -8,59 +8,61 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 
-from .config import HEADERS, STATUS_PAGE
+from src.config import DEFAULT_HEADERS, STATUS_PAGE
 
 
-def fetch_page(url: str) -> BeautifulSoup | None:
-    """Fetch the HTML content of a page at the given URL."""
+def fetch_status_page() -> BeautifulSoup | None:
+    """Fetch the HTML content of the status page."""
     try:
-        response = requests.get(url, headers=HEADERS, timeout=10)
+        response = requests.get(STATUS_PAGE, headers=DEFAULT_HEADERS, timeout=5)
         response.raise_for_status()
 
     except requests.RequestException:
-        logging.exception("An error occurred while fetching the status page.")
+        logging.warning("An error occurred while fetching the status page")
         return None
 
     return BeautifulSoup(response.text, "html.parser")
 
 
 def get_bunkr_status() -> dict[str, str]:
-    """Fetch the status of servers from the status page and returns a dictionary."""
-    soup = fetch_page(STATUS_PAGE)
+    """Fetch the status of servers from the status page and return a dictionary."""
+    soup = fetch_status_page()
     if soup is None:
         logging.warning("Unable to fetch status page; continuing without host data.")
         return {}
 
-    bunkr_status = {}
+    bunkr_status: dict[str, str] = {}
+    server_items = soup.find_all(
+        "div",
+        {
+            "class": (
+                "flex items-center gap-4 py-4 border-b border-soft last:border-b-0"
+            ),
+        },
+    )
 
-    try:
-        server_items = soup.find_all(
-            "div",
-            {
-                "class": (
-                    "flex items-center gap-4 py-4 border-b border-soft last:border-b-0"
-                ),
-            },
-        )
+    for server_item in server_items:
+        server_name_tag = server_item.find("p")
+        server_status_tag = server_item.find("span")
 
-        for server_item in server_items:
-            server_name = server_item.find("p").get_text(strip=True)
-            server_status = server_item.find("span").get_text(strip=True)
-            bunkr_status[server_name] = server_status
+        if server_name_tag is None or server_status_tag is None:
+            continue
 
-    except AttributeError:
-        logging.exception("Error extracting server data")
-        return {}
+        server_name = server_name_tag.get_text(strip=True)
+        server_status = server_status_tag.get_text(strip=True)
+        bunkr_status[server_name] = server_status
 
     return bunkr_status
 
 
 def get_offline_servers(bunkr_status: dict[str, str] | None = None) -> dict[str, str]:
     """Return a dictionary of servers that are not operational."""
-    bunkr_status = bunkr_status or get_bunkr_status()
+    if bunkr_status is None:
+        bunkr_status = get_bunkr_status()
+
     return {
         server_name: server_status
-        for server_name, server_status in bunkr_status.items()
+        for server_name, server_status in (bunkr_status or {}).items()
         if server_status != "Operational"
     }
 
@@ -75,6 +77,9 @@ def subdomain_is_offline(
     download_link: str, bunkr_status: dict[str, str] | None = None,
 ) -> bool:
     """Check if the subdomain from the given download link is marked as offline."""
+    if not bunkr_status:
+        return False
+
     offline_servers = get_offline_servers(bunkr_status)
     subdomain = get_subdomain(download_link)
     return subdomain in offline_servers

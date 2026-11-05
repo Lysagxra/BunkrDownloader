@@ -12,15 +12,11 @@ import logging
 import re
 import sys
 from typing import TYPE_CHECKING
-from urllib.parse import unquote, urlparse, urlunparse
+from urllib.parse import parse_qs, unquote, urlencode, urlparse, urlunparse
 
-from .config import (
-    FALLBACK_DOMAIN,
-    MEDIA_SLUG_REGEX,
-    URL_TYPE_MAPPING,
-    VALID_SLUG_REGEX,
-    SkippedReason,
-)
+from src.config import FALLBACK_DOMAIN, MEDIA_SLUG_REGEX, VALID_SLUG_REGEX
+from src.enums import SkippedReason, UrlType
+from src.models import URL_TYPE_MAPPING
 
 if TYPE_CHECKING:
     from bs4 import BeautifulSoup
@@ -42,6 +38,20 @@ def add_https_prefix(url: str) -> str:
     return url
 
 
+def remove_page_param(url: str) -> str:
+    """Return the URL without the 'page' query parameter, if present."""
+    parsed_url = urlparse(url)
+    query = parse_qs(parsed_url.query)
+    query.pop("page", None)
+    new_query = urlencode(query, doseq=True)
+    return urlunparse(parsed_url._replace(query=new_query))
+
+
+def normalize_url(url: str) -> str:
+    """Normalize URL by ensuring HTTPS and removing pagination parameters."""
+    return add_https_prefix(remove_page_param(url))
+
+
 def replace_domain_with_fallback(url: str) -> str:
     """Replace the domain of the given URL with the configured fallback domain."""
     parsed_url = urlparse(url)
@@ -49,20 +59,21 @@ def replace_domain_with_fallback(url: str) -> str:
     return urlunparse(updated_url)
 
 
-def check_url_type(url: str) -> bool:
+def resolve_url_type(url: str) -> UrlType:
     """Determine whether the provided URL corresponds to an album or a single file."""
     try:
         url_type = url.rstrip("/").split("/")[-2]
 
     except IndexError:
-        log_message = f"Invalid URL format for: {url}"
-        logging.exception(log_message)
+        logging.warning("Invalid URL format for: %s", url)
 
     if url_type in URL_TYPE_MAPPING:
         return URL_TYPE_MAPPING[url_type]
 
-    log_message = f"Invalid URL format for: {url}. Unexpected URL type '{url_type}'."
-    logging.warning(log_message)
+    logging.warning(
+        "Invalid URL format for: %s. Unexpected URL type '%s'",
+        url, url_type,
+    )
     sys.exit(1)
 
 
@@ -73,9 +84,9 @@ def log_unavailable_url(live_manager: LiveManager, url: str) -> None:
     """
     live_manager.update_log(
         event="Service unavailable",
-        details=f"The URL {url} is currently unavailable. Try again later.",
+        details=f"The page {url} is currently unavailable. Verify the link and retry.",
     )
-    live_manager.progress_manager.update_result(SkippedReason.SERVICE_UNAVAILABLE)
+    live_manager.update_summary(SkippedReason.SERVICE_UNAVAILABLE)
 
 
 def get_identifier(url: str, soup: BeautifulSoup | None = None) -> str:
@@ -88,14 +99,14 @@ def get_identifier(url: str, soup: BeautifulSoup | None = None) -> str:
     decoded_url = unquote(url)
 
     try:
-        is_album = check_url_type(decoded_url)
+        url_type = resolve_url_type(decoded_url)
         return (
-            get_album_id(decoded_url) if is_album else get_media_slug(decoded_url, soup)
+            get_album_id(decoded_url) if url_type is UrlType.ALBUM
+            else get_media_slug(decoded_url, soup)
         )
 
     except IndexError:
-        log_message = f"Error extracting the identifier from: {url}"
-        logging.exception(log_message)
+        logging.warning("Error extracting the identifier from: %s", url)
 
     return url
 
@@ -106,8 +117,7 @@ def get_album_id(url: str) -> str:
         return url.rstrip("/").split("/")[-1]
 
     except IndexError:
-        log_message = f"Invalid URL format for: {url}"
-        logging.exception(log_message)
+        logging.warning("Invalid URL format for: %s", url)
         sys.exit(1)
 
 
@@ -124,7 +134,7 @@ def get_media_slug(url: str, soup: BeautifulSoup) -> str:
         return media_slug
 
     # Fallback: try to find slug in script tags
-    for item in soup.find_all("script"):
+    for item in soup.find_all("script") if soup else ():
         script_text = item.get_text()
         match = re.search(MEDIA_SLUG_REGEX, script_text)
         if match:
@@ -147,11 +157,16 @@ def get_album_name(soup: BeautifulSoup) -> str | None:
     if not name_container:
         return None
 
-    raw_album_name = name_container.find("h1").get_text(strip=True)
-    unescaped_album_name = html.unescape(raw_album_name)
+    heading = name_container.find("h1")
+    if not heading:
+        return None
 
-    # Attempt to fix mojibake (UTF-8 bytes mis-decoded as Latin-1). If encoding/decoding
-    # fails, keep the decoded version
+    raw_album_name = heading.get_text(strip=True)
+    unescaped_album_name = html.unescape(raw_album_name)
+    fixed_album_name = unescaped_album_name  # Prevent UnboundLocalError
+
+    # Attempt to fix mojibake (UTF-8 bytes mis-decoded as Latin-1).
+    # If encoding/decoding fails, keep the decoded version.
     with contextlib.suppress(UnicodeEncodeError, UnicodeDecodeError):
         fixed_album_name = unescaped_album_name.encode("latin1").decode("utf-8")
 
@@ -168,8 +183,7 @@ def get_item_type(item_page: str) -> str | None:
         return item_page.rstrip("/").split("/")[-2]
 
     except AttributeError:
-        log_message = f"Error extracting the item type from {item_page}"
-        logging.exception(log_message)
+        logging.warning("Error extracting the item type from %s", item_page)
 
     return None
 
