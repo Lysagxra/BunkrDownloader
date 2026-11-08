@@ -155,6 +155,8 @@ DOWNLOAD_HEADERS: dict[str, str] = {
 # default below. All CLI args participating in this need default=None so an unset flag
 # can be distinguished from an explicit one.
 _CONFIG_FIELDS: dict[str, tuple[object, object]] = {
+    "session_id": (None, lambda v: isinstance(v, str)),
+    "verbose": (False, lambda v: isinstance(v, bool)),
     "custom_path": (None, lambda v: isinstance(v, str)),
     "no_download_folder": (False, lambda v: isinstance(v, bool)),
     "no_album_folder": (False, lambda v: isinstance(v, bool)),

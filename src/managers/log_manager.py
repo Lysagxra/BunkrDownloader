@@ -41,6 +41,8 @@ class LoggerTable:
         """Add a new row to the table and manage scrolling."""
         timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
 
+        logging.getLogger("bunkr.events").info("%s | %s", event, details)
+
         if not disable_ui:
             self.row_buffer.append((timestamp, event, details))
 

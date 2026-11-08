@@ -57,7 +57,7 @@ def add_common_arguments(parser: ArgumentParser) -> None:
         help="Keep the original filenames of downloaded files.",
     )
     parser.add_argument(
-        "--max-retries",
+        "--max-retries", "--retries",
         type=int,
         default=None,
         help=(
@@ -103,6 +103,17 @@ def add_common_arguments(parser: ArgumentParser) -> None:
             "Values above 1 disable the live progress UI since the progress display "
             "only supports tracking one album at a time."
         ),
+    )
+    parser.add_argument(
+        "--session-id",
+        default=None,
+        help="Store this run's structured session log under session/<id>.log.",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        default=None,
+        help="Also write diagnostic events to a timestamped file under logs/.",
     )
     parser.add_argument(
         "--config",

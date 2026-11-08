@@ -19,6 +19,7 @@ from src.config import DOWNLOAD_HEADERS
 from src.enums import CompletedReason, FailedReason, HTTPStatus, SkippedReason
 from src.misc.bunkr_utils import subdomain_is_offline
 from src.misc.file_utils import (
+    append_suffix,
     matches_ignore_list,
     matches_include_list,
     truncate_filename,
@@ -110,11 +111,17 @@ class MediaDownloader:
 
                     continue
 
-                # Fallback: single-connection streaming download
+                # Resume the single-connection partial independently of chunk files.
+                temp_path = append_suffix(final_path, ".temp")
+                offset = temp_path.stat().st_size if temp_path.exists() else 0
+                headers = {**DOWNLOAD_HEADERS, "Accept-Encoding": "identity"}
+                if offset:
+                    headers["Range"] = f"bytes={offset}-"
+
                 with requests.get(
                     self.download_info.download_link,
                     stream=True,
-                    headers=DOWNLOAD_HEADERS,
+                    headers=headers,
                     timeout=_SINGLE_CONNECTION_TIMEOUT,
                 ) as response:
                     response.raise_for_status()

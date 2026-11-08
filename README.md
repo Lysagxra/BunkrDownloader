@@ -191,3 +191,43 @@ python3 downloader.py <bunkr_url> --max-retries 3
 
 The application logs any issues encountered during the download process in a file named `session.log`.
 Check this file for any URLs that may have been blocked or had errors.
+
+### Resuming interrupted downloads
+
+Single-connection downloads keep unfinished data in `<filename>.temp`, preserving
+its extension (for example, `video.mp4.temp`). Run the same command again to request
+the remaining bytes. A valid HTTP `206` response is appended only when its
+`Content-Range` starts at the saved offset and describes the remaining tail.
+Malformed or inconsistent range responses leave the partial file intact. If the
+server returns a full `200` response instead, the partial is overwritten with that
+full response. Short or interrupted responses are never renamed as completed files.
+
+This complements the existing parallel `.partN` / `.bunkrparts` resume support.
+Keep partial files and album state in the same download directory between runs.
+Resume assumes the remote file has not changed; remove its partial files to start
+over if the source was replaced or the server rejects the saved byte range.
+Older partial files named by replacing the original extension are not reused.
+
+### Session and diagnostic logs
+
+Both entry points accept `--session-id <id>` to write structured session entries
+to `session/<id>.log`, and `--verbose` to mirror UI events to a timestamped file in
+`logs/`. Existing logs are retained. Without `--session-id`, the normal upstream
+session log is used. These options also support `session_id` and `verbose` defaults
+in `bunkr.toml`; explicit command-line values take precedence.
+
+```bash
+python downloader.py https://bunkr.cr/a/example --session-id example --verbose
+python main.py --session-id batch --verbose
+```
+
+Session logs contain diagnostic records, rather than a list of direct URLs to
+replay. Failed album items use upstream's final retry pass and persisted album
+state. Re-run the original album command to retry remaining work in its original
+directory. `--retries` remains an alias for upstream's `--max-retries` option.
+
+Run the resume and session regression tests with:
+
+```bash
+python -m unittest discover -s tests -v
+```

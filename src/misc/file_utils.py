@@ -15,11 +15,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src import config
 from src.config import (
     BACKUP_FOLDER,
     DOWNLOAD_FOLDER,
     MAX_FILENAME_LEN,
-    SESSION_LOG,
     URLS_FILE,
     VALID_CHARACTERS_REGEX,
 )
@@ -53,7 +53,7 @@ def append_suffix(path: str | Path, suffix: str) -> Path:
 def log_session_start() -> None:
     """Append a session start marker to the session log."""
     session_start = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    with Path(SESSION_LOG).open("a", encoding="utf-8") as log_file:
+    with Path(config.SESSION_LOG).open("a", encoding="utf-8") as log_file:
         log_file.write(f"\n--- Session started {session_start} UTC ---\n")
 
 
@@ -84,7 +84,7 @@ def write_on_session_log(
         entry["reason"] = reason.name
 
     # Append the entry to the session log file
-    with Path(SESSION_LOG).open("a", encoding="utf-8") as file:
+    with Path(config.SESSION_LOG).open("a", encoding="utf-8") as file:
         file.write(f"{entry}\n")
 
 

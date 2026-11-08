@@ -31,6 +31,9 @@ jobs:
           pip install -r requirements.txt
           pip install pylint
 
+      - name: Resume and session regression tests
+        run: python -m unittest discover -s tests -v
+
       - name: Pylint code check
         run: |
           python -m pylint \

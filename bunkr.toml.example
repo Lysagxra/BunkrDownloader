@@ -49,3 +49,9 @@ connections = 4
 
 # Only download files whose names contain at least one of these substrings.
 # include = ["mp4", "mkv"]
+
+# Optional identifier for structured session logs under session/<id>.log.
+# session_id = "my-album"
+
+# Mirror UI events to a timestamped diagnostic file under logs/.
+verbose = false

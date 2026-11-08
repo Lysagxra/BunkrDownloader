@@ -25,6 +25,7 @@ from src.downloaders.album_downloader import AlbumDownloader, MediaDownloader
 from src.enums import FailedReason, SkippedReason
 from src.managers.live_manager import initialize_managers
 from src.managers.rate_limiter import RateLimiter
+from src.managers.session_manager import configure_session
 from src.managers.state_manager import load_album_state, save_album_state
 from src.misc.args_utils import parse_arguments
 from src.misc.file_utils import (
@@ -300,6 +301,7 @@ async def main() -> None:
         await execute_dry_run_for_url(bunkr_status, args.url, args, Console())
         return
 
+    configure_session(args)
     rate_limiter = RateLimiter(args.rate_limit * KB if args.rate_limit else None)
     live_manager = initialize_managers(disable_ui=args.disable_ui)
 

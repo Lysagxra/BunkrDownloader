@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 from downloader import parse_arguments
 from src.config import URLS_FILE
+from src.managers.session_manager import configure_session
 from src.misc.file_utils import create_urls_file_backup, log_session_start, read_file
 from src.misc.general_utils import check_python_version, clear_terminal
 from src.services.run_utils import (
@@ -50,10 +51,12 @@ async def process_urls(urls: list[str], args: Namespace) -> list[str]:
 async def main() -> None:
     """Run the script and process URLs."""
     clear_terminal()
-    log_session_start()
 
     check_python_version()
     args = parse_arguments(common_only=True)
+    if not args.dry_run:
+        configure_session(args)
+        log_session_start()
     create_urls_file_backup()
 
     urls = [url.strip() for url in read_file(URLS_FILE) if url.strip()]
