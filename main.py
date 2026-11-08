@@ -53,15 +53,15 @@ async def main() -> None:
     clear_terminal()
     check_python_version()
     args = parse_arguments(common_only=True)
-    
+
     if not args.dry_run:
         configure_session(args)
         log_session_start()
-    
+
     create_urls_file_backup()
     urls = [url.strip() for url in read_file(URLS_FILE) if url.strip()]
     failed_urls = await process_urls(urls, args)
-    
+
     if failed_urls:
         log_failed_urls(failed_urls)
 

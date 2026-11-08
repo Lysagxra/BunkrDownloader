@@ -63,7 +63,7 @@ class ResumeTests(unittest.TestCase):
         """A full response replaces partial bytes rather than appending them."""
         self.partial.write_bytes(b"old")
         self.assertFalse(
-            self.save(self.response(200, b"abcdef", **{"Content-Length": "6"}))
+            self.save(self.response(200, b"abcdef", **{"Content-Length": "6"})),
         )
         self.assertEqual(self.path.read_bytes(), b"abcdef")
 
@@ -103,7 +103,8 @@ class ResumeTests(unittest.TestCase):
         def interrupted_stream(chunk_size: int):
             del chunk_size
             yield b"abc"
-            raise ChunkedEncodingError("connection interrupted")
+            msg = "connection interrupted"
+            raise ChunkedEncodingError(msg)
 
         response.iter_content.side_effect = interrupted_stream
         self.assertTrue(self.save(response))
@@ -113,7 +114,7 @@ class ResumeTests(unittest.TestCase):
     def test_short_body_remains_partial(self) -> None:
         """Never finalize a body shorter than the advertised total."""
         self.assertTrue(
-            self.save(self.response(200, b"abc", **{"Content-Length": "6"}))
+            self.save(self.response(200, b"abc", **{"Content-Length": "6"})),
         )
         self.assertFalse(self.path.exists())
 
@@ -125,11 +126,13 @@ class ResumeTests(unittest.TestCase):
     def test_filenames_keep_extensions(self) -> None:
         """Different file extensions do not share a partial path."""
         self.assertNotEqual(
-            self.partial, append_suffix(self.path.with_suffix(".jpg"), ".temp")
+            self.partial,
+            append_suffix(self.path.with_suffix(".jpg"), ".temp"),
         )
 
     @patch(
-        "src.downloaders.media_downloader.detect_range_support", return_value=(False, 6)
+        "src.downloaders.media_downloader.detect_range_support",
+        return_value=(False, 6),
     )
     @patch("src.downloaders.media_downloader.requests.get")
     def test_download_requests_range(self, request: Mock, detect: Mock) -> None:
@@ -169,11 +172,15 @@ class ResumeTests(unittest.TestCase):
 
     @patch("src.downloaders.media_downloader.time.sleep")
     @patch(
-        "src.downloaders.media_downloader.detect_range_support", return_value=(False, 6)
+        "src.downloaders.media_downloader.detect_range_support",
+        return_value=(False, 6),
     )
     @patch("src.downloaders.media_downloader.requests.get")
     def test_retry_uses_saved_offset(
-        self, request: Mock, detect: Mock, sleep: Mock
+        self,
+        request: Mock,
+        detect: Mock,
+        sleep: Mock,
     ) -> None:
         """A short first response resumes during the same outer retry budget."""
         del detect, sleep
@@ -203,7 +210,8 @@ class ResumeTests(unittest.TestCase):
         self.assertEqual(self.path.read_bytes(), b"abcdef")
         self.assertNotIn("Range", request.call_args_list[0].kwargs["headers"])
         self.assertEqual(
-            request.call_args_list[1].kwargs["headers"]["Range"], "bytes=3-"
+            request.call_args_list[1].kwargs["headers"]["Range"],
+            "bytes=3-",
         )
 
 
@@ -226,7 +234,8 @@ class SessionTests(unittest.TestCase):
             write_on_session_log("failed item")
             self.assertEqual(Path(config.SESSION_LOG).parent, root / "session")
             self.assertIn(
-                "failed item", Path(config.SESSION_LOG).read_text(encoding="utf-8")
+                "failed item",
+                Path(config.SESSION_LOG).read_text(encoding="utf-8"),
             )
             LoggerTable().log("Retry", "Trying again")
             logs = list((root / "logs").glob("*.log"))
