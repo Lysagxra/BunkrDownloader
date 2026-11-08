@@ -214,6 +214,7 @@ class SessionTests(unittest.TestCase):
         """Named logs use safe paths; UI events also reach the diagnostic file."""
         original_log = config.SESSION_LOG
         self.addCleanup(setattr, config, "SESSION_LOG", original_log)
+
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             with patch(
@@ -221,6 +222,7 @@ class SessionTests(unittest.TestCase):
                 side_effect=lambda value: root / value,
             ):
                 configure_session(Namespace(session_id="../album", verbose=True))
+
             write_on_session_log("failed item")
             self.assertEqual(Path(config.SESSION_LOG).parent, root / "session")
             self.assertIn(

@@ -29,6 +29,7 @@ from src.config import (
 )
 from src.misc.file_utils import append_suffix
 from src.models import ChunkInfo, DownloadConfig, DownloadPlan
+from src.enums import HTTPStatus
 
 if TYPE_CHECKING:
     from src.managers.live_manager import LiveManager
@@ -48,24 +49,33 @@ def _stream_size(response: Response, offset: int) -> int | None:
     """Validate a streaming response before writing to a partial file."""
     try:
         content_length = int(response.headers.get("Content-Length", -1))
+    
     except ValueError:
         return None
-    if response.status_code == 200:
+    
+    if response.status_code == HTTPStatus.OK:
         return content_length if content_length >= -1 else None
-    if response.status_code != 206:
+    
+    if response.status_code != HTTPStatus.PARTIAL_CONTENT:
         return None
+    
     content_range = re.fullmatch(
         r"bytes (\d+)-(\d+)/(\d+)", response.headers.get("Content-Range", ""),
     )
+    
     if content_range is None:
         return None
+    
     start, end, total = map(int, content_range.groups())
     if start != offset or end < start or end != total - 1:
         return None
+    
     if content_length not in (-1, end - start + 1):
         return None
+    
     if response.headers.get("Content-Encoding", "identity").lower() != "identity":
         return None
+    
     return total
 
 
@@ -92,12 +102,14 @@ def save_file_with_progress(
         if response.status_code == 206 and temp_download_path.exists() else 0
     )
     file_size = _stream_size(response, offset)
+
     if file_size is None:
         return True
+    
     if file_size == -1:
         logging.warning("Content length not provided in response headers.")
+    
     chunk_size = get_chunk_size(file_size)
-
     total_downloaded = offset
 
     try:

@@ -17,6 +17,7 @@ class HTTPStatus(IntEnum):
     """Enumeration of common HTTP status codes used in the project."""
 
     OK = 200
+    PARTIAL_CONTENT = 206
     FORBIDDEN = 403
     TOO_MANY_REQUESTS = 429
     INTERNAL_ERROR = 500

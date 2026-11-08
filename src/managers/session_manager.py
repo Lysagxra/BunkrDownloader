@@ -27,6 +27,7 @@ def configure_session(args: Namespace) -> None:
     for handler in list(event_logger.handlers):
         event_logger.removeHandler(handler)
         handler.close()
+
     event_logger.propagate = False
     event_logger.setLevel(logging.INFO)
     event_logger.addHandler(logging.NullHandler())
